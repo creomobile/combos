@@ -89,7 +89,7 @@ class ComboState extends State<Combo> {
     setState(() {});
   }
 
-  void close() async {
+  void close({bool byTapOver = false}) async {
     if (_overlay == null) return;
     final overlay = _overlay;
     _overlay = null;
@@ -108,11 +108,14 @@ class ComboState extends State<Combo> {
         final size = renderBox.size;
         final screenSize = MediaQuery.of(context).size;
         final requiredHeight = widget.requiredHeight ?? screenSize.height / 3;
+        var lastOffset = Offset.zero;
 
-        Widget overlay = StreamBuilder(
+        final overlay = StreamBuilder(
             stream: _scrolls.stream,
             builder: (context, snapshot) {
-              final offset = renderBox.localToGlobal(Offset.zero);
+              final offset = mounted
+                  ? lastOffset = renderBox.localToGlobal(Offset.zero)
+                  : lastOffset;
               final isAbove = widget.showAbove &&
                   screenSize.height -
                           (offset.dy + (widget.overlap ? 0 : size.height)) <
@@ -140,7 +143,7 @@ class ComboState extends State<Combo> {
                 key: ValueKey(screenSize),
                 children: [
                   if (widget.closeOnTapOver)
-                    GestureDetector(onPanDown: (_) => close()),
+                    GestureDetector(onPanDown: (_) => close(byTapOver: true)),
                   FutureBuilder<Offset>(
                       future: completer.future,
                       builder: (context, snapshot) {
@@ -377,6 +380,8 @@ class Typeahead<T> extends Combo {
   const Typeahead({
     Key key,
     this.decoration,
+    this.enabled = true,
+    this.autofocus = false,
     @required this.getItems,
     @required this.buildItem,
     this.buildItemsDecorator,
@@ -397,6 +402,7 @@ class Typeahead<T> extends Combo {
     this.popupWidth,
     this.popupMaxHeight = 300,
     this.delay = const Duration(milliseconds: 300),
+    this.cleanAfterSelection = false,
     bool showAbove = true,
     bool animatedOpen = true,
     Duration openingAnimationDuration = _defaultAnimationDuration,
@@ -407,6 +413,7 @@ class Typeahead<T> extends Combo {
     double requiredHeight,
     ValueChanged<bool> openedChanged,
   }) : super(
+          key: key,
           horizontalBehavior: popupWidth == null
               ? PopupHorizontalBehavior.matchWidth
               : PopupHorizontalBehavior.customWidth,
@@ -423,6 +430,8 @@ class Typeahead<T> extends Combo {
         );
 
   final InputDecoration decoration;
+  final bool enabled;
+  final bool autofocus;
   final GetItems<T> getItems;
   final ItemsDecoratorBuilder buildItemsDecorator;
   final InputDecoratorBuilder buildInputDecorator;
@@ -436,16 +445,20 @@ class Typeahead<T> extends Combo {
   final double popupWidth;
   final double popupMaxHeight;
   final Duration delay;
+  final bool cleanAfterSelection;
 
   @override
-  _TypeaheadBaseState<T> createState() =>
-      _TypeaheadBaseState<T>(focusNode ?? FocusNode(), value);
+  _TypeaheadBaseState<T> createState() => _TypeaheadBaseState<T>(
+      focusNode ?? FocusNode(), value, value == null ? '' : getItemText(value));
 }
 
 class _TypeaheadBaseState<T> extends ComboState {
-  _TypeaheadBaseState(this._focusNode, this._value);
+  _TypeaheadBaseState(this._focusNode, this._value, String text)
+      : _controller = TextEditingController(text: text),
+        _actualText = text;
 
-  final _controller = TextEditingController();
+  final TextEditingController _controller;
+  String _actualText;
   final FocusNode _focusNode;
   final _scrollController = ScrollController();
   T _value;
@@ -458,18 +471,17 @@ class _TypeaheadBaseState<T> extends ComboState {
   @override
   void initState() {
     super.initState();
-
-    var text = _controller.text;
-
     _controller.addListener(() async {
-      if (!mounted || text == _controller.text || !_focusNode.hasFocus) return;
+      if (!mounted || _actualText == _controller.text || !_focusNode.hasFocus) {
+        return;
+      }
       _setValue(null, false);
-      final localText = text = _controller.text;
+      final text = _actualText = _controller.text;
       if (_textLength < widget.minTextLength) {
         super.close();
       } else {
         await Future.delayed(widget.delay);
-        if (localText != _controller.text) return;
+        if (text != _controller.text) return;
         _getItems();
       }
     });
@@ -484,10 +496,14 @@ class _TypeaheadBaseState<T> extends ComboState {
     });
   }
 
+  @override
   void didUpdateWidget(Typeahead<T> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.value != widget.value && widget.value != _value) {
       _setValue(widget.value);
+    }
+    if (oldWidget.enabled != widget.enabled) {
+      setState(() {});
     }
   }
 
@@ -495,9 +511,14 @@ class _TypeaheadBaseState<T> extends ComboState {
 
   void _setValue(T value, [bool updateText = true]) {
     if (value == _value) return;
-    _value = value;
-    if (updateText) {
-      _controller.text = widget.getItemText(value) ?? '';
+    if (widget.cleanAfterSelection) {
+      _controller.text = '';
+      _items = null;
+    } else {
+      _value = value;
+      if (updateText) {
+        _controller.text = _actualText = widget.getItemText(value) ?? '';
+      }
     }
     if (widget.onValueChanged != null) {
       widget.onValueChanged(value);
@@ -529,10 +550,14 @@ class _TypeaheadBaseState<T> extends ComboState {
   }
 
   @override
-  void close() {
-    Future.delayed(Duration(milliseconds: 100)).then((_) {
-      if (!_focusNode.hasFocus) super.close();
-    });
+  void close({bool byTapOver = false}) {
+    if (byTapOver) {
+      Future.delayed(Duration(milliseconds: 100)).then((_) {
+        if (!_focusNode.hasFocus) super.close(byTapOver: true);
+      });
+    } else {
+      super.close();
+    }
   }
 
   @override
@@ -543,7 +568,12 @@ class _TypeaheadBaseState<T> extends ComboState {
     final textField = TextField(
       controller: _controller,
       focusNode: _focusNode,
+      enabled: widget.enabled,
+      autofocus: widget.autofocus,
       decoration: widget.decoration ?? const InputDecoration(),
+      onTap: () {
+        if (!opened && _items != null) open();
+      },
     );
     return widget.buildInputDecorator == null
         ? textField
@@ -609,7 +639,7 @@ class _TypeaheadBaseState<T> extends ComboState {
   void dispose() {
     super.dispose();
     _controller.dispose();
-    _focusNode.dispose();
+    if (widget.focusNode == null) _focusNode.dispose();
     _scrollController.dispose();
     _itemsController.close();
     _inProgressController.close();
