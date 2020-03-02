@@ -30,23 +30,22 @@ class _MyHomePageState extends State<MyHomePage> {
   final _hoverPopupKey = GlobalKey<_TestPopupState>();
   final _openingDurationController = TextEditingController(text: '150');
   final _closingDurationController = TextEditingController(text: '150');
-  final _requiredHeightController = TextEditingController(text: '300');
+  final _requiredUnderHeightController = TextEditingController(text: '300');
   final _popupWidthController = TextEditingController(text: '300');
   final _popupHeightController = TextEditingController(text: '300');
   final _spaceAboveController = TextEditingController(text: '100');
   final _comboWidthController = TextEditingController(text: '200');
 
-  var _horizontalBehavior = PopupHorizontalBehavior.minMatchWidth;
+  var _widthConstraints = PopupWidthConstraints.minMatchWidth;
+  var _popupAutoClose = PopupAutoClose.tapDownWithChildIgnorePointer;
   var _overlap = false;
   var _showAbove = true;
-  var _ignoreChildPointerWhenPopupShowed = true;
   var _animatedOpen = true;
   var _openingDurationMs = 150;
   var _animatedClose = true;
   var _closingDurationMs = 150;
   var _customAnimation = false;
-  var _closeOnTapOver = true;
-  var _requiredHeight = 300;
+  var _requiredUnderHeight = 300;
   var _popupWidth = 300;
   var _popupHeight = 300;
   var _spaceAbove = 100;
@@ -112,12 +111,19 @@ class _MyHomePageState extends State<MyHomePage> {
             Padding(
               padding: const EdgeInsets.all(16.0),
               child: Wrap(spacing: 24, runSpacing: 16, children: [
-                // horizontalBehavior
-                buildEnumSelector<PopupHorizontalBehavior>(
-                    'Horizontal Behavior:',
-                    PopupHorizontalBehavior.values,
-                    _horizontalBehavior,
-                    (_) => _horizontalBehavior = _),
+                // width constraints
+                buildEnumSelector<PopupWidthConstraints>(
+                    'Width Constraints:',
+                    PopupWidthConstraints.values,
+                    _widthConstraints,
+                    (_) => _widthConstraints = _),
+
+                // auto close
+                buildEnumSelector<PopupAutoClose>(
+                    'Width Constraints:',
+                    PopupAutoClose.values,
+                    _popupAutoClose,
+                    (_) => _popupAutoClose = _),
 
                 // overlap
                 buildBoolSelector('Overlap', _overlap, (_) => _overlap = _),
@@ -125,12 +131,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 // showAbove
                 buildBoolSelector(
                     'Show Above', _showAbove, (_) => _showAbove = _),
-
-                // ignoreChildPointerWhenPopupShowed
-                buildBoolSelector(
-                    'Ignore Child Pointer',
-                    _ignoreChildPointerWhenPopupShowed,
-                    (_) => _ignoreChildPointerWhenPopupShowed = _),
 
                 // animatedOpen
                 buildBoolSelector('Animated Open', _animatedOpen, (_) {
@@ -166,13 +166,9 @@ class _MyHomePageState extends State<MyHomePage> {
                   }
                 }),
 
-                // closeOnTapOver
-                buildBoolSelector('Close On Tap Over', _closeOnTapOver,
-                    (_) => _closeOnTapOver = _),
-
                 // requiredHeight
-                buildIntSelector(_requiredHeightController, 'Required Height',
-                    (_) => _requiredHeight = _),
+                buildIntSelector(_requiredUnderHeightController,
+                    'Required Under Height', (_) => _requiredUnderHeight = _),
 
                 // popup width
                 buildIntSelector(_popupWidthController, 'Popup Width',
@@ -227,11 +223,10 @@ class _MyHomePageState extends State<MyHomePage> {
 
                     Combo(
                       key: _comboKey,
-                      horizontalBehavior: _horizontalBehavior,
+                      popupWidthConstraints: _widthConstraints,
                       overlap: _overlap,
                       showAbove: _showAbove,
-                      ignoreChildPointerWhenPopupShowed:
-                          _ignoreChildPointerWhenPopupShowed,
+                      popupAutoClose: _popupAutoClose,
                       animatedOpen: _animatedOpen,
                       openingAnimationDuration:
                           Duration(milliseconds: _openingDurationMs),
@@ -241,8 +236,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               ? _customAnimationDurationMs
                               : _closingDurationMs),
                       customAnimation: _customAnimation,
-                      closeOnTapOver: _closeOnTapOver,
-                      requiredHeight: _requiredHeight.toDouble(),
+                      requiredUnderHeight: _requiredUnderHeight.toDouble(),
                       openedChanged: (isOpened) {
                         if (isOpened) {
                           HoverCombo.blockOpenOnHover();
@@ -309,7 +303,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
                     HoverCombo(
                       key: _hoverComboKey,
-                      horizontalBehavior: _horizontalBehavior,
+                      horizontalBehavior: _widthConstraints,
                       overlap: _overlap,
                       showAbove: _showAbove,
                       animatedOpen: _animatedOpen,
@@ -321,7 +315,7 @@ class _MyHomePageState extends State<MyHomePage> {
                               ? _customAnimationDurationMs
                               : _closingDurationMs),
                       customAnimation: _customAnimation,
-                      requiredHeight: _requiredHeight.toDouble(),
+                      requiredHeight: _requiredUnderHeight.toDouble(),
                       openedChanged: _customAnimation
                           ? (isOpened) {
                               if (!isOpened)
@@ -427,6 +421,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           ),
                         ),
                         showAbove: _showAbove,
+                        popupAutoClose: _popupAutoClose,
                         animatedOpen: _animatedOpen,
                         openingAnimationDuration:
                             Duration(milliseconds: _openingDurationMs),
@@ -436,8 +431,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 ? _customAnimationDurationMs
                                 : _closingDurationMs),
                         customAnimation: _customAnimation,
-                        closeOnTapOver: _closeOnTapOver,
-                        requiredHeight: _requiredHeight.toDouble(),
+                        requiredHeight: _requiredUnderHeight.toDouble(),
                         openedChanged: (isOpened) {
                           if (isOpened) {
                             HoverCombo.blockOpenOnHover();

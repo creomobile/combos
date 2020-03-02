@@ -9,7 +9,14 @@ import 'package:flutter/rendering.dart';
 
 const _defaultAnimationDuration = Duration(milliseconds: 150);
 
-enum PopupHorizontalBehavior { matchWidth, minMatchWidth, customWidth }
+enum PopupWidthConstraints { matchWidth, minMatchWidth, customWidth }
+
+enum PopupAutoClose {
+  none,
+  tapDown,
+  tapDownWithChildIgnorePointer,
+  tapDownExceptChild
+}
 
 typedef Widget PopupBuilder(BuildContext context, bool isAbove);
 
@@ -18,33 +25,31 @@ class Combo extends StatefulWidget {
     Key key,
     this.child,
     this.popupBuilder,
-    this.horizontalBehavior = PopupHorizontalBehavior.minMatchWidth,
+    this.popupWidthConstraints = PopupWidthConstraints.minMatchWidth,
+    this.popupAutoClose = PopupAutoClose.tapDownWithChildIgnorePointer,
     this.overlap = false,
     this.showAbove = true,
-    this.ignoreChildPointerWhenPopupShowed = true,
     this.animatedOpen = true,
     this.openingAnimationDuration = _defaultAnimationDuration,
     this.animatedClose = true,
     this.closingAnimationDuration = _defaultAnimationDuration,
     this.customAnimation = false,
-    this.closeOnTapOver = true,
-    this.requiredHeight,
+    this.requiredUnderHeight,
     this.openedChanged,
   }) : super(key: key);
 
   final Widget child;
   final PopupBuilder popupBuilder;
-  final PopupHorizontalBehavior horizontalBehavior;
+  final PopupWidthConstraints popupWidthConstraints;
+  final PopupAutoClose popupAutoClose;
   final bool overlap;
   final bool showAbove;
-  final bool ignoreChildPointerWhenPopupShowed;
   final bool animatedOpen;
   final Duration openingAnimationDuration;
   final bool animatedClose;
   final Duration closingAnimationDuration;
   final bool customAnimation;
-  final bool closeOnTapOver;
-  final double requiredHeight;
+  final double requiredUnderHeight;
   final ValueChanged<bool> openedChanged;
 
   static void close() => ComboState._closes.add(true);
@@ -107,7 +112,8 @@ class ComboState extends State<Combo> {
         final RenderBox renderBox = this.context.findRenderObject();
         final size = renderBox.size;
         final screenSize = MediaQuery.of(context).size;
-        final requiredHeight = widget.requiredHeight ?? screenSize.height / 3;
+        final requiredHeight =
+            widget.requiredUnderHeight ?? screenSize.height / 3;
         var lastOffset = Offset.zero;
 
         final overlay = StreamBuilder(
@@ -123,11 +129,11 @@ class ComboState extends State<Combo> {
 
               Widget popup = popupBuilder(context, isAbove);
 
-              switch (widget.horizontalBehavior) {
-                case PopupHorizontalBehavior.matchWidth:
+              switch (widget.popupWidthConstraints) {
+                case PopupWidthConstraints.matchWidth:
                   popup = SizedBox(width: size.width, child: popup);
                   break;
-                case PopupHorizontalBehavior.minMatchWidth:
+                case PopupWidthConstraints.minMatchWidth:
                   popup = ConstrainedBox(
                       constraints: BoxConstraints(minWidth: size.width),
                       child: popup);
@@ -142,7 +148,7 @@ class ComboState extends State<Combo> {
               return Stack(
                 key: ValueKey(screenSize),
                 children: [
-                  if (widget.closeOnTapOver)
+                  if (widget.popupAutoClose != PopupAutoClose.none)
                     GestureDetector(onPanDown: (_) => close(byTapOver: true)),
                   FutureBuilder<Offset>(
                       future: completer.future,
@@ -155,8 +161,8 @@ class ComboState extends State<Combo> {
                             link: _layerLink,
                             showWhenUnlinked: false,
                             offsetBuilder: (popupSize) {
-                              final dx = widget.horizontalBehavior ==
-                                      PopupHorizontalBehavior.matchWidth
+                              final dx = widget.popupWidthConstraints ==
+                                      PopupWidthConstraints.matchWidth
                                   ? 0.0
                                   : math.min(
                                       0.0,
@@ -209,8 +215,9 @@ class ComboState extends State<Combo> {
   Widget build(BuildContext context) => CompositedTransformTarget(
       link: _layerLink,
       child: IgnorePointer(
-          ignoring:
-              widget.ignoreChildPointerWhenPopupShowed && _overlay != null,
+          ignoring: widget.popupAutoClose ==
+                  PopupAutoClose.tapDownWithChildIgnorePointer &&
+              _overlay != null,
           child: child ?? Container()));
 
   @override
@@ -271,8 +278,8 @@ class HoverCombo extends Combo {
     Key key,
     @required Widget child,
     PopupBuilder popupBuilder,
-    PopupHorizontalBehavior horizontalBehavior =
-        PopupHorizontalBehavior.minMatchWidth,
+    PopupWidthConstraints horizontalBehavior =
+        PopupWidthConstraints.minMatchWidth,
     bool overlap = false,
     bool showAbove = true,
     bool animatedOpen = true,
@@ -291,17 +298,16 @@ class HoverCombo extends Combo {
           key: key,
           child: child,
           popupBuilder: popupBuilder,
-          horizontalBehavior: horizontalBehavior,
+          popupWidthConstraints: horizontalBehavior,
+          popupAutoClose: kIsWeb ? PopupAutoClose.none : PopupAutoClose.tapDown,
           overlap: overlap,
           showAbove: showAbove,
-          ignoreChildPointerWhenPopupShowed: false,
           animatedOpen: animatedOpen,
           openingAnimationDuration: openingAnimationDuration,
           animatedClose: animatedClose,
           closingAnimationDuration: closingAnimationDuration,
           customAnimation: customAnimation,
-          closeOnTapOver: !kIsWeb,
-          requiredHeight: requiredHeight,
+          requiredUnderHeight: requiredHeight,
           openedChanged: openedChanged,
         );
 
@@ -403,6 +409,7 @@ class Typeahead<T> extends Combo {
     this.popupMaxHeight = 300,
     this.delay = const Duration(milliseconds: 300),
     this.cleanAfterSelection = false,
+    PopupAutoClose popupAutoClose = PopupAutoClose.tapDown,
     bool showAbove = true,
     bool animatedOpen = true,
     Duration openingAnimationDuration = _defaultAnimationDuration,
@@ -414,18 +421,17 @@ class Typeahead<T> extends Combo {
     ValueChanged<bool> openedChanged,
   }) : super(
           key: key,
-          horizontalBehavior: popupWidth == null
-              ? PopupHorizontalBehavior.matchWidth
-              : PopupHorizontalBehavior.customWidth,
+          popupWidthConstraints: popupWidth == null
+              ? PopupWidthConstraints.matchWidth
+              : PopupWidthConstraints.customWidth,
+          popupAutoClose: popupAutoClose,
           showAbove: showAbove,
-          ignoreChildPointerWhenPopupShowed: false,
           animatedOpen: animatedOpen,
           openingAnimationDuration: openingAnimationDuration,
           animatedClose: animatedClose,
           closingAnimationDuration: closingAnimationDuration,
           customAnimation: customAnimation,
-          closeOnTapOver: closeOnTapOver,
-          requiredHeight: requiredHeight,
+          requiredUnderHeight: requiredHeight,
           openedChanged: openedChanged,
         );
 
