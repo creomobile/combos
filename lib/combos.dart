@@ -53,7 +53,7 @@ class Combo extends StatefulWidget {
   final double requiredUnderHeight;
   final ValueChanged<bool> openedChanged;
 
-  static void close() => ComboState._closes.add(true);
+  static void closeAll() => ComboState._closes.add(true);
 
   @override
   ComboState createState() => ComboState();
@@ -95,7 +95,7 @@ class ComboState extends State<Combo> {
     setState(() {});
   }
 
-  void close({bool byTapOver = false}) async {
+  void close() async {
     if (_overlay == null) return;
     final overlay = _overlay;
     _overlay = null;
@@ -116,6 +116,9 @@ class ComboState extends State<Combo> {
         final requiredHeight =
             widget.requiredUnderHeight ?? screenSize.height / 3;
         var lastOffset = Offset.zero;
+
+        // ! workaround: https://github.com/flutter/flutter/issues/50800
+        final sizeCompleter = Completer<Offset>();
 
         final overlay = StreamBuilder(
             stream: _scrolls.stream,
@@ -143,16 +146,21 @@ class ComboState extends State<Combo> {
                   break;
               }
 
-              // ! workaround: https://github.com/flutter/flutter/issues/50800
-              final completer = Completer<Offset>();
-
               return Stack(
                 key: ValueKey(screenSize),
                 children: [
                   if (widget.popupAutoClose != PopupAutoClose.none)
-                    GestureDetector(onPanDown: (_) => close(byTapOver: true)),
+                    GestureDetector(onPanDown: (_) {
+                      if (widget.popupAutoClose !=
+                              PopupAutoClose.tapDownExceptChild ||
+                          !renderBox.hitTest(BoxHitTestResult(),
+                              position:
+                                  renderBox.globalToLocal(_.globalPosition))) {
+                        close();
+                      }
+                    }),
                   FutureBuilder<Offset>(
-                      future: completer.future,
+                      future: sizeCompleter.future,
                       builder: (context, snapshot) {
                         return Positioned(
                           top: snapshot.data?.dy,
@@ -175,13 +183,17 @@ class ComboState extends State<Combo> {
                                       popupSize.height
                                   : widget.overlap ? 0 : size.height;
 
-                              if (!completer.isCompleted) {
-                                completer.complete(Offset(dx, dy));
+                              if (!sizeCompleter.isCompleted) {
+                                sizeCompleter.complete(Offset(dx, dy));
                               }
 
                               return Offset(dx, dy);
                             },
-                            child: popup,
+                            child: widget.animatedOpen
+                                ? popup
+                                : Opacity(
+                                    opacity: snapshot.data == null ? 0.01 : 1.0,
+                                    child: popup),
                           ),
                         );
                       }),
@@ -204,7 +216,7 @@ class ComboState extends State<Combo> {
             );
 
         final openAnimated = widget.animatedOpen
-            ? animate(0.0, Future.value(1.0), overlay)
+            ? animate(0.01, sizeCompleter.future.then((_) => 1.0), overlay)
             : overlay;
         final closeAnimated = widget.animatedClose && _closeCompleter != null
             ? animate(1.0, _closeCompleter.future, openAnimated)
@@ -377,42 +389,40 @@ class _HoverComboState extends ComboState {
           );
 }
 
+typedef GetItems<T> = FutureOr<List<T>> Function();
 typedef ItemBuilder<T> = Widget Function(BuildContext context, T item);
-typedef ItemsDecoratorBuilder = Widget Function(
-    BuildContext context, bool isAbove, Widget items);
-typedef InputDecoratorBuilder = Widget Function(
-    BuildContext context, Widget input);
-typedef GetItemText<T> = String Function(T item);
-typedef GetItems<T> = FutureOr<List<T>> Function(String text);
+typedef ItemsDecoratorBuilder<T> = Widget Function(
+    BuildContext context, bool isAbove, List<T> list, Widget items);
 
-class Typeahead<T> extends Combo {
-  const Typeahead({
+const Widget defaultEmptyMessage = Padding(
+  padding: EdgeInsets.all(16),
+  child: Text(
+    'No Items',
+    textAlign: TextAlign.center,
+    style: TextStyle(color: Colors.grey),
+  ),
+);
+
+class ListCombo<T> extends Combo {
+  const ListCombo({
     Key key,
-    this.decoration,
-    this.enabled = true,
-    this.autofocus = false,
     @required this.getItems,
     @required this.buildItem,
+    @required this.onItemTapped,
+    this.autoOpen = true,
+    this.refreshListOnOpened = false,
+    this.emptyMessage = defaultEmptyMessage,
     this.buildItemsDecorator,
-    this.buildInputDecorator,
-    @required this.getItemText,
-    this.minTextLength = 1,
-    this.emptyMessage = const Padding(
-      padding: EdgeInsets.all(16),
-      child: Text(
-        'No Items',
-        textAlign: TextAlign.center,
-        style: TextStyle(color: Colors.grey),
-      ),
-    ),
-    this.focusNode,
-    this.value,
-    this.onValueChanged,
     this.popupWidth,
     this.popupMaxHeight = 300,
-    this.delay = const Duration(milliseconds: 300),
-    this.cleanAfterSelection = false,
-    PopupAutoClose popupAutoClose = PopupAutoClose.tapDown,
+    this.highlightColor,
+    this.splashColor,
+    this.hoverColor,
+    this.focusColor,
+    Widget child,
+    PopupAutoClose popupAutoClose =
+        PopupAutoClose.tapDownWithChildIgnorePointer,
+    bool overlap = false,
     bool showAbove = true,
     bool animatedOpen = true,
     Duration openingAnimationDuration = _defaultAnimationDuration,
@@ -420,126 +430,69 @@ class Typeahead<T> extends Combo {
     Duration closingAnimationDuration = _defaultAnimationDuration,
     bool customAnimation = false,
     bool closeOnTapOver = true,
-    double requiredHeight,
+    double requiredUnderHeight,
     ValueChanged<bool> openedChanged,
   }) : super(
           key: key,
+          child: child,
           popupWidthConstraints: popupWidth == null
               ? PopupWidthConstraints.matchWidth
               : PopupWidthConstraints.customWidth,
           popupAutoClose: popupAutoClose,
+          overlap: overlap,
           showAbove: showAbove,
           animatedOpen: animatedOpen,
           openingAnimationDuration: openingAnimationDuration,
           animatedClose: animatedClose,
           closingAnimationDuration: closingAnimationDuration,
           customAnimation: customAnimation,
-          requiredUnderHeight: requiredHeight,
+          requiredUnderHeight: requiredUnderHeight,
           openedChanged: openedChanged,
         );
 
-  final InputDecoration decoration;
-  final bool enabled;
-  final bool autofocus;
   final GetItems<T> getItems;
-  final ItemsDecoratorBuilder buildItemsDecorator;
-  final InputDecoratorBuilder buildInputDecorator;
   final ItemBuilder<T> buildItem;
-  final GetItemText<T> getItemText;
-  final int minTextLength;
+  final ValueChanged<T> onItemTapped;
+  final bool autoOpen;
+  final bool refreshListOnOpened;
   final Widget emptyMessage;
-  final FocusNode focusNode;
-  final T value;
-  final ValueChanged<T> onValueChanged;
+  final ItemsDecoratorBuilder buildItemsDecorator;
   final double popupWidth;
   final double popupMaxHeight;
-  final Duration delay;
-  final bool cleanAfterSelection;
+  final Color highlightColor;
+  final Color splashColor;
+  final Color hoverColor;
+  final Color focusColor;
 
   @override
-  _TypeaheadBaseState<T> createState() => _TypeaheadBaseState<T>(
-      focusNode ?? FocusNode(), value, value == null ? '' : getItemText(value));
+  ListComboState<T> createState() => ListComboState<T>();
 }
 
-class _TypeaheadBaseState<T> extends ComboState {
-  _TypeaheadBaseState(this._focusNode, this._value, String text)
-      : _controller = TextEditingController(text: text),
-        _actualText = text;
-
-  final TextEditingController _controller;
-  String _actualText;
-  final FocusNode _focusNode;
+class ListComboState<T> extends ComboState {
   final _scrollController = ScrollController();
-  T _value;
   List<T> _items;
+  List<T> get items => _items;
   final _itemsController = StreamController<List<T>>.broadcast();
   var _inProgressCount = 0;
   final _inProgressController = StreamController<int>.broadcast();
   DateTime _lastTimestamp;
 
   @override
-  void initState() {
-    super.initState();
-    _controller.addListener(() async {
-      if (!mounted || _actualText == _controller.text || !_focusNode.hasFocus) {
-        return;
-      }
-      _setValue(null, false);
-      final text = _actualText = _controller.text;
-      if (_textLength < widget.minTextLength) {
-        super.close();
-      } else {
-        await Future.delayed(widget.delay);
-        if (text != _controller.text) return;
-        _getItems();
-      }
-    });
+  ListCombo<T> get widget => super.widget;
 
-    _focusNode.addListener(() {
-      if (mounted &&
-          _focusNode.hasFocus &&
-          _textLength >= widget.minTextLength) {
-        if (_items == null) _getItems();
-        open();
-      }
-    });
-  }
-
-  @override
-  void didUpdateWidget(Typeahead<T> oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.value != widget.value && widget.value != _value) {
-      _setValue(widget.value);
-    }
-    if (oldWidget.enabled != widget.enabled) {
-      setState(() {});
+  void itemTapped(T value) {
+    if (widget.onItemTapped != null) {
+      widget.onItemTapped(value);
     }
   }
 
-  int get _textLength => _controller.text?.length ?? 0;
+  FutureOr getItems() => widget.getItems();
 
-  void _setValue(T value, [bool updateText = true]) {
-    if (value == _value) return;
-    if (widget.cleanAfterSelection) {
-      _controller.text = '';
-      _items = null;
-    } else {
-      _value = value;
-      if (updateText) {
-        _controller.text = _actualText = widget.getItemText(value) ?? '';
-      }
-    }
-    if (widget.onValueChanged != null) {
-      widget.onValueChanged(value);
-    }
-  }
-
-  void _getItems() async {
-    final timestamp = DateTime.now();
-    _lastTimestamp = timestamp;
+  void fillItems() async {
+    final timestamp = _lastTimestamp = DateTime.now();
     List<T> items;
-    final future = widget.getItems(_controller.text);
-    open();
+    final future = getItems();
+    super.open();
     unawaited((() async => items = await future)());
     if (items == null) {
       try {
@@ -558,36 +511,29 @@ class _TypeaheadBaseState<T> extends ComboState {
     }
   }
 
+  void clearItems() => _items = null;
+
   @override
-  void close({bool byTapOver = false}) {
-    if (byTapOver) {
-      Future.delayed(Duration(milliseconds: 100)).then((_) {
-        if (!_focusNode.hasFocus) super.close(byTapOver: true);
-      });
+  void open({bool refresh = false}) {
+    if (refresh || _items == null) {
+      fillItems();
     } else {
-      super.close();
+      super.open();
     }
   }
 
-  @override
-  Typeahead<T> get widget => super.widget;
+  Widget buildChild() => super.child;
 
   @override
-  Widget get child {
-    final textField = TextField(
-      controller: _controller,
-      focusNode: _focusNode,
-      enabled: widget.enabled,
-      autofocus: widget.autofocus,
-      decoration: widget.decoration ?? const InputDecoration(),
-      onTap: () {
-        if (!opened && _items != null) open();
-      },
-    );
-    return widget.buildInputDecorator == null
-        ? textField
-        : widget.buildInputDecorator(context, textField);
-  }
+  Widget get child => widget.autoOpen
+      ? InkWell(
+          highlightColor: widget.highlightColor,
+          splashColor: widget.splashColor,
+          hoverColor: widget.hoverColor,
+          focusColor: widget.focusColor,
+          child: buildChild(),
+          onTap: () => open(refresh: widget.refreshListOnOpened))
+      : buildChild();
 
   @override
   PopupBuilder get popupBuilder => (context, isAbove) {
@@ -620,7 +566,7 @@ class _TypeaheadBaseState<T> extends ComboState {
                             return InkWell(
                               child: widget.buildItem(context, item),
                               onTap: () {
-                                _setValue(item);
+                                itemTapped(item);
                                 super.close();
                               },
                             );
@@ -641,16 +587,295 @@ class _TypeaheadBaseState<T> extends ComboState {
         );
         return widget.buildItemsDecorator == null
             ? Material(elevation: 4, child: items)
-            : widget.buildItemsDecorator(context, isAbove, items);
+            : widget.buildItemsDecorator(context, isAbove, _items, items);
       };
+
+  @override
+  void dispose() {
+    super.dispose();
+    _scrollController.dispose();
+    _itemsController.close();
+    _inProgressController.close();
+  }
+}
+
+typedef ChildDecoratorBuilder = Widget Function(
+    BuildContext context, Widget child);
+
+class SelectorCombo<T> extends ListCombo<T> {
+  const SelectorCombo({
+    Key key,
+    @required this.selected,
+    this.buildChild,
+    this.buildChildDecorator,
+    @required GetItems<T> getItems,
+    @required ItemBuilder<T> buildItem,
+    @required ValueChanged<T> onItemTapped,
+    bool autoOpen = true,
+    bool refreshListOnOpened = false,
+    Widget emptyMessage = defaultEmptyMessage,
+    ItemsDecoratorBuilder buildItemsDecorator,
+    double popupWidth,
+    double popupMaxHeight = 300,
+    Color highlightColor,
+    Color splashColor,
+    Color hoverColor,
+    Color focusColor,
+    PopupAutoClose popupAutoClose =
+        PopupAutoClose.tapDownWithChildIgnorePointer,
+    bool overlap = false,
+    bool showAbove = true,
+    bool animatedOpen = true,
+    Duration openingAnimationDuration = _defaultAnimationDuration,
+    bool animatedClose = true,
+    Duration closingAnimationDuration = _defaultAnimationDuration,
+    bool customAnimation = false,
+    bool closeOnTapOver = true,
+    double requiredUnderHeight,
+    ValueChanged<bool> openedChanged,
+  }) : super(
+          key: key,
+          getItems: getItems,
+          buildItem: buildItem,
+          onItemTapped: onItemTapped,
+          autoOpen: autoOpen,
+          refreshListOnOpened: refreshListOnOpened,
+          emptyMessage: emptyMessage,
+          buildItemsDecorator: buildItemsDecorator,
+          popupWidth: popupWidth,
+          popupMaxHeight: popupMaxHeight,
+          highlightColor: highlightColor,
+          splashColor: splashColor,
+          hoverColor: hoverColor,
+          focusColor: focusColor,
+          popupAutoClose: popupAutoClose,
+          overlap: overlap,
+          showAbove: showAbove,
+          animatedOpen: animatedOpen,
+          openingAnimationDuration: openingAnimationDuration,
+          animatedClose: animatedClose,
+          closingAnimationDuration: closingAnimationDuration,
+          customAnimation: customAnimation,
+          requiredUnderHeight: requiredUnderHeight,
+          openedChanged: openedChanged,
+        );
+
+  final T selected;
+  final ItemBuilder<T> buildChild;
+  final ChildDecoratorBuilder buildChildDecorator;
+
+  @override
+  SelectorComboState<T> createState() => SelectorComboState<T>(selected);
+}
+
+class SelectorComboState<T> extends ListComboState<T> {
+  SelectorComboState(this._selected);
+  T _selected;
+  T get selected => _selected;
+
+  @protected
+  void clearSelected() => _selected = null;
+
+  @override
+  SelectorCombo<T> get widget => super.widget;
+
+  @override
+  void didUpdateWidget(Combo oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selected != _selected) {
+      setState(() => _selected = widget.selected);
+    }
+  }
+
+  @override
+  Widget buildChild() {
+    final child = (widget.buildChild ?? widget.buildItem)(context, _selected);
+    return widget.buildChildDecorator == null
+        ? child
+        : widget.buildChildDecorator(context, child);
+  }
+}
+
+typedef TypeaheadGetItems<T> = FutureOr<List<T>> Function(String text);
+typedef GetItemText<T> = String Function(T item);
+
+class Typeahead<T> extends SelectorCombo<T> {
+  const Typeahead({
+    Key key,
+    this.decoration,
+    this.enabled = true,
+    this.autofocus = false,
+    @required this.getItemText,
+    this.minTextLength = 1,
+    this.focusNode,
+    this.delay = const Duration(milliseconds: 300),
+    this.cleanAfterSelection = false,
+    T selected,
+    ItemBuilder<T> buildChild,
+    ChildDecoratorBuilder buildChildDecorator,
+    @required TypeaheadGetItems<T> getItems,
+    @required ItemBuilder<T> buildItem,
+    @required ValueChanged<T> onItemTapped,
+    bool autoOpen = true,
+    bool refreshListOnOpened = false,
+    Widget emptyMessage = defaultEmptyMessage,
+    ItemsDecoratorBuilder buildItemsDecorator,
+    double popupWidth,
+    double popupMaxHeight = 300,
+    Color highlightColor,
+    Color splashColor,
+    Color hoverColor,
+    Color focusColor,
+    bool overlap = false,
+    bool showAbove = true,
+    bool animatedOpen = true,
+    Duration openingAnimationDuration = _defaultAnimationDuration,
+    bool animatedClose = true,
+    Duration closingAnimationDuration = _defaultAnimationDuration,
+    bool customAnimation = false,
+    bool closeOnTapOver = true,
+    double requiredUnderHeight,
+    ValueChanged<bool> openedChanged,
+  })  : typeaheadGetItems = getItems,
+        super(
+          key: key,
+          selected: selected,
+          buildChild: buildChild,
+          buildChildDecorator: buildChildDecorator,
+          getItems: null,
+          buildItem: buildItem,
+          onItemTapped: onItemTapped,
+          autoOpen: autoOpen,
+          refreshListOnOpened: refreshListOnOpened,
+          emptyMessage: emptyMessage,
+          buildItemsDecorator: buildItemsDecorator,
+          popupWidth: popupWidth,
+          popupMaxHeight: popupMaxHeight,
+          highlightColor: highlightColor,
+          splashColor: splashColor,
+          hoverColor: hoverColor,
+          focusColor: focusColor,
+          popupAutoClose: PopupAutoClose.tapDownExceptChild,
+          overlap: overlap,
+          showAbove: showAbove,
+          animatedOpen: animatedOpen,
+          openingAnimationDuration: openingAnimationDuration,
+          animatedClose: animatedClose,
+          closingAnimationDuration: closingAnimationDuration,
+          customAnimation: customAnimation,
+          requiredUnderHeight: requiredUnderHeight,
+          openedChanged: openedChanged,
+        );
+
+  final TypeaheadGetItems<T> typeaheadGetItems;
+  final InputDecoration decoration;
+  final bool enabled;
+  final bool autofocus;
+  final GetItemText<T> getItemText;
+  final int minTextLength;
+  final FocusNode focusNode;
+  final Duration delay;
+  final bool cleanAfterSelection;
+
+  @override
+  TypeaheadState<T> createState() => TypeaheadState<T>(selected,
+      selected == null ? '' : getItemText(selected), focusNode ?? FocusNode());
+}
+
+class TypeaheadState<T> extends SelectorComboState<T> {
+  TypeaheadState(T selected, String text, this._focusNode)
+      : _controller = TextEditingController(text: text),
+        _text = text,
+        super(selected);
+
+  final TextEditingController _controller;
+  final FocusNode _focusNode;
+
+  String _text;
+  int get _textLength => _controller.text?.length ?? 0;
+
+  @override
+  Typeahead<T> get widget => super.widget;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _controller.addListener(() async {
+      if (!mounted || _text == _controller.text || !_focusNode.hasFocus) {
+        return;
+      }
+
+      clearSelected();
+      if (widget.selected != null) super.itemTapped(null);
+
+      final text = _text = _controller.text;
+      if (_textLength < widget.minTextLength) {
+        super.close();
+      } else {
+        await Future.delayed(widget.delay);
+        if (text == _controller.text) fillItems();
+      }
+    });
+
+    _focusNode.addListener(() {
+      if (mounted &&
+          _focusNode.hasFocus &&
+          _textLength >= widget.minTextLength) {
+        (items == null ? fillItems : open)();
+      }
+    });
+  }
+
+  @override
+  void didUpdateWidget(Typeahead<T> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.selected != null) {
+      final text = widget.getItemText(selected);
+      if (text != _controller.text) {
+        _controller.text = _text = text;
+      }
+    }
+    if (oldWidget.enabled != widget.enabled) {
+      setState(() {});
+    }
+  }
+
+  @override
+  FutureOr getItems() => widget.typeaheadGetItems(_text);
+
+  @override
+  void itemTapped(T value) {
+    if (value == selected) return;
+    if (widget.cleanAfterSelection) {
+      _controller.text = _text = '';
+      clearItems();
+    }
+
+    super.itemTapped(value);
+  }
+
+  @override
+  Widget get child {
+    final textField = TextField(
+      controller: _controller,
+      focusNode: _focusNode,
+      enabled: widget.enabled,
+      autofocus: widget.autofocus,
+      decoration: widget.decoration ?? const InputDecoration(),
+      onTap: () {
+        if (!opened && _items != null) open();
+      },
+    );
+    return widget.buildChildDecorator == null
+        ? textField
+        : widget.buildChildDecorator(context, textField);
+  }
 
   @override
   void dispose() {
     super.dispose();
     _controller.dispose();
     if (widget.focusNode == null) _focusNode.dispose();
-    _scrollController.dispose();
-    _itemsController.close();
-    _inProgressController.close();
   }
 }

@@ -32,8 +32,8 @@ class _MyHomePageState extends State<MyHomePage> {
   final _closingDurationController = TextEditingController(text: '150');
   final _requiredUnderHeightController = TextEditingController(text: '300');
   final _popupWidthController = TextEditingController(text: '300');
-  final _popupHeightController = TextEditingController(text: '300');
-  final _spaceAboveController = TextEditingController(text: '100');
+  final _itemsCountController = TextEditingController(text: '3');
+  final _spaceAboveController = TextEditingController(text: '16');
   final _comboWidthController = TextEditingController(text: '200');
 
   var _widthConstraints = PopupWidthConstraints.minMatchWidth;
@@ -47,10 +47,13 @@ class _MyHomePageState extends State<MyHomePage> {
   var _customAnimation = false;
   var _requiredUnderHeight = 300;
   var _popupWidth = 300;
-  var _popupHeight = 300;
-  var _spaceAbove = 100;
+  var _itemsCount = 3;
+  var _spaceAbove = 16;
   var _comboWidth = 200;
   var _comboAlignment = CrossAxisAlignment.center;
+
+  String _selectorItem;
+  String _typeaheadItem;
 
   @override
   Widget build(BuildContext context) {
@@ -100,6 +103,18 @@ class _MyHomePageState extends State<MyHomePage> {
           ),
         );
 
+    Widget buildComboContainer({String title, Widget child}) =>
+        Row(mainAxisSize: MainAxisSize.min, children: [
+          SizedBox(
+              width: 120,
+              child: Text(
+                title,
+                style: const TextStyle(
+                    color: Colors.grey, fontWeight: FontWeight.bold),
+              )),
+          child,
+        ]);
+
     return Scaffold(
       appBar: AppBar(
         title: Text('Combo Samples'),
@@ -120,7 +135,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
                 // auto close
                 buildEnumSelector<PopupAutoClose>(
-                    'Width Constraints:',
+                    'Auto Close:',
                     PopupAutoClose.values,
                     _popupAutoClose,
                     (_) => _popupAutoClose = _),
@@ -174,9 +189,9 @@ class _MyHomePageState extends State<MyHomePage> {
                 buildIntSelector(_popupWidthController, 'Popup Width',
                     (_) => _popupWidth = _),
 
-                // popup height
-                buildIntSelector(_popupHeightController, 'Popup Height',
-                    (_) => _popupHeight = _),
+                // items count
+                buildIntSelector(_itemsCountController, 'Items Count',
+                    (_) => _itemsCount = _),
 
                 // space above
                 buildIntSelector(_spaceAboveController, 'Space Above',
@@ -204,7 +219,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       color: Colors.blueAccent,
                       textColor: Colors.white,
                       child: Text('Close Popup'),
-                      onPressed: Combo.close),
+                      onPressed: Combo.closeAll),
                 )
               ]),
             ),
@@ -213,7 +228,7 @@ class _MyHomePageState extends State<MyHomePage> {
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
-                  key: UniqueKey(),
+                  //key: UniqueKey(),
                   crossAxisAlignment: _comboAlignment,
                   children: [
                     // space
@@ -221,206 +236,13 @@ class _MyHomePageState extends State<MyHomePage> {
                         key: ValueKey(_spaceAbove),
                         height: _spaceAbove.toDouble()),
 
-                    Combo(
-                      key: _comboKey,
-                      popupWidthConstraints: _widthConstraints,
-                      overlap: _overlap,
-                      showAbove: _showAbove,
-                      popupAutoClose: _popupAutoClose,
-                      animatedOpen: _animatedOpen,
-                      openingAnimationDuration:
-                          Duration(milliseconds: _openingDurationMs),
-                      animatedClose: _animatedClose,
-                      closingAnimationDuration: Duration(
-                          milliseconds: _customAnimation
-                              ? _customAnimationDurationMs
-                              : _closingDurationMs),
-                      customAnimation: _customAnimation,
-                      requiredUnderHeight: _requiredUnderHeight.toDouble(),
-                      openedChanged: (isOpened) {
-                        if (isOpened) {
-                          HoverCombo.blockOpenOnHover();
-                        } else {
-                          HoverCombo.unblockOpenOnHover();
-                          if (_customAnimation) {
-                            _popupKey.currentState?.animatedClose();
-                          }
-                        }
-                      },
-                      child: Container(
-                        width: _comboWidth.toDouble(),
-                        height: 48,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.blueAccent.withOpacity(0.2),
-                                Colors.blueAccent.withOpacity(0.0),
-                                Colors.blueAccent.withOpacity(0.0),
-                                Colors.blueAccent.withOpacity(0.2),
-                              ]),
-                          borderRadius: BorderRadius.circular(24),
-                          border: Border.all(color: Colors.blueAccent),
-                        ),
-                        child: Material(
-                            borderRadius: BorderRadius.circular(24),
-                            color: Colors.transparent,
-                            child: InkWell(
-                              highlightColor:
-                                  Colors.blueAccent.withOpacity(0.1),
-                              splashColor: Colors.blueAccent.withOpacity(0.1),
-                              hoverColor: Colors.blueAccent.withOpacity(0.1),
-                              onTap: () => _comboKey.currentState?.open(),
-                              child: Row(
-                                children: [
-                                  const Expanded(
-                                      child: Text('Combo Child',
-                                          textAlign: TextAlign.center,
-                                          style: TextStyle(
-                                              color: Colors.blueAccent))),
-                                  const Padding(
-                                    padding:
-                                        EdgeInsets.symmetric(horizontal: 16),
-                                    child: Icon(Icons.arrow_drop_down,
-                                        color: Colors.blueAccent),
-                                  ),
-                                ],
-                              ),
-                            )),
-                      ),
-                      popupBuilder: (context, isAbove) => TestPopup(
-                          key: _popupKey,
-                          isAbove: isAbove,
-                          width: _popupWidth.toDouble(),
-                          height: _popupHeight.toDouble(),
-                          onClose: () => _comboKey.currentState?.close(),
-                          animated: _customAnimation,
-                          radius: const Radius.circular(24)),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    HoverCombo(
-                      key: _hoverComboKey,
-                      horizontalBehavior: _widthConstraints,
-                      overlap: _overlap,
-                      showAbove: _showAbove,
-                      animatedOpen: _animatedOpen,
-                      openingAnimationDuration:
-                          Duration(milliseconds: _openingDurationMs),
-                      animatedClose: _animatedClose,
-                      closingAnimationDuration: Duration(
-                          milliseconds: _customAnimation
-                              ? _customAnimationDurationMs
-                              : _closingDurationMs),
-                      customAnimation: _customAnimation,
-                      requiredHeight: _requiredUnderHeight.toDouble(),
-                      openedChanged: _customAnimation
-                          ? (isOpened) {
-                              if (!isOpened) {
-                                _hoverPopupKey.currentState?.animatedClose();
-                              }
-                            }
-                          : null,
-                      highlightColor: Colors.blueAccent.withOpacity(0.1),
-                      splashColor: Colors.blueAccent.withOpacity(0.1),
-                      hoverColor: Colors.blueAccent.withOpacity(0.1),
-                      onTap: () {
-                        final dialog =
-                            AlertDialog(content: Text('HoverCombo tapped'));
-                        showDialog(context: context, builder: (_) => dialog);
-                      },
-                      child: Container(
-                        width: _comboWidth.toDouble(),
-                        height: 48,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.blueAccent.withOpacity(0.2),
-                                Colors.blueAccent.withOpacity(0.0),
-                                Colors.blueAccent.withOpacity(0.0),
-                                Colors.blueAccent.withOpacity(0.2),
-                              ]),
-                          border: Border.all(color: Colors.blueAccent),
-                        ),
-                        child: Row(
-                          children: [
-                            const Expanded(
-                                child: Text('HoverCombo Child',
-                                    textAlign: TextAlign.center,
-                                    style:
-                                        TextStyle(color: Colors.blueAccent))),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 16),
-                              child: Icon(Icons.arrow_drop_down,
-                                  color: Colors.blueAccent),
-                            ),
-                          ],
-                        ),
-                      ),
-                      popupBuilder: (context, isAbove) => TestPopup(
-                        key: _hoverPopupKey,
-                        isAbove: isAbove,
-                        width: _popupWidth.toDouble(),
-                        height: _popupHeight.toDouble(),
-                        onClose: () => _hoverComboKey.currentState?.close(),
-                        animated: _customAnimation,
-                      ),
-                    ),
-
-                    const SizedBox(height: 16),
-
-                    SizedBox(
-                      width: _comboWidth.toDouble(),
-                      child: Typeahead<String>(
-                        getItems: (text) async {
-                          await Future.delayed(Duration(seconds: 1));
-                          return [
-                            'Item1',
-                            'Item2',
-                            'Item3',
-                            'Item4',
-                            'Item5',
-                            'Item6',
-                            'Item7',
-                          ];
-                        },
-                        buildItem: (context, item) =>
-                            SizedBox(child: ListTile(title: Text(item))),
-                        getItemText: (item) => item,
-                        //minTextLength: 0,
-                        //popupWidth: _popupWidth.toDouble(),
-                        popupMaxHeight: _popupHeight.toDouble(),
-                        decoration: InputDecoration(
-                          labelText: 'Sample Typeahead',
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(4),
-                            borderSide: BorderSide(color: Colors.blueAccent),
-                          ),
-                          labelStyle: TextStyle(color: Colors.blueAccent),
-                        ),
-                        buildInputDecorator: (context, input) => Theme(
-                          data: Theme.of(context)
-                              .copyWith(accentColor: Colors.blueAccent),
-                          child: DecoratedBox(
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(4),
-                              gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.blueAccent.withOpacity(0.2),
-                                    Colors.blueAccent.withOpacity(0.0),
-                                    Colors.blueAccent.withOpacity(0.0),
-                                    Colors.blueAccent.withOpacity(0.2),
-                                  ]),
-                            ),
-                            child: input,
-                          ),
-                        ),
+                    // Combo
+                    buildComboContainer(
+                      title: 'Combo',
+                      child: Combo(
+                        key: _comboKey,
+                        popupWidthConstraints: _widthConstraints,
+                        overlap: _overlap,
                         showAbove: _showAbove,
                         popupAutoClose: _popupAutoClose,
                         animatedOpen: _animatedOpen,
@@ -432,7 +254,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                 ? _customAnimationDurationMs
                                 : _closingDurationMs),
                         customAnimation: _customAnimation,
-                        requiredHeight: _requiredUnderHeight.toDouble(),
+                        requiredUnderHeight: _requiredUnderHeight.toDouble(),
                         openedChanged: (isOpened) {
                           if (isOpened) {
                             HoverCombo.blockOpenOnHover();
@@ -443,6 +265,366 @@ class _MyHomePageState extends State<MyHomePage> {
                             }
                           }
                         },
+                        child: Container(
+                          width: _comboWidth.toDouble(),
+                          height: 58,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.blueAccent.withOpacity(0.2),
+                                  Colors.blueAccent.withOpacity(0.0),
+                                  Colors.blueAccent.withOpacity(0.0),
+                                  Colors.blueAccent.withOpacity(0.2),
+                                ]),
+                            borderRadius: BorderRadius.circular(29),
+                            border: Border.all(color: Colors.blueAccent),
+                          ),
+                          child: Material(
+                              borderRadius: BorderRadius.circular(24),
+                              color: Colors.transparent,
+                              child: InkWell(
+                                highlightColor:
+                                    Colors.blueAccent.withOpacity(0.1),
+                                splashColor: Colors.blueAccent.withOpacity(0.1),
+                                hoverColor: Colors.blueAccent.withOpacity(0.1),
+                                onTap: () => _comboKey.currentState?.open(),
+                                child: Row(
+                                  children: [
+                                    const Expanded(
+                                        child: Text('Combo Child',
+                                            textAlign: TextAlign.center,
+                                            style: TextStyle(
+                                                color: Colors.blueAccent))),
+                                    const Padding(
+                                      padding:
+                                          EdgeInsets.symmetric(horizontal: 16),
+                                      child: Icon(Icons.arrow_drop_down,
+                                          color: Colors.blueAccent),
+                                    ),
+                                  ],
+                                ),
+                              )),
+                        ),
+                        popupBuilder: (context, isAbove) => TestPopup(
+                            key: _popupKey,
+                            isAbove: isAbove,
+                            width: _popupWidth.toDouble(),
+                            itemsCount: _itemsCount,
+                            onClose: () => _comboKey.currentState?.close(),
+                            animated: _customAnimation,
+                            radius: const Radius.circular(24)),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // HoverCombo
+                    buildComboContainer(
+                      title: 'HoverCombo',
+                      child: HoverCombo(
+                        key: _hoverComboKey,
+                        horizontalBehavior: _widthConstraints,
+                        overlap: _overlap,
+                        showAbove: _showAbove,
+                        animatedOpen: _animatedOpen,
+                        openingAnimationDuration:
+                            Duration(milliseconds: _openingDurationMs),
+                        animatedClose: _animatedClose,
+                        closingAnimationDuration: Duration(
+                            milliseconds: _customAnimation
+                                ? _customAnimationDurationMs
+                                : _closingDurationMs),
+                        customAnimation: _customAnimation,
+                        requiredHeight: _requiredUnderHeight.toDouble(),
+                        openedChanged: _customAnimation
+                            ? (isOpened) {
+                                if (!isOpened) {
+                                  _hoverPopupKey.currentState?.animatedClose();
+                                }
+                              }
+                            : null,
+                        highlightColor: Colors.blueAccent.withOpacity(0.1),
+                        splashColor: Colors.blueAccent.withOpacity(0.1),
+                        hoverColor: Colors.blueAccent.withOpacity(0.1),
+                        onTap: () {
+                          final dialog =
+                              AlertDialog(content: Text('HoverCombo tapped'));
+                          showDialog(context: context, builder: (_) => dialog);
+                        },
+                        child: Container(
+                          width: _comboWidth.toDouble(),
+                          height: 58,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.blueAccent.withOpacity(0.2),
+                                  Colors.blueAccent.withOpacity(0.0),
+                                  Colors.blueAccent.withOpacity(0.0),
+                                  Colors.blueAccent.withOpacity(0.2),
+                                ]),
+                            border: Border.all(color: Colors.blueAccent),
+                          ),
+                          child: Row(
+                            children: [
+                              const Expanded(
+                                  child: Text('HoverCombo Child',
+                                      textAlign: TextAlign.center,
+                                      style:
+                                          TextStyle(color: Colors.blueAccent))),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                child: Icon(Icons.arrow_drop_down,
+                                    color: Colors.blueAccent),
+                              ),
+                            ],
+                          ),
+                        ),
+                        popupBuilder: (context, isAbove) => TestPopup(
+                          key: _hoverPopupKey,
+                          isAbove: isAbove,
+                          width: _popupWidth.toDouble(),
+                          itemsCount: _itemsCount,
+                          onClose: () => _hoverComboKey.currentState?.close(),
+                          animated: _customAnimation,
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // ListCombo
+                    buildComboContainer(
+                      title: 'ListCombo',
+                      child: ListCombo<String>(
+                        popupWidth: _comboWidth.toDouble(),
+                        overlap: _overlap,
+                        showAbove: _showAbove,
+                        animatedOpen: _animatedOpen,
+                        popupAutoClose: _popupAutoClose,
+                        //refreshListOnOpened: false,
+                        openingAnimationDuration:
+                            Duration(milliseconds: _openingDurationMs),
+                        animatedClose: _animatedClose,
+                        closingAnimationDuration: Duration(
+                            milliseconds: _customAnimation
+                                ? _customAnimationDurationMs
+                                : _closingDurationMs),
+                        customAnimation: _customAnimation,
+                        requiredUnderHeight: _requiredUnderHeight.toDouble(),
+                        openedChanged: _customAnimation
+                            ? (isOpened) {
+                                if (!isOpened) {
+                                  _hoverPopupKey.currentState?.animatedClose();
+                                }
+                              }
+                            : null,
+                        highlightColor: Colors.blueAccent.withOpacity(0.1),
+                        splashColor: Colors.blueAccent.withOpacity(0.1),
+                        hoverColor: Colors.blueAccent.withOpacity(0.1),
+                        onItemTapped: (_) {
+                          final dialog =
+                              AlertDialog(content: Text('$_ tapped'));
+                          showDialog(context: context, builder: (_) => dialog);
+                        },
+                        child: Container(
+                          width: _comboWidth.toDouble(),
+                          height: 58,
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                                begin: Alignment.topCenter,
+                                end: Alignment.bottomCenter,
+                                colors: [
+                                  Colors.blueAccent.withOpacity(0.2),
+                                  Colors.blueAccent.withOpacity(0.0),
+                                  Colors.blueAccent.withOpacity(0.0),
+                                  Colors.blueAccent.withOpacity(0.2),
+                                ]),
+                            border: Border.all(color: Colors.blueAccent),
+                          ),
+                          child: Row(
+                            children: [
+                              const Expanded(
+                                  child: Text('ListCombo Child',
+                                      textAlign: TextAlign.center,
+                                      style:
+                                          TextStyle(color: Colors.blueAccent))),
+                              const Padding(
+                                padding: EdgeInsets.symmetric(horizontal: 16),
+                                child: Icon(Icons.arrow_drop_down,
+                                    color: Colors.blueAccent),
+                              ),
+                            ],
+                          ),
+                        ),
+                        getItems: () async {
+                          await Future.delayed(Duration(milliseconds: 500));
+                          return ['Item1', 'Item2', 'Item3', 'Item4'];
+                        },
+                        buildItem: (context, item) =>
+                            ListTile(title: Text(item)),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // SelectorCombo
+                    buildComboContainer(
+                      title: 'SelectorCombo',
+                      child: SizedBox(
+                        width: _comboWidth.toDouble(),
+                        child: SelectorCombo<String>(
+                          popupWidth: _comboWidth.toDouble(),
+                          overlap: _overlap,
+                          showAbove: _showAbove,
+                          animatedOpen: _animatedOpen,
+                          popupAutoClose: _popupAutoClose,
+                          //refreshListOnOpened: true,
+                          openingAnimationDuration:
+                              Duration(milliseconds: _openingDurationMs),
+                          animatedClose: _animatedClose,
+                          closingAnimationDuration: Duration(
+                              milliseconds: _customAnimation
+                                  ? _customAnimationDurationMs
+                                  : _closingDurationMs),
+                          customAnimation: _customAnimation,
+                          requiredUnderHeight: _requiredUnderHeight.toDouble(),
+                          openedChanged: _customAnimation
+                              ? (isOpened) {
+                                  if (!isOpened) {
+                                    _hoverPopupKey.currentState
+                                        ?.animatedClose();
+                                  }
+                                }
+                              : null,
+                          highlightColor: Colors.blueAccent.withOpacity(0.1),
+                          splashColor: Colors.blueAccent.withOpacity(0.1),
+                          hoverColor: Colors.blueAccent.withOpacity(0.1),
+                          onItemTapped: (_) =>
+                              setState(() => _selectorItem = _),
+                          selected: _selectorItem,
+                          getItems: () async {
+                            await Future.delayed(Duration(milliseconds: 500));
+                            return ['Item1', 'Item2', 'Item3', 'Item4'];
+                          },
+                          buildItem: (context, item) => ListTile(
+                              title: Text(item ?? ''),
+                              selected: item == _selectorItem),
+                          buildChild: (context, item) => ListTile(
+                            title: Text(
+                              item ?? '< Empty >',
+                              style: TextStyle(
+                                  color: Colors.blueAccent
+                                      .withOpacity(item == null ? 0.5 : 1)),
+                            ),
+                          ),
+                          buildChildDecorator: (context, child) => Container(
+                            width: _comboWidth.toDouble(),
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                  begin: Alignment.topCenter,
+                                  end: Alignment.bottomCenter,
+                                  colors: [
+                                    Colors.blueAccent.withOpacity(0.2),
+                                    Colors.blueAccent.withOpacity(0.0),
+                                    Colors.blueAccent.withOpacity(0.0),
+                                    Colors.blueAccent.withOpacity(0.2),
+                                  ]),
+                              border: Border.all(color: Colors.blueAccent),
+                            ),
+                            child: child,
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // Typeahead
+                    buildComboContainer(
+                      title: 'Typeahead',
+                      child: SizedBox(
+                        width: _comboWidth.toDouble(),
+                        child: Typeahead<String>(
+                          selected: _typeaheadItem,
+                          onItemTapped: (_) =>
+                              setState(() => _typeaheadItem = _),
+                          getItems: (text) async {
+                            await Future.delayed(Duration(seconds: 1));
+                            return [
+                              'Item1',
+                              'Item2',
+                              'Item3',
+                              'Item4',
+                              'Item5',
+                              'Item6',
+                              'Item7',
+                            ];
+                          },
+                          buildItem: (context, item) => ListTile(
+                              selected: item == _typeaheadItem,
+                              title: Text(item)),
+                          getItemText: (item) => item,
+                          //minTextLength: 0,
+                          //popupWidth: _popupWidth.toDouble(),
+                          //popupMaxHeight: _popupHeight.toDouble(),
+                          decoration: InputDecoration(
+                            labelText: 'Sample Typeahead',
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(29),
+                              borderSide: BorderSide(color: Colors.blueAccent),
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(29),
+                              borderSide: BorderSide(color: Colors.blueAccent),
+                            ),
+                            labelStyle: TextStyle(color: Colors.blueAccent),
+                          ),
+                          buildChildDecorator: (context, input) => Theme(
+                            data: Theme.of(context)
+                                .copyWith(accentColor: Colors.blueAccent),
+                            child: DecoratedBox(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(29),
+                                gradient: LinearGradient(
+                                    begin: Alignment.topCenter,
+                                    end: Alignment.bottomCenter,
+                                    colors: [
+                                      Colors.blueAccent.withOpacity(0.2),
+                                      Colors.blueAccent.withOpacity(0.0),
+                                      Colors.blueAccent.withOpacity(0.0),
+                                      Colors.blueAccent.withOpacity(0.2),
+                                    ]),
+                              ),
+                              child: input,
+                            ),
+                          ),
+                          showAbove: _showAbove,
+                          //popupAutoClose: _popupAutoClose,
+                          animatedOpen: _animatedOpen,
+                          openingAnimationDuration:
+                              Duration(milliseconds: _openingDurationMs),
+                          animatedClose: _animatedClose,
+                          closingAnimationDuration: Duration(
+                              milliseconds: _customAnimation
+                                  ? _customAnimationDurationMs
+                                  : _closingDurationMs),
+                          customAnimation: _customAnimation,
+                          requiredUnderHeight: _requiredUnderHeight.toDouble(),
+                          openedChanged: (isOpened) {
+                            if (isOpened) {
+                              HoverCombo.blockOpenOnHover();
+                            } else {
+                              HoverCombo.unblockOpenOnHover();
+                              if (_customAnimation) {
+                                _popupKey.currentState?.animatedClose();
+                              }
+                            }
+                          },
+                        ),
                       ),
                     ),
                   ]),
@@ -461,7 +643,7 @@ class TestPopup extends StatefulWidget {
     Key key,
     @required this.isAbove,
     @required this.width,
-    @required this.height,
+    @required this.itemsCount,
     @required this.onClose,
     @required this.animated,
     this.radius = Radius.zero,
@@ -469,25 +651,35 @@ class TestPopup extends StatefulWidget {
 
   final bool isAbove;
   final double width;
-  final double height;
+  final int itemsCount;
   final VoidCallback onClose;
   final bool animated;
   final Radius radius;
 
   @override
-  _TestPopupState createState() => _TestPopupState(width, height);
+  _TestPopupState createState() => _TestPopupState(width, itemsCount);
 }
 
-class _TestPopupState extends State<TestPopup> {
-  _TestPopupState(this._width, this._height);
-
-  static const _minHeight = 108.0;
+class _TestPopupState extends State<TestPopup>
+    with SingleTickerProviderStateMixin {
+  _TestPopupState(this._width, this._itemsCount);
 
   double _width;
-  final double _height;
-  final _closeCompleter = Completer<bool>();
+  final int _itemsCount;
+  AnimationController _controller;
 
-  void animatedClose() => _closeCompleter.complete(true);
+  void animatedClose() => _controller.animateBack(0.0);
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: _customAnimationDurationMs),
+      vsync: this,
+      value: widget.animated ? 0.0 : 1.0,
+    );
+    _controller.animateTo(1.0);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -528,45 +720,35 @@ class _TestPopupState extends State<TestPopup> {
         ],
       ),
     );
-    final content = const Expanded(
-        child: Center(
-            child: Text('Combo Popup',
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.blueAccent))));
+    final content = Column(
+        children: Iterable.generate(_itemsCount)
+            .map((_) => ListTile(title: Text('Item ${_ + 1}')))
+            .toList());
 
-    Widget buildContainer(double height) => Material(
-          elevation: 4,
-          borderRadius: BorderRadius.all(widget.radius),
-          child: AnimatedContainer(
-            width: _width,
-            height: height,
-            duration: const Duration(milliseconds: _customAnimationDurationMs),
-            decoration:
-                BoxDecoration(borderRadius: BorderRadius.all(widget.radius)),
-            child: Column(children: [
-              if (widget.isAbove) ...[
-                content,
-                size,
-                close
-              ] else ...[
-                close,
-                size,
-                content
-              ],
-            ]),
-          ),
-        );
-
-    return widget.animated
-        ? FutureBuilder<bool>(
-            initialData: false,
-            future: Future.value(true),
-            builder: (context, opening) => FutureBuilder<bool>(
-                initialData: false,
-                future: _closeCompleter.future,
-                builder: (context, closing) => buildContainer(
-                    !opening.data || closing.data ? _minHeight : _height)))
-        : buildContainer(_height);
+    return Material(
+      elevation: 4,
+      borderRadius: BorderRadius.all(widget.radius),
+      child: AnimatedContainer(
+        width: _width,
+        duration: const Duration(milliseconds: _customAnimationDurationMs),
+        decoration:
+            BoxDecoration(borderRadius: BorderRadius.all(widget.radius)),
+        child: ScaleTransition(
+          scale: _controller,
+          child: Column(children: [
+            if (widget.isAbove) ...[
+              content,
+              size,
+              close
+            ] else ...[
+              close,
+              size,
+              content
+            ],
+          ]),
+        ),
+      ),
+    );
   }
 }
 
