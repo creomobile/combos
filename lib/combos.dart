@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:pedantic/pedantic.dart';
 
 const _defaultAnimationDuration = Duration(milliseconds: 150);
 
@@ -18,7 +19,7 @@ enum PopupAutoClose {
   tapDownExceptChild
 }
 
-typedef Widget PopupBuilder(BuildContext context, bool isAbove);
+typedef PopupBuilder = Widget Function(BuildContext context, bool isAbove);
 
 class Combo extends StatefulWidget {
   const Combo({
@@ -127,7 +128,7 @@ class ComboState extends State<Combo> {
                           (offset.dy + (widget.overlap ? 0 : size.height)) <
                       requiredHeight;
 
-              Widget popup = popupBuilder(context, isAbove);
+              var popup = popupBuilder(context, isAbove);
 
               switch (widget.popupWidthConstraints) {
                 case PopupWidthConstraints.matchWidth:
@@ -174,8 +175,9 @@ class ComboState extends State<Combo> {
                                       popupSize.height
                                   : widget.overlap ? 0 : size.height;
 
-                              if (!completer.isCompleted)
+                              if (!completer.isCompleted) {
                                 completer.complete(Offset(dx, dy));
+                              }
 
                               return Offset(dx, dy);
                             },
@@ -229,7 +231,7 @@ class ComboState extends State<Combo> {
   }
 }
 
-typedef Offset _OffsetBuilder(Size childSize);
+typedef _OffsetBuilder = Offset Function(Size childSize);
 
 class _DynamicTransformFollower extends CompositedTransformFollower {
   const _DynamicTransformFollower({
@@ -375,12 +377,13 @@ class _HoverComboState extends ComboState {
           );
 }
 
-typedef Widget ItemBuilder<T>(BuildContext context, T item);
-typedef Widget ItemsDecoratorBuilder(
+typedef ItemBuilder<T> = Widget Function(BuildContext context, T item);
+typedef ItemsDecoratorBuilder = Widget Function(
     BuildContext context, bool isAbove, Widget items);
-typedef Widget InputDecoratorBuilder(BuildContext context, Widget input);
-typedef String GetItemText<T>(T item);
-typedef FutureOr<List<T>> GetItems<T>(String text);
+typedef InputDecoratorBuilder = Widget Function(
+    BuildContext context, Widget input);
+typedef GetItemText<T> = String Function(T item);
+typedef GetItems<T> = FutureOr<List<T>> Function(String text);
 
 class Typeahead<T> extends Combo {
   const Typeahead({
@@ -537,7 +540,7 @@ class _TypeaheadBaseState<T> extends ComboState {
     List<T> items;
     final future = widget.getItems(_controller.text);
     open();
-    (() async => items = await future)();
+    unawaited((() async => items = await future)());
     if (items == null) {
       try {
         _inProgressController.add(++_inProgressCount);
@@ -550,7 +553,7 @@ class _TypeaheadBaseState<T> extends ComboState {
     }
     if (items != null && _lastTimestamp == timestamp) {
       _itemsController.add(_items = items);
-      _scrollController.animateTo(0,
+      await _scrollController.animateTo(0,
           duration: const Duration(milliseconds: 1), curve: Curves.linear);
     }
   }
@@ -601,7 +604,7 @@ class _TypeaheadBaseState<T> extends ComboState {
                 StreamBuilder<List<T>>(
                   initialData: _items,
                   stream: _itemsController.stream,
-                  builder: (context, snapshot) => snapshot.data?.length == 0
+                  builder: (context, snapshot) => snapshot.data?.isEmpty == true
                       ? Column(
                           mainAxisSize: MainAxisSize.min,
                           crossAxisAlignment: CrossAxisAlignment.stretch,

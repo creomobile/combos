@@ -55,7 +55,7 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   Widget build(BuildContext context) {
     Widget buildEnumSelector<T>(String title, Iterable<T> values, T value,
-            void setValue(T value)) =>
+            void Function(T value) setValue) =>
         Row(mainAxisSize: MainAxisSize.min, children: [
           Text(title,
               style:
@@ -72,7 +72,7 @@ class _MyHomePageState extends State<MyHomePage> {
         ]);
 
     Widget buildBoolSelector(
-            String title, bool value, void setValue(bool value)) =>
+            String title, bool value, void Function(bool value) setValue) =>
         SizedBox(
           width: 200,
           child: CheckboxListTile(
@@ -85,7 +85,7 @@ class _MyHomePageState extends State<MyHomePage> {
         );
 
     Widget buildIntSelector(TextEditingController controller, String labelText,
-            void setValue(int value),
+            void Function(int value) setValue,
             [enabled = true]) =>
         SizedBox(
           width: 200,
@@ -318,8 +318,9 @@ class _MyHomePageState extends State<MyHomePage> {
                       requiredHeight: _requiredUnderHeight.toDouble(),
                       openedChanged: _customAnimation
                           ? (isOpened) {
-                              if (!isOpened)
+                              if (!isOpened) {
                                 _hoverPopupKey.currentState?.animatedClose();
+                              }
                             }
                           : null,
                       highlightColor: Colors.blueAccent.withOpacity(0.1),
@@ -483,7 +484,7 @@ class _TestPopupState extends State<TestPopup> {
   static const _minHeight = 108.0;
 
   double _width;
-  double _height;
+  final double _height;
   final _closeCompleter = Completer<bool>();
 
   void animatedClose() => _closeCompleter.complete(true);

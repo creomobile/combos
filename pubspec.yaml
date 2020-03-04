@@ -10,5 +10,6 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
+  pedantic: ^1.8.0
 
 flutter:

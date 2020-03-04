@@ -14,5 +14,8 @@ dependencies:
 
   cupertino_icons: ^0.1.2
 
+dev_dependencies:
+  pedantic: ^1.8.0
+
 flutter:
   uses-material-design: true
