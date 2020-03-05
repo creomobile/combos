@@ -599,15 +599,11 @@ class ListComboState<T> extends ComboState {
   }
 }
 
-typedef ChildDecoratorBuilder = Widget Function(
-    BuildContext context, Widget child);
-
 class SelectorCombo<T> extends ListCombo<T> {
   const SelectorCombo({
     Key key,
     @required this.selected,
     this.buildChild,
-    this.buildChildDecorator,
     @required GetItems<T> getItems,
     @required ItemBuilder<T> buildItem,
     @required ValueChanged<T> onItemTapped,
@@ -662,7 +658,6 @@ class SelectorCombo<T> extends ListCombo<T> {
 
   final T selected;
   final ItemBuilder<T> buildChild;
-  final ChildDecoratorBuilder buildChildDecorator;
 
   @override
   SelectorComboState<T> createState() => SelectorComboState<T>(selected);
@@ -688,12 +683,8 @@ class SelectorComboState<T> extends ListComboState<T> {
   }
 
   @override
-  Widget buildChild() {
-    final child = (widget.buildChild ?? widget.buildItem)(context, _selected);
-    return widget.buildChildDecorator == null
-        ? child
-        : widget.buildChildDecorator(context, child);
-  }
+  Widget buildChild() =>
+      (widget.buildChild ?? widget.buildItem)(context, _selected);
 }
 
 typedef TypeaheadGetItems<T> = FutureOr<List<T>> Function(String text);
@@ -712,7 +703,6 @@ class Typeahead<T> extends SelectorCombo<T> {
     this.cleanAfterSelection = false,
     T selected,
     ItemBuilder<T> buildChild,
-    ChildDecoratorBuilder buildChildDecorator,
     @required TypeaheadGetItems<T> getItems,
     @required ItemBuilder<T> buildItem,
     @required ValueChanged<T> onItemTapped,
@@ -741,7 +731,6 @@ class Typeahead<T> extends SelectorCombo<T> {
           key: key,
           selected: selected,
           buildChild: buildChild,
-          buildChildDecorator: buildChildDecorator,
           getItems: null,
           buildItem: buildItem,
           onItemTapped: onItemTapped,
@@ -856,21 +845,16 @@ class TypeaheadState<T> extends SelectorComboState<T> {
   }
 
   @override
-  Widget get child {
-    final textField = TextField(
-      controller: _controller,
-      focusNode: _focusNode,
-      enabled: widget.enabled,
-      autofocus: widget.autofocus,
-      decoration: widget.decoration ?? const InputDecoration(),
-      onTap: () {
-        if (!opened && _items != null) open();
-      },
-    );
-    return widget.buildChildDecorator == null
-        ? textField
-        : widget.buildChildDecorator(context, textField);
-  }
+  Widget get child => TextField(
+        controller: _controller,
+        focusNode: _focusNode,
+        enabled: widget.enabled,
+        autofocus: widget.autofocus,
+        decoration: widget.decoration ?? const InputDecoration(),
+        onTap: () {
+          if (!opened && _items != null) open();
+        },
+      );
 
   @override
   void dispose() {

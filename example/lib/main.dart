@@ -474,8 +474,20 @@ class _MyHomePageState extends State<MyHomePage> {
                     // SelectorCombo
                     buildComboContainer(
                       title: 'SelectorCombo',
-                      child: SizedBox(
+                      child: Container(
                         width: _comboWidth.toDouble(),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.blueAccent.withOpacity(0.2),
+                                Colors.blueAccent.withOpacity(0.0),
+                                Colors.blueAccent.withOpacity(0.0),
+                                Colors.blueAccent.withOpacity(0.2),
+                              ]),
+                          border: Border.all(color: Colors.blueAccent),
+                        ),
                         child: SelectorCombo<String>(
                           popupWidth: _comboWidth.toDouble(),
                           overlap: _overlap,
@@ -521,22 +533,6 @@ class _MyHomePageState extends State<MyHomePage> {
                                       .withOpacity(item == null ? 0.5 : 1)),
                             ),
                           ),
-                          buildChildDecorator: (context, child) => Container(
-                            width: _comboWidth.toDouble(),
-                            decoration: BoxDecoration(
-                              gradient: LinearGradient(
-                                  begin: Alignment.topCenter,
-                                  end: Alignment.bottomCenter,
-                                  colors: [
-                                    Colors.blueAccent.withOpacity(0.2),
-                                    Colors.blueAccent.withOpacity(0.0),
-                                    Colors.blueAccent.withOpacity(0.0),
-                                    Colors.blueAccent.withOpacity(0.2),
-                                  ]),
-                              border: Border.all(color: Colors.blueAccent),
-                            ),
-                            child: child,
-                          ),
                         ),
                       ),
                     ),
@@ -546,8 +542,20 @@ class _MyHomePageState extends State<MyHomePage> {
                     // Typeahead
                     buildComboContainer(
                       title: 'Typeahead',
-                      child: SizedBox(
+                      child: Container(
                         width: _comboWidth.toDouble(),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(29),
+                          gradient: LinearGradient(
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                              colors: [
+                                Colors.blueAccent.withOpacity(0.2),
+                                Colors.blueAccent.withOpacity(0.0),
+                                Colors.blueAccent.withOpacity(0.0),
+                                Colors.blueAccent.withOpacity(0.2),
+                              ]),
+                        ),
                         child: Typeahead<String>(
                           selected: _typeaheadItem,
                           onItemTapped: (_) =>
@@ -582,25 +590,6 @@ class _MyHomePageState extends State<MyHomePage> {
                               borderSide: BorderSide(color: Colors.blueAccent),
                             ),
                             labelStyle: TextStyle(color: Colors.blueAccent),
-                          ),
-                          buildChildDecorator: (context, input) => Theme(
-                            data: Theme.of(context)
-                                .copyWith(accentColor: Colors.blueAccent),
-                            child: DecoratedBox(
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(29),
-                                gradient: LinearGradient(
-                                    begin: Alignment.topCenter,
-                                    end: Alignment.bottomCenter,
-                                    colors: [
-                                      Colors.blueAccent.withOpacity(0.2),
-                                      Colors.blueAccent.withOpacity(0.0),
-                                      Colors.blueAccent.withOpacity(0.0),
-                                      Colors.blueAccent.withOpacity(0.2),
-                                    ]),
-                              ),
-                              child: input,
-                            ),
                           ),
                           showAbove: _showAbove,
                           //popupAutoClose: _popupAutoClose,
