@@ -706,7 +706,6 @@ class Typeahead<T> extends SelectorCombo<T> {
     @required TypeaheadGetItems<T> getItems,
     @required ItemBuilder<T> buildItem,
     @required ValueChanged<T> onItemTapped,
-    bool autoOpen = true,
     bool refreshListOnOpened = false,
     Widget emptyMessage = defaultEmptyMessage,
     ItemsDecoratorBuilder buildItemsDecorator,
@@ -734,7 +733,7 @@ class Typeahead<T> extends SelectorCombo<T> {
           getItems: null,
           buildItem: buildItem,
           onItemTapped: onItemTapped,
-          autoOpen: autoOpen,
+          autoOpen: false,
           refreshListOnOpened: refreshListOnOpened,
           emptyMessage: emptyMessage,
           buildItemsDecorator: buildItemsDecorator,
@@ -852,7 +851,11 @@ class TypeaheadState<T> extends SelectorComboState<T> {
         autofocus: widget.autofocus,
         decoration: widget.decoration ?? const InputDecoration(),
         onTap: () {
-          if (!opened && _items != null) open();
+          if (!opened &&
+              _items != null &&
+              _textLength >= widget.minTextLength) {
+            open();
+          }
         },
       );
 
