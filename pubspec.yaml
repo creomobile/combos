@@ -1,8 +1,7 @@
 name: combos
 description: Combo Widgets for Flutter.
-version: 0.1.0
-author: Andrii Glushko
-homepage: creomobile.com
+version: 1.0.0
+homepage: https://github.com/creomobile/combos
 
 environment:
   sdk: ">=2.6.0 <3.0.0"
