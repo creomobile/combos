@@ -44,6 +44,7 @@ class Combo extends StatefulWidget {
     this.popupBuilder,
     this.position = PopupPosition.bottomMinMatch,
     this.offset,
+    this.autoMirror = true,
     this.requiredSpace,
     this.screenPadding = _defaultScreenPadding,
     this.autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
@@ -63,6 +64,7 @@ class Combo extends StatefulWidget {
   final PopupBuilder popupBuilder;
   final PopupPosition position;
   final Offset offset;
+  final bool autoMirror;
   final double requiredSpace;
   final EdgeInsets screenPadding;
   final PopupAutoClose autoClose;
@@ -209,36 +211,40 @@ class ComboState<T extends Combo> extends State<T> {
           offset = mounted
               ? lastOffset = renderBox.localToGlobal(Offset.zero)
               : lastOffset;
-          mirrored = () {
-            final offsetx = widget.offset?.dx ?? 0;
-            final offsety = widget.offset?.dx ?? 0;
+          mirrored = widget.autoMirror
+              ? () {
+                  final offsetx = widget.offset?.dx ?? 0;
+                  final offsety = widget.offset?.dx ?? 0;
 
-            return () {
-                  switch (widget.position) {
-                    case PopupPosition.left:
-                      return offset.dx -
-                          offsetx -
-                          (widget.screenPadding?.left ?? 0);
-                    case PopupPosition.right:
-                      return screenSize.width -
-                          offset.dx -
-                          size.width -
-                          offsetx -
-                          (widget.screenPadding?.right ?? 0);
-                    default:
-                      return screenSize.height -
-                          offset.dy -
-                          (widget.position == PopupPosition.top ||
-                                  widget.position == PopupPosition.topMatch ||
-                                  widget.position == PopupPosition.topMinMatch
-                              ? 0
-                              : size.height) -
-                          offsety -
-                          (widget.screenPadding?.bottom ?? 0);
-                  }
-                }() <
-                requiredSpace;
-          }();
+                  return () {
+                        switch (widget.position) {
+                          case PopupPosition.left:
+                            return offset.dx -
+                                offsetx -
+                                (widget.screenPadding?.left ?? 0);
+                          case PopupPosition.right:
+                            return screenSize.width -
+                                offset.dx -
+                                size.width -
+                                offsetx -
+                                (widget.screenPadding?.right ?? 0);
+                          default:
+                            return screenSize.height -
+                                offset.dy -
+                                (widget.position == PopupPosition.top ||
+                                        widget.position ==
+                                            PopupPosition.topMatch ||
+                                        widget.position ==
+                                            PopupPosition.topMinMatch
+                                    ? 0
+                                    : size.height) -
+                                offsety -
+                                (widget.screenPadding?.bottom ?? 0);
+                        }
+                      }() <
+                      requiredSpace;
+                }()
+              : false;
           popup = getPopup(context, mirrored);
           if (_catchHover) {
             popup = MouseRegion(
@@ -594,6 +600,7 @@ class AwaitCombo extends Combo {
     AwaitPopupBuilder popupBuilder,
     PopupPosition position = PopupPosition.bottomMinMatch,
     Offset offset,
+    bool autoMirror = true,
     double requiredSpace,
     EdgeInsets screenPadding = _defaultScreenPadding,
     PopupAutoClose autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
@@ -613,6 +620,7 @@ class AwaitCombo extends Combo {
           child: child,
           position: position,
           offset: offset,
+          autoMirror: autoMirror,
           requiredSpace: requiredSpace,
           screenPadding: screenPadding,
           autoClose: autoClose,
@@ -827,6 +835,7 @@ class ListCombo<T> extends AwaitCombo {
     Widget child,
     PopupPosition position = PopupPosition.bottomMatch,
     Offset offset,
+    bool autoMirror = true,
     double requiredSpace,
     EdgeInsets screenPadding = _defaultScreenPadding,
     PopupAutoClose autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
@@ -850,6 +859,7 @@ class ListCombo<T> extends AwaitCombo {
           child: child,
           position: position,
           offset: offset,
+          autoMirror: autoMirror,
           requiredSpace: requiredSpace,
           screenPadding: screenPadding,
           autoClose: autoClose,
@@ -933,6 +943,7 @@ class SelectorCombo<T> extends ListCombo<T> {
     ProgressPosition progressPosition = ProgressPosition.popup,
     PopupPosition position = PopupPosition.bottomMatch,
     Offset offset,
+    bool autoMirror = true,
     double requiredSpace,
     EdgeInsets screenPadding = _defaultScreenPadding,
     PopupAutoClose autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
@@ -959,6 +970,7 @@ class SelectorCombo<T> extends ListCombo<T> {
           progressPosition: progressPosition,
           position: position,
           offset: offset,
+          autoMirror: autoMirror,
           requiredSpace: requiredSpace,
           screenPadding: screenPadding,
           autoClose: autoClose,
@@ -1032,6 +1044,7 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
     ProgressPosition progressPosition = ProgressPosition.popup,
     PopupPosition position = PopupPosition.bottomMatch,
     Offset offset,
+    bool autoMirror = true,
     double requiredSpace,
     EdgeInsets screenPadding = _defaultScreenPadding,
     PopupAnimation animation = PopupAnimation.fade,
@@ -1058,6 +1071,7 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
           progressPosition: progressPosition,
           position: position,
           offset: offset,
+          autoMirror: autoMirror,
           requiredSpace: requiredSpace,
           screenPadding: screenPadding,
           autoClose: PopupAutoClose.tapOutsideExceptChild,
@@ -1293,6 +1307,7 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
     ProgressPosition progressPosition = ProgressPosition.child,
     PopupPosition position = PopupPosition.bottomMinMatch,
     Offset offset,
+    bool autoMirror = true,
     double requiredSpace,
     EdgeInsets screenPadding = _defaultScreenPadding,
     PopupAutoClose autoClose = PopupAutoClose.notHovered,
@@ -1336,6 +1351,7 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
                   progressPosition: progressPosition,
                   position: PopupPosition.right,
                   offset: offset,
+                  autoMirror: true,
                   requiredSpace: requiredSpace,
                   screenPadding: screenPadding,
                   autoClose: PopupAutoClose.notHovered,
@@ -1367,6 +1383,7 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
           child: itemBuilder(null, item),
           position: position,
           offset: offset,
+          autoMirror: autoMirror,
           requiredSpace: requiredSpace,
           screenPadding: screenPadding,
           autoClose: autoClose,
