@@ -192,6 +192,7 @@ class ComboState<T extends Combo> extends State<T> {
           : widget.popupBuilder(context, mirrored);
 
   OverlayEntry _createOverlay() => OverlayEntry(builder: (context) {
+        if (this.context == null) return null;
         _sizeCompleter = Completer<Offset>();
         final RenderBox renderBox = this.context.findRenderObject();
         final size = renderBox.size;
@@ -264,8 +265,7 @@ class ComboState<T extends Combo> extends State<T> {
 
         if (popup == null) return null;
 
-        final overlay = StreamBuilder(
-            initialData: null,
+        Widget overlay = StreamBuilder(
             stream: _scrolls.stream,
             builder: (context, snapshot) {
               if (snapshot.data != null) updatePopup();
@@ -288,23 +288,13 @@ class ComboState<T extends Combo> extends State<T> {
               return Stack(
                 key: ValueKey(screenSize),
                 children: [
-                  if (widget.autoClose != PopupAutoClose.none &&
-                      (widget.autoClose != PopupAutoClose.notHovered ||
-                          !kIsWeb))
-                    GestureDetector(onPanDown: (_) {
-                      if (widget.autoClose !=
-                              PopupAutoClose.tapOutsideExceptChild ||
-                          !renderBox.hitTest(BoxHitTestResult(),
-                              position:
-                                  renderBox.globalToLocal(_.globalPosition))) {
-                        close();
-                      }
-                    }),
                   FutureBuilder<Offset>(
                       future: _sizeCompleter.future,
                       builder: (context, snapshot) => Positioned(
-                            top: snapshot.data?.dy ?? 0,
-                            left: snapshot.data?.dx ?? 0,
+                            top: (snapshot.data?.dy ?? 0) -
+                                (widget.screenPadding?.top ?? 0),
+                            left: (snapshot.data?.dx ?? 0) -
+                                (widget.screenPadding?.left ?? 0),
                             child: _DynamicTransformFollower(
                               key: ValueKey(mirrored),
                               link: _layerLink,
@@ -395,14 +385,31 @@ class ComboState<T extends Combo> extends State<T> {
                 ),
               ),
             );
+        if (_fadeOpen) overlay = animate(0.0, Future.value(1.0), overlay);
+        if (_fadeClose && _closeCompleter != null) {
+          overlay = animate(1.0, _closeCompleter.future, overlay);
+        }
 
-        final openAnimated =
-            _fadeOpen ? animate(0.0, Future.value(1.0), overlay) : overlay;
-        final closeAnimated = _fadeClose && _closeCompleter != null
-            ? animate(1.0, _closeCompleter.future, openAnimated)
-            : openAnimated;
+        if (widget.screenPadding != null) {
+          overlay = Padding(
+              padding: widget.screenPadding, child: ClipRect(child: overlay));
+        }
 
-        return _ComboOverlay(child: closeAnimated, comboState: this);
+        if (widget.autoClose != PopupAutoClose.none &&
+            (widget.autoClose != PopupAutoClose.notHovered || !kIsWeb)) {
+          overlay = Stack(children: [
+            GestureDetector(onPanDown: (_) {
+              if (widget.autoClose != PopupAutoClose.tapOutsideExceptChild ||
+                  !renderBox.hitTest(BoxHitTestResult(),
+                      position: renderBox.globalToLocal(_.globalPosition))) {
+                close();
+              }
+            }),
+            overlay,
+          ]);
+        }
+
+        return _ComboOverlay(child: overlay, comboState: this);
       });
 
   @override
