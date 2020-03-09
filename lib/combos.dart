@@ -117,7 +117,6 @@ typedef PopupBuilder = Widget Function(BuildContext context, bool mirrored);
 /// and platform is not 'Web'
 /// [focusColor], [hoverColor], [highlightColor], [splashColor] are [InkWell] parameters
 ///
-///
 /// See also:
 ///
 ///  * [AwaitCombo]
@@ -795,6 +794,13 @@ class _ProgressDecoratorState extends State<ProgressDecorator> {
 }
 
 /// Combo widget with the delayed getting of the popup content and progress indication
+/// See also:
+///
+///  * [Combo]
+///  * [ListCombo]
+///  * [SelectorCombo]
+///  * [TypeaheadCombo]
+///  * [MenuItemCombo]
 class AwaitCombo extends Combo {
   /// Creates combo widget with the delayed getting of the popup content and progress indication
   const AwaitCombo({
@@ -1076,6 +1082,14 @@ class ListPopup<T> extends StatelessWidget {
 }
 
 /// Combo widget for displaying the items list
+/// Combo widget with the delayed getting of the popup content and progress indication
+/// See also:
+///
+///  * [Combo]
+///  * [AwaitCombo]
+///  * [SelectorCombo]
+///  * [TypeaheadCombo]
+///  * [MenuItemCombo]
 class ListCombo<T> extends AwaitCombo {
   /// Creates combo widget for displaying the items list
   const ListCombo({
@@ -1198,6 +1212,14 @@ class ListComboState<W extends ListCombo<T>, T>
 }
 
 /// Combo widget for displaying the items list and selected item
+/// Combo widget with the delayed getting of the popup content and progress indication
+/// See also:
+///
+///  * [Combo]
+///  * [AwaitCombo]
+///  * [ListCombo]
+///  * [TypeaheadCombo]
+///  * [MenuItemCombo]
 class SelectorCombo<T> extends ListCombo<T> {
   /// Creates combo widget for displaying the items list and selected item
   const SelectorCombo({
@@ -1303,6 +1325,14 @@ typedef TypeaheadGetList<T> = FutureOr<List<T>> Function(String text);
 typedef PopupGetItemText<T> = String Function(T item);
 
 /// Combo widget for displaying the items list and selected item
+/// Combo widget with the delayed getting of the popup content and progress indication
+/// See also:
+///
+///  * [Combo]
+///  * [AwaitCombo]
+///  * [ListCombo]
+///  * [SelectorCombo]
+///  * [MenuItemCombo]
 /// corresponds to the user's text
 class TypeaheadCombo<T> extends SelectorCombo<T> {
   /// Creates combo widget for displaying the items list and selected item
@@ -1638,6 +1668,14 @@ class MenuListPopup<T extends MenuItem> extends StatelessWidget {
 }
 
 /// Combo widget for displaying the menu
+/// Combo widget with the delayed getting of the popup content and progress indication
+/// See also:
+///
+///  * [Combo]
+///  * [AwaitCombo]
+///  * [ListCombo]
+///  * [SelectorCombo]
+///  * [TypeaheadCombo]
 class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
   /// Creates combo widget for displaying the menu
   MenuItemCombo({
