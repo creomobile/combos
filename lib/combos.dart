@@ -58,7 +58,11 @@ class Combo extends StatefulWidget {
     this.hoverColor,
     this.highlightColor,
     this.splashColor,
-  }) : super(key: key);
+  })  : assert(position != null),
+        assert(autoMirror != null),
+        assert(autoClose != null),
+        assert(animation != null),
+        super(key: key);
 
   final Widget child;
   final PopupBuilder popupBuilder;
@@ -380,7 +384,7 @@ class ComboState<T extends Combo> extends State<T> {
                 ignoring: snapshot.data != 1.0,
                 child: AnimatedOpacity(
                   opacity: snapshot.data,
-                  duration: widget.animationDuration,
+                  duration: widget.animationDuration ?? Duration.zero,
                   child: child,
                 ),
               ),
@@ -542,7 +546,8 @@ class ProgressDecorator extends StatefulWidget {
     this.progressBackgroundColor,
     this.progressValueColor,
     this.progressHeight = 2.0,
-  }) : super(key: key);
+  })  : assert(child != null),
+        super(key: key);
 
   final Widget child;
   final bool waiting;
@@ -622,6 +627,7 @@ class AwaitCombo extends Combo {
     Color highlightColor,
     Color splashColor,
   })  : awaitPopupBuilder = popupBuilder,
+        assert(refreshOnOpened != null),
         super(
           key: key,
           child: child,
@@ -801,11 +807,13 @@ class ListPopup<T> extends StatelessWidget {
         child: Material(
           elevation: 4,
           child: list?.isEmpty == true
-              ? Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [emptyMessage],
-                )
+              ? emptyMessage == null
+                  ? null
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [emptyMessage],
+                    )
               : ListView.builder(
                   shrinkWrap: true,
                   physics: ClampingScrollPhysics(),
@@ -857,6 +865,7 @@ class ListCombo<T> extends AwaitCombo {
     Color highlightColor,
     Color splashColor,
   })  : listPopupBuilder = popupBuilder ?? buildDefaultPopup,
+        assert(itemBuilder != null),
         super(
           key: key,
           progressDecoratorBuilder: progressDecoratorBuilder,
@@ -1029,7 +1038,7 @@ typedef PopupGetItemText<T> = String Function(T item);
 class TypeaheadCombo<T> extends SelectorCombo<T> {
   const TypeaheadCombo({
     Key key,
-    TypeaheadGetList<T> getList,
+    @required TypeaheadGetList<T> getList,
     this.decoration,
     this.enabled = true,
     this.autofocus = false,
@@ -1064,6 +1073,12 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
     Color highlightColor,
     Color splashColor,
   })  : typeaheadGetList = getList,
+        assert(getList != null),
+        assert(enabled != null),
+        assert(autofocus != null),
+        assert(getItemText != null),
+        assert(minTextLength >= 0),
+        assert(cleanAfterSelection != null),
         // ignore: missing_required_param
         super(
           key: key,
@@ -1140,7 +1155,7 @@ class TypeaheadComboState<W extends TypeaheadCombo<T>, T>
       if (_textLength < widget.minTextLength) {
         super.close();
       } else {
-        await Future.delayed(widget.delay);
+        await Future.delayed(widget.delay ?? Duration.zero);
         if (text == _controller.text) await fill();
       }
     });
@@ -1263,7 +1278,9 @@ class MenuListPopup<T extends MenuItem> extends StatelessWidget {
       this.backgroundColor = Colors.white,
       this.borderRadius,
       this.elevation = 4})
-      : super(key: key);
+      : assert(itemBuilder != null),
+        assert(canTapOnFolder != null),
+        super(key: key);
 
   final List<T> list;
   final PopupListItemBuilder<T> itemBuilder;
@@ -1286,7 +1303,7 @@ class MenuListPopup<T extends MenuItem> extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             if (list?.isEmpty == true)
-              emptyMessage
+              emptyMessage ?? const SizedBox()
             else if (list != null)
               ...list?.map((item) => itemBuilder(context, item))
           ],
@@ -1296,13 +1313,13 @@ class MenuListPopup<T extends MenuItem> extends StatelessWidget {
 
 class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
   MenuItemCombo({
+    Key key,
     @required MenuItem<T> item,
     Widget divider = _defaultMenuDivider,
     bool showSubmenuArrows = true,
     bool canTapOnFolder = false,
 
     // inherited
-    Key key,
     @required PopupListItemBuilder<MenuItem<T>> itemBuilder,
     @required ValueSetter<MenuItem<T>> onItemTapped,
     MenuItemPopupBuilder<MenuItem<T>> popupBuilder,
@@ -1332,7 +1349,11 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
     Color rootHoverColor,
     Color rootHighlightColor,
     Color rootSplashColor,
-  }) : super(
+  })  : assert(item != null),
+        assert(divider != null),
+        assert(showSubmenuArrows != null),
+        assert(canTapOnFolder != null),
+        super(
           key: key,
           getList: item.getChildren,
           itemBuilder: (context, item) => item == MenuItem.separator
