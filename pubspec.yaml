@@ -1,5 +1,5 @@
 name: combos
-description: Combo Widgets for Flutter.
+description: Combo Widgets for Flutter. Includes Combo, AwaitCombo, ListCombo, SelectorCombo, TypeaheadCombo, MenuItemCombo
 version: 1.0.0
 homepage: https://github.com/creomobile/combos
 
