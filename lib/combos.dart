@@ -10,34 +10,153 @@ import 'package:flutter/rendering.dart';
 const _defaultAnimationDuration = Duration(milliseconds: 150);
 const _defaultScreenPadding = EdgeInsets.all(16);
 
+/// Determines how the popup should be placed depent on [Combo.child] position
 enum PopupPosition {
+  /// Place the popup on the bottom of the [Combo.child] with custom width
   bottom,
+
+  /// Place the popup on the bottom of the [Combo.child] with same width
   bottomMatch,
+
+  /// Place the popup on the bottom of the [Combo.child] with the equal or bigger width
   bottomMinMatch,
+
+  /// Place the popup on the top of the [Combo.child] with custom width
   top,
+
+  /// Place the popup on the top of the [Combo.child] with same width
   topMatch,
+
+  /// Place the popup on the top of the [Combo.child] with the equal or bigger width
   topMinMatch,
+
+  /// Place the popup on the right of the [Combo.child] with custom width
   right,
-  left
+
+  /// Place the popup on the left of the [Combo.child] with custom width
+  left,
 }
 
-enum PopupWidthConstraints { matchWidth, minMatchWidth, customWidth }
-
-enum PopupAutoOpen { none, tap, hovered }
-
-enum PopupAutoClose {
+/// Determines automatically opening mode of the popup
+enum PopupAutoOpen {
+  /// Without automatically opening
   none,
+
+  /// Open when [Combo.child] tapped
+  tap,
+
+  /// Open when mouse enters on [Combo.child]
+  hovered,
+}
+
+/// Determines automatically closing mode of the popup
+enum PopupAutoClose {
+  /// Without automatically closing
+  none,
+
+  /// Close when user tapped on the outside area of the popup
   tapOutside,
+
+  /// Close when user tapped on the outside area of the popup and decorates
+  /// [Combo.child] with [IgnorePointer] to prevent repeated opening
   tapOutsideWithChildIgnorePointer,
+
+  /// Close when user tapped on the outside area of the popup except
+  /// [Combo.child] area
   tapOutsideExceptChild,
+
+  /// Close when mouse exits from [Combo.child] and [Combo.popup]
+  /// and another popups opened by the [Combo] widgets
+  /// which [Combo.popup] contains.
   notHovered,
 }
 
-enum PopupAnimation { none, fade, fadeOpen, fadeClose, custom }
+/// Determines [Combo.popup] open/close animation
+enum PopupAnimation {
+  /// Without animation
+  none,
 
+  /// Faded opening and closing
+  fade,
+
+  /// Faded opening
+  fadeOpen,
+
+  /// Faded closing
+  fadeClose,
+
+  /// Indicates that popup contains custom animation.
+  /// Afects only closing delay
+  custom,
+}
+
+/// Signature for popup builder.
+/// If [mirrored] is true, then popup position was changed due to screen edges
 typedef PopupBuilder = Widget Function(BuildContext context, bool mirrored);
 
+/// Simple combo box widget
+///
+/// Use [Combo] to link a widget with a popup setting [child] ans [popupBuilder] properties.
+/// The [child] and [popupBuilder] properties is not required.
+/// Popup can be opened or closed automatically by [autoOpen] and [autoClose] properties
+/// or programmatically by [ComboState.open] and [ComboState.close] methods.
+///
+/// Popup position is determined by [position] property with the [offset]
+/// If [autoMirror] is true, popup position may depends on screen edges using
+/// [requiredSpace] and [screenPadding] predefined values, [screenPadding] also affects popup clipping.
+///
+/// You can apply 'fade' or custom animation to the popup using [animation] and [animationDuration]
+/// properties. In case of custom animation popup will not be closed immediattely, but will wait for
+/// animationDuration with [IgnorePointer].
+///
+/// [openedChanged] is raised when popup is opening or closing with appropriate bool value.
+/// [hoveredChanged] is raised when mouse pointer enters on or exits from child or popup
+/// and its children - when popup contains another [Combo] widgets.
+/// [onTap] is raised when the user taps on popup and don't paint [InkWell] when it's null.
+/// [onTap] also can be raised by 'long tap' event when [autoOpen] is set to [PopupAutoOpen.hovered]
+/// and platform is not 'Web'
+/// [focusColor], [hoverColor], [highlightColor], [splashColor] are [InkWell] parameters
+///
+///
+/// See also:
+///
+///  * [AwaitCombo]
+///  * [ListCombo]
+///  * [SelectorCombo]
+///  * [TypeaheadCombo]
+///  * [MenuItemCombo]
 class Combo extends StatefulWidget {
+  /// Creates simple combo box widget
+  ///
+  /// Links a [child] widget with a popup that builds by [popupBuilder].
+  /// The [child] and [popupBuilder] properties is not required.
+  /// Popup can be opened or closed automatically by [autoOpen] and [autoClose] properties
+  /// or programmatically by [ComboState.open] and [ComboState.close] methods.
+  ///
+  /// Popup position is determined by [position] property with the [offset]
+  /// If [autoMirror] is true, popup position may depends on screen edges using
+  /// [requiredSpace] and [screenPadding] predefined values, [screenPadding] also affects popup clipping.
+  ///
+  /// You can apply 'fade' or custom animation to the popup using [animation] and [animationDuration]
+  /// properties. In case of custom animation popup will not be closed immediattely, but will wait for
+  /// animationDuration with [IgnorePointer].
+  ///
+  /// [openedChanged] is raised when popup is opening or closing with appropriate bool value.
+  /// [hoveredChanged] is raised when mouse pointer enters on or exits from child or popup
+  /// and its children - when popup contains another [Combo] widgets.
+  /// [onTap] is raised when the user taps on popup and don't paint [InkWell] when it's null.
+  /// [onTap] also can be raised by 'long tap' event when [autoOpen] is set to [PopupAutoOpen.hovered]
+  /// and platform is not 'Web'
+  /// [focusColor], [hoverColor], [highlightColor], [splashColor] are [InkWell] parameters
+  ///
+  ///
+  /// See also:
+  ///
+  ///  * [AwaitCombo]
+  ///  * [ListCombo]
+  ///  * [SelectorCombo]
+  ///  * [TypeaheadCombo]
+  ///  * [MenuItemCombo]
   const Combo({
     Key key,
     this.child,
@@ -47,8 +166,8 @@ class Combo extends StatefulWidget {
     this.autoMirror = true,
     this.requiredSpace,
     this.screenPadding = _defaultScreenPadding,
-    this.autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
     this.autoOpen = PopupAutoOpen.tap,
+    this.autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
     this.animation = PopupAnimation.fade,
     this.animationDuration = _defaultAnimationDuration,
     this.openedChanged,
@@ -64,31 +183,79 @@ class Combo extends StatefulWidget {
         assert(animation != null),
         super(key: key);
 
+  /// The widget below this widget in the tree.
+  ///
+  /// {@macro flutter.widgets.child}
   final Widget child;
+
+  /// Called to obtain the popup widget.
   final PopupBuilder popupBuilder;
+
+  /// Determines popup position depend on [child]
   final PopupPosition position;
+
+  /// The offset to apply to the popup position
   final Offset offset;
+
+  /// If true, popup position may depends on screen edges using [requiredSpace]
+  /// and [screenPadding] values.
   final bool autoMirror;
+
+  /// Determines required space between popup position and screen edge minus [screenPadding].
+  /// If the popup height or width (depends on [position]) is longer the popup will be
+  /// showed on opposite side of [child] and [popupBuilder] will be called with mirrored = true
   final double requiredSpace;
+
+  /// Determines the padding of screen edges and clipping popups.
+  /// (may be useful for hiding popups in app bar area)
   final EdgeInsets screenPadding;
-  final PopupAutoClose autoClose;
+
+  /// Determines automatically opening mode of the popup
   final PopupAutoOpen autoOpen;
+
+  /// Determines automatically closing mode of the popup
+  final PopupAutoClose autoClose;
+
+  /// Determines [Combo.popup] open/close animation
   final PopupAnimation animation;
+
+  /// Duration of open/close animation
   final Duration animationDuration;
+
+  /// Callbacks when the popup is opening or closing
   final ValueChanged<bool> openedChanged;
+
+  /// Callbacks when the mouse pointer enters on or exits from child or popup
+  /// and its children - when popup contains another [Combo] widgets.
   final ValueChanged<bool> hoveredChanged;
+
+  /// Called when the user taps on [child].
+  /// Also can be called by 'long tap' event if [autoOpen] is set to [PopupAutoOpen.hovered]
+  /// and platform is not 'Web'
   final GestureTapCallback onTap;
+
+  /// The color of the ink response when the parent widget is focused.
   final Color focusColor;
+
+  /// The color of the ink response when a pointer is hovering over it.
   final Color hoverColor;
+
+  /// The highlight color of the ink response when pressed.
   final Color highlightColor;
+
+  /// The splash color of the ink response.
   final Color splashColor;
 
+  /// Closes all opened by [Combo] popups
   static void closeAll() => ComboState._closes.add(true);
 
   @override
   ComboState createState() => ComboState();
 }
 
+/// State for a [Combo].
+///
+/// Can [open] and [close] popups.
 class ComboState<T extends Combo> extends State<T> {
   // ignore: close_sinks
   static final _closes = StreamController.broadcast();
@@ -134,6 +301,7 @@ class ComboState<T extends Combo> extends State<T> {
   bool get opened => _overlay != null;
   bool get hasPopup => widget.popupBuilder != null;
 
+  /// Opens the popup
   void open() {
     if (_overlay != null) return;
     if (widget.openedChanged != null) widget.openedChanged(true);
@@ -144,6 +312,7 @@ class ComboState<T extends Combo> extends State<T> {
     setState(() {});
   }
 
+  /// Closes the popup
   void close() async {
     if (_overlay == null) return;
     final overlay = _overlay;
@@ -189,7 +358,9 @@ class ComboState<T extends Combo> extends State<T> {
     }
   }
 
+  @protected
   Widget getChild() => widget.child;
+  @protected
   Widget getPopup(BuildContext context, bool mirrored) =>
       widget.popupBuilder == null
           ? null
@@ -531,13 +702,23 @@ class _DynamicRenderFollowerLayer extends RenderFollowerLayer {
   Offset get offset => offsetBuilder(child.size);
 }
 
+/// Signature for futured popup builder.
+/// ('Mirrored' flag cannot be passed as there is no possibility to get popup size immediately)
 typedef AwaitPopupBuilder = FutureOr<Widget> Function(BuildContext context);
+
+/// Signature to build the progress decorator.
+/// [waiting] indicates that the popup is getting by [AwaitPopupBuilder]
+/// [mirrored] indicates that the popup position was changed due to screen edges
+/// [child] is popup content
 typedef ProgressDecoratorBuilder = Widget Function(
     BuildContext context, bool waiting, bool mirrored, Widget child);
 
+/// Determine the progress container - [Combo.child] or [Combo.popup]
 enum ProgressPosition { child, popup }
 
+/// Default widget for progress indication for futured popups
 class ProgressDecorator extends StatefulWidget {
+  /// Creates the progress decorator
   const ProgressDecorator({
     Key key,
     @required this.child,
@@ -549,11 +730,25 @@ class ProgressDecorator extends StatefulWidget {
   })  : assert(child != null),
         super(key: key);
 
+  /// The widget below this widget in the tree.
+  ///
+  /// {@macro flutter.widgets.child}
   final Widget child;
+
+  /// Indicates that the popup getting is in progress
   final bool waiting;
+
+  /// Indicates that the popup position was changed due to screen edges
   final bool mirrored;
+
+  /// The progress indicator's background color.
   final Color progressBackgroundColor;
+
+  /// The progress indicator's color as an animated value.
   final Animation<Color> progressValueColor;
+
+  /// Height of the progress indicator.
+  /// If null, indicator stretches by the popup area
   final double progressHeight;
 
   @override
@@ -599,7 +794,9 @@ class _ProgressDecoratorState extends State<ProgressDecorator> {
   }
 }
 
+/// Combo widget with the delayed getting of the popup content and progress indication
 class AwaitCombo extends Combo {
+  /// Creates combo widget with the delayed getting of the popup content and progress indication
   const AwaitCombo({
     Key key,
     this.progressDecoratorBuilder = buildDefaultProgressDecorator,
@@ -615,8 +812,8 @@ class AwaitCombo extends Combo {
     bool autoMirror = true,
     double requiredSpace,
     EdgeInsets screenPadding = _defaultScreenPadding,
-    PopupAutoClose autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
     PopupAutoOpen autoOpen = PopupAutoOpen.tap,
+    PopupAutoClose autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
     PopupAnimation animation = PopupAnimation.fade,
     Duration animationDuration = _defaultAnimationDuration,
     ValueChanged<bool> openedChanged,
@@ -636,8 +833,8 @@ class AwaitCombo extends Combo {
           autoMirror: autoMirror,
           requiredSpace: requiredSpace,
           screenPadding: screenPadding,
-          autoClose: autoClose,
           autoOpen: autoOpen,
+          autoClose: autoClose,
           animation: animation,
           animationDuration: animationDuration,
           openedChanged: openedChanged,
@@ -649,20 +846,32 @@ class AwaitCombo extends Combo {
           splashColor: splashColor,
         );
 
+  /// Define the progress decorator widget
   final ProgressDecoratorBuilder progressDecoratorBuilder;
+
+  /// Called to obtain the futured popup content.
   final AwaitPopupBuilder awaitPopupBuilder;
+
+  /// Indicates that the popup should call [awaitPopupBuilder]
+  /// each time when popup is opened to update the content
   final bool refreshOnOpened;
+
+  /// Called when the popup content is getting or got
   final ValueChanged<bool> waitChanged;
+
+  /// Determine the progress container - [Combo.child] or [Combo.popup]
   final ProgressPosition progressPosition;
 
   @override
   AwaitComboStateBase createState() => AwaitComboState();
 
+  /// Builds defaut progress decorator
   static Widget buildDefaultProgressDecorator(
           BuildContext context, bool waiting, bool mirrored, Widget child) =>
       ProgressDecorator(waiting: waiting, mirrored: mirrored, child: child);
 }
 
+/// State for a [AwaitCombo].
 class AwaitComboState extends AwaitComboStateBase<AwaitCombo, Widget> {
   @override
   FutureOr<Widget> getContent(BuildContext context) =>
@@ -674,6 +883,7 @@ class AwaitComboState extends AwaitComboStateBase<AwaitCombo, Widget> {
   Widget buildContent(Widget content, bool mirrored) => content;
 }
 
+/// Base state for the combo widgets with the futured popup content builder.
 abstract class AwaitComboStateBase<W extends AwaitCombo, C>
     extends ComboState<W> {
   var _waitCount = 0;
@@ -686,7 +896,9 @@ abstract class AwaitComboStateBase<W extends AwaitCombo, C>
   @override
   bool get hasPopup => widget.popupBuilder != null;
 
+  @protected
   FutureOr<C> getContent(BuildContext context);
+  @protected
   Widget buildContent(C content, bool mirrored);
   @protected
   void clearContent() => _content = null;
@@ -720,6 +932,7 @@ abstract class AwaitComboStateBase<W extends AwaitCombo, C>
         },
       );
 
+  @protected
   Future fill() async {
     final future = getContent(context);
     if (future == null) return;
@@ -759,9 +972,21 @@ abstract class AwaitComboStateBase<W extends AwaitCombo, C>
   }
 }
 
+/// Signature to get the popup items.
 typedef PopupGetList<T> = FutureOr<List<T>> Function();
+
+/// Signature to build the popup item widget.
 typedef PopupListItemBuilder<T> = Widget Function(BuildContext context, T item);
+
+/// Signature to determine if the popup item is active for tapping
 typedef GetIsSelectable<T> = bool Function(T item);
+
+/// Signature to build the widget containing popup items
+/// [list] of the popup items
+/// [itemBuilder] builds the popup item widget
+/// [onItemTapped] calls when user taps on the item
+/// [mirrored] indicates that the popup position was changed due to screen edges
+/// [getIsSelectable] determines if the popup item is active for tapping
 typedef ListPopupBuilder<T> = Widget Function(
     BuildContext context,
     List<T> list,
@@ -770,6 +995,7 @@ typedef ListPopupBuilder<T> = Widget Function(
     bool mirrored,
     GetIsSelectable<T> getIsSelectable);
 
+/// Default widget for empty list indication
 const Widget defaultEmptyMessage = Padding(
   padding: EdgeInsets.all(16),
   child: Text(
@@ -779,7 +1005,9 @@ const Widget defaultEmptyMessage = Padding(
   ),
 );
 
+/// Default widget for displaying popup items
 class ListPopup<T> extends StatelessWidget {
+  /// Creates default widget for displaying popup items
   const ListPopup({
     Key key,
     @required this.list,
@@ -791,12 +1019,27 @@ class ListPopup<T> extends StatelessWidget {
     this.getIsSelectable,
   }) : super(key: key);
 
+  /// List of the popup items
   final List<T> list;
+
+  /// Builds the popup item widget
   final PopupListItemBuilder<T> itemBuilder;
+
+  /// Calls when user taps on the item
   final ValueSetter<T> onItemTapped;
+
+  /// The width of the list content
+  /// Must be setted if [Combo.position] not is [PopupPosition.bottomMatch]
+  /// or [PopupPosition.topMatch] (ListView cannot be stretched by its content)
   final double width;
+
+  /// Maximum height of popup
   final double maxHeight;
+
+  /// Widget for empty list indication
   final Widget emptyMessage;
+
+  /// Determines if the popup item is active for tapping
   final GetIsSelectable<T> getIsSelectable;
 
   @override
@@ -832,7 +1075,9 @@ class ListPopup<T> extends StatelessWidget {
       );
 }
 
+/// Combo widget for displaying the items list
 class ListCombo<T> extends AwaitCombo {
+  /// Creates combo widget for displaying the items list
   const ListCombo({
     Key key,
     @required this.getList,
@@ -853,8 +1098,8 @@ class ListCombo<T> extends AwaitCombo {
     bool autoMirror = true,
     double requiredSpace,
     EdgeInsets screenPadding = _defaultScreenPadding,
-    PopupAutoClose autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
     PopupAutoOpen autoOpen = PopupAutoOpen.tap,
+    PopupAutoClose autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
     PopupAnimation animation = PopupAnimation.fade,
     Duration animationDuration = _defaultAnimationDuration,
     ValueChanged<bool> openedChanged,
@@ -878,8 +1123,8 @@ class ListCombo<T> extends AwaitCombo {
           autoMirror: autoMirror,
           requiredSpace: requiredSpace,
           screenPadding: screenPadding,
-          autoClose: autoClose,
           autoOpen: autoOpen,
+          autoClose: autoClose,
           animation: animation,
           animationDuration: animationDuration,
           openedChanged: openedChanged,
@@ -891,16 +1136,26 @@ class ListCombo<T> extends AwaitCombo {
           splashColor: splashColor,
         );
 
+  /// Popup items getter.
   final PopupGetList<T> getList;
+
+  /// Popup item widget builder.
   final PopupListItemBuilder<T> itemBuilder;
+
+  /// Calls when the user taps on the item.
   final ValueSetter<T> onItemTapped;
+
+  /// Builder of widget for displaying popup items list.
   final ListPopupBuilder<T> listPopupBuilder;
+
+  /// Determines if the popup item is active for tapping
   final GetIsSelectable<T> getIsSelectable;
 
   @override
   ListComboState<ListCombo<T>, T> createState() =>
       ListComboState<ListCombo<T>, T>();
 
+  /// Builds default widget for displaying popup items.
   static Widget buildDefaultPopup<T>(
           BuildContext context,
           List<T> list,
@@ -915,6 +1170,7 @@ class ListCombo<T> extends AwaitCombo {
           getIsSelectable: getIsSelectable);
 }
 
+/// State for a [ListCombo].
 class ListComboState<W extends ListCombo<T>, T>
     extends AwaitComboStateBase<W, List<T>> {
   @override
@@ -932,6 +1188,7 @@ class ListComboState<W extends ListCombo<T>, T>
   @override
   FutureOr<List<T>> getContent(BuildContext context) => widget.getList();
 
+  @protected
   void itemTapped(T item) {
     if (widget.onItemTapped != null) {
       widget.onItemTapped(item);
@@ -940,7 +1197,9 @@ class ListComboState<W extends ListCombo<T>, T>
   }
 }
 
+/// Combo widget for displaying the items list and selected item
 class SelectorCombo<T> extends ListCombo<T> {
+  /// Creates combo widget for displaying the items list and selected item
   const SelectorCombo({
     Key key,
     this.selected,
@@ -962,8 +1221,8 @@ class SelectorCombo<T> extends ListCombo<T> {
     bool autoMirror = true,
     double requiredSpace,
     EdgeInsets screenPadding = _defaultScreenPadding,
-    PopupAutoClose autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
     PopupAutoOpen autoOpen = PopupAutoOpen.tap,
+    PopupAutoClose autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
     PopupAnimation animation = PopupAnimation.fade,
     Duration animationDuration = _defaultAnimationDuration,
     ValueChanged<bool> openedChanged,
@@ -989,8 +1248,8 @@ class SelectorCombo<T> extends ListCombo<T> {
           autoMirror: autoMirror,
           requiredSpace: requiredSpace,
           screenPadding: screenPadding,
-          autoClose: autoClose,
           autoOpen: autoOpen,
+          autoClose: autoClose,
           animation: animation,
           animationDuration: animationDuration,
           openedChanged: openedChanged,
@@ -1002,7 +1261,11 @@ class SelectorCombo<T> extends ListCombo<T> {
           splashColor: splashColor,
         );
 
+  /// The 'selected' item to display in [Combo.child] area
   final T selected;
+
+  /// Builds the thid widget for [selected] item
+  /// If null uses [ListCombo.itemBuilder]
   final PopupListItemBuilder<T> childBuilder;
 
   @override
@@ -1010,6 +1273,7 @@ class SelectorCombo<T> extends ListCombo<T> {
       SelectorComboState<SelectorCombo<T>, T>(selected);
 }
 
+/// State for a [SelectorCombo].
 class SelectorComboState<W extends SelectorCombo<T>, T>
     extends ListComboState<W, T> {
   SelectorComboState(this._selected);
@@ -1032,10 +1296,16 @@ class SelectorComboState<W extends SelectorCombo<T>, T>
       (widget.childBuilder ?? widget.itemBuilder)(context, _selected);
 }
 
+/// Signature to get the popup items using the text from [TypeaheadCombo].
 typedef TypeaheadGetList<T> = FutureOr<List<T>> Function(String text);
+
+/// Signature to get the text that corresponds to popup item
 typedef PopupGetItemText<T> = String Function(T item);
 
+/// Combo widget for displaying the items list and selected item
+/// corresponds to the user's text
 class TypeaheadCombo<T> extends SelectorCombo<T> {
+  /// Creates combo widget for displaying the items list and selected item
   const TypeaheadCombo({
     Key key,
     @required TypeaheadGetList<T> getList,
@@ -1096,8 +1366,8 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
           autoMirror: autoMirror,
           requiredSpace: requiredSpace,
           screenPadding: screenPadding,
-          autoClose: PopupAutoClose.tapOutsideExceptChild,
           autoOpen: PopupAutoOpen.none,
+          autoClose: PopupAutoClose.tapOutsideExceptChild,
           animation: animation,
           animationDuration: animationDuration,
           openedChanged: openedChanged,
@@ -1109,14 +1379,33 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
           splashColor: splashColor,
         );
 
+  /// Popup items getter using user's text.
   final TypeaheadGetList<T> typeaheadGetList;
+
+  /// The decoration to show around the text field.
   final InputDecoration decoration;
+
+  /// If false the text field is "disabled": it ignores taps and its
+  /// [decoration] is rendered in grey.
   final bool enabled;
+
+  /// {@macro flutter.widgets.editableText.autofocus}
   final bool autofocus;
+
+  /// Gets the text that corresponds to popup item
   final PopupGetItemText<T> getItemText;
+
+  /// Minimum text length to start getting the list
+  /// if [minTextLength] = 0, shows the popup immediatelly on focus
   final int minTextLength;
+
+  /// Defines the keyboard focus for this widget.
   final FocusNode focusNode;
+
+  /// Delay between last text change to throttling user's inputs
   final Duration delay;
+
+  /// Determine if text should be cleared when user select the item
   final bool cleanAfterSelection;
 
   @override
@@ -1127,6 +1416,7 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
           focusNode ?? FocusNode());
 }
 
+/// State for [TypeaheadCombo]
 class TypeaheadComboState<W extends TypeaheadCombo<T>, T>
     extends SelectorComboState<W, T> {
   TypeaheadComboState(T selected, String text, this._focusNode)
@@ -1221,13 +1511,28 @@ class TypeaheadComboState<W extends TypeaheadCombo<T>, T>
   }
 }
 
+/// Menu items container
 class MenuItem<T> {
+  /// Creates menu items container
   const MenuItem(this.item, [this.getChildren]);
+
+  /// Widget to designate a menu items separator
   static const separator = MenuItem(null);
+
+  /// Menu item
   final T item;
+
+  /// Menu item children getter
   final PopupGetList<MenuItem<T>> getChildren;
 }
 
+/// Signature to build the widget containing menu items
+/// [list] of the menu items
+/// [itemBuilder] builds the menu item widget
+/// [onItemTapped] calls when user taps on the menu item
+/// [mirrored] indicates that the popup position was changed due to screen edges
+/// [getIsSelectable] determines if the menu item is active for tapping
+/// [canTapOnFolder] determines if the menu items that containing another items is selectable
 typedef MenuItemPopupBuilder<T> = Widget Function(
     BuildContext context,
     List<T> list,
@@ -1237,7 +1542,9 @@ typedef MenuItemPopupBuilder<T> = Widget Function(
     GetIsSelectable<T> getIsSelectable,
     bool canTapOnFolder);
 
+/// Default widget to display menu separator
 class MenuDivider extends StatelessWidget {
+  /// Creates default widget to display menu separator
   const MenuDivider({Key key, this.color = Colors.black12}) : super(key: key);
 
   final Color color;
@@ -1266,7 +1573,9 @@ class _ArrowedItem extends StatelessWidget {
       ]);
 }
 
+/// Default widget for displaying list of the menu items
 class MenuListPopup<T extends MenuItem> extends StatelessWidget {
+  /// Creates default widget for displaying list of the menu items
   const MenuListPopup(
       {Key key,
       @required this.list,
@@ -1282,14 +1591,31 @@ class MenuListPopup<T extends MenuItem> extends StatelessWidget {
         assert(canTapOnFolder != null),
         super(key: key);
 
+  /// List of the menu items
   final List<T> list;
+
+  /// Builds the menu item widget
   final PopupListItemBuilder<T> itemBuilder;
+
+  /// Calls when user taps on the menu item
   final ValueSetter<T> onItemTapped;
+
+  /// Widget to displaying empty menu list
   final Widget emptyMessage;
+
+  /// Determines if the menu item is active for tapping
   final GetIsSelectable<T> getIsSelectable;
+
+  /// Determines if the menu items that containing another items is selectable
   final bool canTapOnFolder;
+
+  /// Menu bachground color
   final Color backgroundColor;
+
+  /// The corners of the menu are rounded by this value
   final BorderRadius borderRadius;
+
+  /// The z-coordinate at which to place the menu relative to its parent.
   final double elevation;
 
   @override
@@ -1311,12 +1637,22 @@ class MenuListPopup<T extends MenuItem> extends StatelessWidget {
       ));
 }
 
+/// Combo widget for displaying the menu
 class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
+  /// Creates combo widget for displaying the menu
   MenuItemCombo({
     Key key,
+
+    /// Menu item
     @required MenuItem<T> item,
+
+    /// Menu separator widget
     Widget divider = _defaultMenuDivider,
+
+    /// Indicates that the menu items that contains another items should display 'right arrow'
     bool showSubmenuArrows = true,
+
+    /// Determines if the menu items that containing another items is selectable
     bool canTapOnFolder = false,
 
     // inherited
@@ -1334,8 +1670,8 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
     bool autoMirror = true,
     double requiredSpace,
     EdgeInsets screenPadding = _defaultScreenPadding,
-    PopupAutoClose autoClose = PopupAutoClose.notHovered,
     PopupAutoOpen autoOpen = PopupAutoOpen.tap,
+    PopupAutoClose autoClose = PopupAutoClose.notHovered,
     PopupAnimation animation = PopupAnimation.fade,
     Duration animationDuration = _defaultAnimationDuration,
     ValueChanged<bool> openedChanged,
@@ -1382,8 +1718,8 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
                   autoMirror: true,
                   requiredSpace: requiredSpace,
                   screenPadding: screenPadding,
-                  autoClose: PopupAutoClose.notHovered,
                   autoOpen: PopupAutoOpen.hovered,
+                  autoClose: PopupAutoClose.notHovered,
                   animation: animation,
                   animationDuration: animationDuration,
                   openedChanged: openedChanged,
@@ -1414,8 +1750,8 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
           autoMirror: autoMirror,
           requiredSpace: requiredSpace,
           screenPadding: screenPadding,
-          autoClose: autoClose,
           autoOpen: autoOpen,
+          autoClose: autoClose,
           animation: animation,
           animationDuration: animationDuration,
           openedChanged: openedChanged,
@@ -1427,6 +1763,7 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
           splashColor: rootSplashColor ?? splashColor,
         );
 
+  /// Builds default widget to display list of the menu items
   static Widget buildDefaultPopup<T extends MenuItem>(
           BuildContext context,
           List<T> list,
@@ -1442,6 +1779,7 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
           getIsSelectable: getIsSelectable,
           canTapOnFolder: canTapOnFolder);
 
+  /// Builds default separator widget
   static Widget buildDefaultProgressDecorator(
           BuildContext context, bool waiting, bool mirrored, Widget child) =>
       ProgressDecorator(
