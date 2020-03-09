@@ -288,7 +288,6 @@ class _MyHomePageState extends State<MyHomePage> {
                       highlightColor: Colors.blueAccent.withOpacity(0.1),
                       splashColor: Colors.blueAccent.withOpacity(0.1),
                       hoverColor: Colors.blueAccent.withOpacity(0.1),
-                      onTap: () => print('tapped'),
                     ),
                   ),
                 ),
@@ -791,9 +790,6 @@ class _MyHomePageState extends State<MyHomePage> {
                                   context: context, builder: (_) => dialog);
                             },
                             autoOpen: _autoOpen,
-                            onTap: () {
-                              print(1);
-                            },
                           ),
                         ],
                       ),

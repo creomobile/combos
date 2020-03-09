@@ -92,6 +92,7 @@ class ComboState<T extends Combo> extends State<T> {
   StreamSubscription _subscription;
   Completer<double> _closeCompleter;
   var _hovered = false;
+  bool _lastHovered;
   var _popupHovered = false;
   ComboState _parent;
 
@@ -162,14 +163,20 @@ class ComboState<T extends Combo> extends State<T> {
     if (value == _hovered || !mounted) return;
     _hovered = value;
     if (value) {
-      if (widget.hoveredChanged != null) widget.hoveredChanged(true);
+      if (widget.hoveredChanged != null && _lastHovered != true) {
+        _lastHovered = true;
+        widget.hoveredChanged(true);
+      }
       if (!opened && widget.autoOpen == PopupAutoOpen.hovered) {
         open();
       }
     } else {
       await Future.delayed(const Duration(milliseconds: 50));
       if (_hovered) return;
-      if (widget.hoveredChanged != null) widget.hoveredChanged(false);
+      if (widget.hoveredChanged != null && _lastHovered != false) {
+        _lastHovered = false;
+        widget.hoveredChanged(false);
+      }
       if (opened && widget.autoClose == PopupAutoClose.notHovered) {
         close();
       }
@@ -1224,15 +1231,18 @@ class _ArrowedItem extends StatelessWidget {
 }
 
 class MenuListPopup<T extends MenuItem> extends StatelessWidget {
-  const MenuListPopup({
-    Key key,
-    @required this.list,
-    @required this.itemBuilder,
-    @required this.onItemTapped,
-    this.emptyMessage = defaultEmptyMessage,
-    this.getIsSelectable,
-    this.canTapOnFolder = true,
-  }) : super(key: key);
+  const MenuListPopup(
+      {Key key,
+      @required this.list,
+      @required this.itemBuilder,
+      @required this.onItemTapped,
+      this.emptyMessage = defaultEmptyMessage,
+      this.getIsSelectable,
+      this.canTapOnFolder = true,
+      this.backgroundColor = Colors.white,
+      this.borderRadius,
+      this.elevation = 4})
+      : super(key: key);
 
   final List<T> list;
   final PopupListItemBuilder<T> itemBuilder;
@@ -1240,33 +1250,25 @@ class MenuListPopup<T extends MenuItem> extends StatelessWidget {
   final Widget emptyMessage;
   final GetIsSelectable<T> getIsSelectable;
   final bool canTapOnFolder;
+  final Color backgroundColor;
+  final BorderRadius borderRadius;
+  final double elevation;
 
   @override
   Widget build(BuildContext context) => Material(
-      elevation: 4,
-      child: Center(
-        child: IntrinsicWidth(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (list?.isEmpty == true)
-                emptyMessage
-              else if (list != null)
-                ...list?.map((item) {
-                  final itemWidget = itemBuilder(context, item);
-                  return itemWidget;
-                  // return item != MenuItem.separator &&
-                  //         (canTapOnFolder || item.getChildren == null) &&
-                  //         (getIsSelectable == null || getIsSelectable(item))
-                  //     ? InkWell(
-                  //         child: itemWidget,
-                  //         onTap: () => onItemTapped(item),
-                  //       )
-                  //     : itemWidget;
-                })
-            ],
-          ),
+      color: backgroundColor,
+      borderRadius: borderRadius,
+      elevation: elevation,
+      child: IntrinsicWidth(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            if (list?.isEmpty == true)
+              emptyMessage
+            else if (list != null)
+              ...list?.map((item) => itemBuilder(context, item))
+          ],
         ),
       ));
 }
@@ -1304,6 +1306,10 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
     Color hoverColor,
     Color highlightColor,
     Color splashColor,
+    Color rootFocusColor,
+    Color rootHoverColor,
+    Color rootHighlightColor,
+    Color rootSplashColor,
   }) : super(
           key: key,
           getList: item.getChildren,
@@ -1370,10 +1376,10 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
           openedChanged: openedChanged,
           hoveredChanged: hoveredChanged,
           onTap: onTap,
-          focusColor: focusColor,
-          hoverColor: hoverColor,
-          highlightColor: highlightColor,
-          splashColor: splashColor,
+          focusColor: rootFocusColor ?? focusColor,
+          hoverColor: rootHoverColor ?? hoverColor,
+          highlightColor: rootHighlightColor ?? highlightColor,
+          splashColor: rootSplashColor ?? splashColor,
         );
 
   static Widget buildDefaultPopup<T extends MenuItem>(
