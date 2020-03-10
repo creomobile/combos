@@ -2,7 +2,7 @@
 
 ## About
 
-Combo widgets for flutter.
+Combo widgets for Flutter.
 
 Includes:
 * **Combo** - Simple combo widget for custom child and popup content.
