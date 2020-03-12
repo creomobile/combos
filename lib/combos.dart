@@ -7,9 +7,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
-const _defaultAnimationDuration = Duration(milliseconds: 150);
-const _defaultScreenPadding = EdgeInsets.all(16);
-
 /// Determines how the popup should be placed depent on [Combo.child] position
 enum PopupPosition {
   /// Place the popup on the bottom of the [Combo.child] with custom width
@@ -164,11 +161,11 @@ class Combo extends StatefulWidget {
     this.offset,
     this.autoMirror = true,
     this.requiredSpace,
-    this.screenPadding = _defaultScreenPadding,
+    this.screenPadding = defaultScreenPadding,
     this.autoOpen = PopupAutoOpen.tap,
     this.autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
     this.animation = PopupAnimation.fade,
-    this.animationDuration = _defaultAnimationDuration,
+    this.animationDuration = defaultAnimationDuration,
     this.openedChanged,
     this.hoveredChanged,
     this.onTap,
@@ -244,6 +241,12 @@ class Combo extends StatefulWidget {
 
   /// The splash color of the ink response.
   final Color splashColor;
+
+  /// Default value of [Combo.animationDuration]
+  static const defaultAnimationDuration = Duration(milliseconds: 150);
+
+  /// Default value of [Combo.screenPadding]
+  static const defaultScreenPadding = EdgeInsets.all(16);
 
   /// Closes all opened by [Combo] popups
   static void closeAll() => ComboState._closes.add(true);
@@ -817,11 +820,11 @@ class AwaitCombo extends Combo {
     Offset offset,
     bool autoMirror = true,
     double requiredSpace,
-    EdgeInsets screenPadding = _defaultScreenPadding,
+    EdgeInsets screenPadding = Combo.defaultScreenPadding,
     PopupAutoOpen autoOpen = PopupAutoOpen.tap,
     PopupAutoClose autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
     PopupAnimation animation = PopupAnimation.fade,
-    Duration animationDuration = _defaultAnimationDuration,
+    Duration animationDuration = Combo.defaultAnimationDuration,
     ValueChanged<bool> openedChanged,
     ValueChanged<bool> hoveredChanged,
     GestureTapCallback onTap,
@@ -1111,11 +1114,11 @@ class ListCombo<T> extends AwaitCombo {
     Offset offset,
     bool autoMirror = true,
     double requiredSpace,
-    EdgeInsets screenPadding = _defaultScreenPadding,
+    EdgeInsets screenPadding = Combo.defaultScreenPadding,
     PopupAutoOpen autoOpen = PopupAutoOpen.tap,
     PopupAutoClose autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
     PopupAnimation animation = PopupAnimation.fade,
-    Duration animationDuration = _defaultAnimationDuration,
+    Duration animationDuration = Combo.defaultAnimationDuration,
     ValueChanged<bool> openedChanged,
     ValueChanged<bool> hoveredChanged,
     GestureTapCallback onTap,
@@ -1242,11 +1245,11 @@ class SelectorCombo<T> extends ListCombo<T> {
     Offset offset,
     bool autoMirror = true,
     double requiredSpace,
-    EdgeInsets screenPadding = _defaultScreenPadding,
+    EdgeInsets screenPadding = Combo.defaultScreenPadding,
     PopupAutoOpen autoOpen = PopupAutoOpen.tap,
     PopupAutoClose autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
     PopupAnimation animation = PopupAnimation.fade,
-    Duration animationDuration = _defaultAnimationDuration,
+    Duration animationDuration = Combo.defaultAnimationDuration,
     ValueChanged<bool> openedChanged,
     ValueChanged<bool> hoveredChanged,
     GestureTapCallback onTap,
@@ -1362,9 +1365,9 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
     Offset offset,
     bool autoMirror = true,
     double requiredSpace,
-    EdgeInsets screenPadding = _defaultScreenPadding,
+    EdgeInsets screenPadding = Combo.defaultScreenPadding,
     PopupAnimation animation = PopupAnimation.fade,
-    Duration animationDuration = _defaultAnimationDuration,
+    Duration animationDuration = Combo.defaultAnimationDuration,
     ValueChanged<bool> openedChanged,
     ValueChanged<bool> hoveredChanged,
     GestureTapCallback onTap,
@@ -1707,11 +1710,11 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
     Offset offset,
     bool autoMirror = true,
     double requiredSpace,
-    EdgeInsets screenPadding = _defaultScreenPadding,
+    EdgeInsets screenPadding = Combo.defaultScreenPadding,
     PopupAutoOpen autoOpen = PopupAutoOpen.tap,
     PopupAutoClose autoClose = PopupAutoClose.notHovered,
     PopupAnimation animation = PopupAnimation.fade,
-    Duration animationDuration = _defaultAnimationDuration,
+    Duration animationDuration = Combo.defaultAnimationDuration,
     ValueChanged<bool> openedChanged,
     ValueChanged<bool> hoveredChanged,
     GestureTapCallback onTap,
