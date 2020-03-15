@@ -91,6 +91,166 @@ enum PopupAnimation {
 /// If [mirrored] is true, then popup position was changed due to screen edges
 typedef PopupBuilder = Widget Function(BuildContext context, bool mirrored);
 
+/// Common parameters for combo widgets
+class ComboParameters {
+  const ComboParameters({
+    this.position = PopupPosition.bottomMinMatch,
+    this.offset,
+    this.autoMirror = true,
+    this.requiredSpace,
+    this.screenPadding = Combo.defaultScreenPadding,
+    this.autoOpen = PopupAutoOpen.tap,
+    this.autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
+    this.animation = PopupAnimation.fade,
+    this.animationDuration = Combo.defaultAnimationDuration,
+    this.focusColor,
+    this.hoverColor,
+    this.highlightColor,
+    this.splashColor,
+  })  : assert(position != null),
+        assert(autoMirror != null),
+        assert(autoClose != null),
+        assert(animation != null);
+
+  /// Determines popup position depend on [Combo.child] position
+  final PopupPosition position;
+
+  /// The offset to apply to the popup position
+  final Offset offset;
+
+  /// If true, popup position may depends on screen edges using [requiredSpace]
+  /// and [screenPadding] values.
+  final bool autoMirror;
+
+  /// Determines required space between popup position and screen edge minus [screenPadding].
+  /// If the popup height or width (depends on [position]) is longer the popup will be
+  /// showed on opposite side of [Combo.child] and [Combo.popupBuilder] will be called with mirrored = true
+  final double requiredSpace;
+
+  /// Determines the padding of screen edges and clipping popups.
+  /// (may be useful for hiding popups in app bar area)
+  final EdgeInsets screenPadding;
+
+  /// Determines automatically opening mode of the popup
+  final PopupAutoOpen autoOpen;
+
+  /// Determines automatically closing mode of the popup
+  final PopupAutoClose autoClose;
+
+  /// Determines [Combo.popup] open/close animation
+  final PopupAnimation animation;
+
+  /// Duration of open/close animation
+  final Duration animationDuration;
+
+  /// The color of combo the ink response when the parent widget is focused.
+  final Color focusColor;
+
+  /// The color of the combo ink response when a pointer is hovering over it.
+  final Color hoverColor;
+
+  /// The highlight color of the combo ink response when pressed.
+  final Color highlightColor;
+
+  /// The splash color of the combo ink response.
+  final Color splashColor;
+
+  /// Creates a copy of this combo parameters but with the given fields replaced with
+  /// the new values.
+  ComboParameters copyWith({
+    PopupPosition position,
+    Offset offset,
+    bool autoMirror,
+    double requiredSpace,
+    EdgeInsets screenPadding,
+    PopupAutoOpen autoOpen,
+    PopupAutoClose autoClose,
+    PopupAnimation animation,
+    Duration animationDuration,
+    Colors focusColor,
+    Colors hoverColor,
+    Colors highlightColor,
+    Colors splashColor,
+  }) =>
+      ComboParameters(
+        position: position ?? this.position,
+        offset: offset ?? this.offset,
+        autoMirror: autoMirror ?? this.autoMirror,
+        requiredSpace: requiredSpace ?? this.requiredSpace,
+        screenPadding: screenPadding ?? this.screenPadding,
+        autoOpen: autoOpen ?? this.autoOpen,
+        autoClose: autoClose ?? this.autoClose,
+        animation: animation ?? this.animation,
+        animationDuration: animationDuration ?? this.animationDuration,
+        focusColor: focusColor ?? this.focusColor,
+        hoverColor: hoverColor ?? this.hoverColor,
+        highlightColor: highlightColor ?? this.highlightColor,
+        splashColor: splashColor ?? this.splashColor,
+      );
+}
+
+/// Specifies [ComboParameters] for all [Combo] widgets in [child]
+class ComboContext extends StatelessWidget {
+  const ComboContext({Key key, @required this.parameters, @required this.child})
+      : super(key: key);
+  final ComboParameters parameters;
+  final Widget child;
+
+  static ComboContextData of(BuildContext context) =>
+      context.dependOnInheritedWidgetOfExactType<ComboContextData>();
+
+  @override
+  Widget build(BuildContext context) {
+    final parentData = ComboContext.of(context);
+    return ComboContextData(
+      this,
+      () {
+        final params = parameters;
+        final parent = parentData?.parameters;
+        return params == null
+            ? parent
+            : parent == null
+                ? params
+                : ComboParameters(
+                    position: params.position ?? parent.position,
+                    offset: params.offset ?? parent.offset,
+                    autoMirror: params.autoMirror ?? parent.autoMirror,
+                    requiredSpace: params.requiredSpace ?? parent.requiredSpace,
+                    screenPadding: params.screenPadding ?? parent.screenPadding,
+                    autoOpen: params.autoOpen ?? parent.autoOpen,
+                    autoClose: params.autoClose ?? parent.autoClose,
+                    animation: params.animation ?? parent.animation,
+                    animationDuration:
+                        params.animationDuration ?? parent.animationDuration,
+                    focusColor: params.focusColor ?? parent.focusColor,
+                    hoverColor: params.hoverColor ?? parent.hoverColor,
+                    highlightColor:
+                        params.highlightColor ?? parent.highlightColor,
+                    splashColor: params.splashColor ?? parent.splashColor,
+                  );
+      },
+    );
+  }
+}
+
+typedef _ComboParametersGetter = ComboParameters Function();
+
+/// Provides [ComboParameters] for specified [ComboContext].
+class ComboContextData extends InheritedWidget {
+  ComboContextData(this.widget, this._parametersGetter)
+      : super(child: widget.child);
+
+  final ComboContext widget;
+  final _ComboParametersGetter _parametersGetter;
+
+  // Common parameters for combo widgets
+  ComboParameters get parameters => _parametersGetter();
+
+  @override
+  bool updateShouldNotify(ComboContextData oldWidget) =>
+      widget.parameters != oldWidget.widget.parameters;
+}
+
 /// Simple combo box widget
 ///
 /// Use [Combo] to link a widget with a popup setting [child] ans [popupBuilder] properties.
@@ -157,12 +317,18 @@ class Combo extends StatefulWidget {
     Key key,
     this.child,
     this.popupBuilder,
-    this.position = PopupPosition.bottomMinMatch,
-    this.offset,
-    this.autoMirror = true,
-    this.requiredSpace,
-    this.screenPadding = defaultScreenPadding,
-    this.autoOpen = PopupAutoOpen.tap,
+    //this.position = PopupPosition.bottomMinMatch,
+    PopupPosition position = PopupPosition.bottomMinMatch,
+    //this.offset,
+    Offset offset,
+    //this.autoMirror = true,
+    bool autoMirror = true,
+    //this.requiredSpace,
+    double requiredSpace,
+    //this.screenPadding = defaultScreenPadding,
+    EdgeInsets screenPadding = defaultScreenPadding,
+    //this.autoOpen = PopupAutoOpen.tap,
+    PopupAutoOpen autoOpen = PopupAutoOpen.tap,
     this.autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
     this.animation = PopupAnimation.fade,
     this.animationDuration = defaultAnimationDuration,
@@ -188,26 +354,26 @@ class Combo extends StatefulWidget {
   final PopupBuilder popupBuilder;
 
   /// Determines popup position depend on [child]
-  final PopupPosition position;
+  //final PopupPosition position;
 
   /// The offset to apply to the popup position
-  final Offset offset;
+  //final Offset offset;
 
   /// If true, popup position may depends on screen edges using [requiredSpace]
   /// and [screenPadding] values.
-  final bool autoMirror;
+  //final bool autoMirror;
 
   /// Determines required space between popup position and screen edge minus [screenPadding].
   /// If the popup height or width (depends on [position]) is longer the popup will be
   /// showed on opposite side of [child] and [popupBuilder] will be called with mirrored = true
-  final double requiredSpace;
+  //final double requiredSpace;
 
   /// Determines the padding of screen edges and clipping popups.
   /// (may be useful for hiding popups in app bar area)
-  final EdgeInsets screenPadding;
+  //final EdgeInsets screenPadding;
 
   /// Determines automatically opening mode of the popup
-  final PopupAutoOpen autoOpen;
+  //final PopupAutoOpen autoOpen;
 
   /// Determines automatically closing mode of the popup
   final PopupAutoClose autoClose;
@@ -285,6 +451,13 @@ class ComboState<T extends Combo> extends State<T> {
       widget.animation == PopupAnimation.fadeClose ||
       widget.animation == PopupAnimation.custom;
 
+  @protected
+  ComboParameters createDefaultParameters() => const ComboParameters();
+
+  @protected
+  ComboParameters getParameters() =>
+      ComboContext.of(context)?.parameters ?? createDefaultParameters();
+
   @override
   void initState() {
     super.initState();
@@ -330,13 +503,13 @@ class ComboState<T extends Combo> extends State<T> {
     setState(() {});
   }
 
-  bool get _catchHover =>
-      widget.autoOpen == PopupAutoOpen.hovered ||
+  bool _getCatchHover(ComboParameters parameters) =>
+      parameters.autoOpen == PopupAutoOpen.hovered ||
       widget.autoClose == PopupAutoClose.notHovered;
 
-  void _setHovered(bool value) async {
+  void _setHovered(ComboParameters parameters, bool value) async {
     if (!value && opened && _popupHovered) return;
-    _parent?._setHovered(value);
+    _parent?._setHovered(parameters, value);
     if (value == _hovered || !mounted) return;
     _hovered = value;
     if (value) {
@@ -344,7 +517,7 @@ class ComboState<T extends Combo> extends State<T> {
         _lastHovered = true;
         widget.hoveredChanged(true);
       }
-      if (!opened && widget.autoOpen == PopupAutoOpen.hovered) {
+      if (!opened && parameters.autoOpen == PopupAutoOpen.hovered) {
         open();
       }
     } else {
@@ -371,12 +544,14 @@ class ComboState<T extends Combo> extends State<T> {
   OverlayEntry _createOverlay() => OverlayEntry(builder: (context) {
         if (this.context == null) return null;
         _sizeCompleter = Completer<Offset>();
+        final parameters = getParameters();
+        final position = parameters.position;
+        final screenPadding = parameters.screenPadding;
         final RenderBox renderBox = this.context.findRenderObject();
         final size = renderBox.size;
         final screenSize = MediaQuery.of(context).size;
-        final requiredSpace = widget.requiredSpace ??
-            (widget.position == PopupPosition.left ||
-                    widget.position == PopupPosition.right
+        final requiredSpace = parameters.requiredSpace ??
+            (position == PopupPosition.left || position == PopupPosition.right
                 ? screenSize.width / 3
                 : screenSize.height / 3);
 
@@ -389,50 +564,48 @@ class ComboState<T extends Combo> extends State<T> {
           offset = mounted
               ? lastOffset = renderBox.localToGlobal(Offset.zero)
               : lastOffset;
-          mirrored = widget.autoMirror
+          mirrored = parameters.autoMirror
               ? () {
-                  final offsetx = widget.offset?.dx ?? 0;
-                  final offsety = widget.offset?.dx ?? 0;
+                  final offsetx = parameters.offset?.dx ?? 0;
+                  final offsety = parameters.offset?.dx ?? 0;
 
                   return () {
-                        switch (widget.position) {
+                        switch (position) {
                           case PopupPosition.left:
                             return offset.dx -
                                 offsetx -
-                                (widget.screenPadding?.left ?? 0);
+                                (screenPadding?.left ?? 0);
                           case PopupPosition.right:
                             return screenSize.width -
                                 offset.dx -
                                 size.width -
                                 offsetx -
-                                (widget.screenPadding?.right ?? 0);
+                                (screenPadding?.right ?? 0);
                           default:
                             return screenSize.height -
                                 offset.dy -
-                                (widget.position == PopupPosition.top ||
-                                        widget.position ==
-                                            PopupPosition.topMatch ||
-                                        widget.position ==
-                                            PopupPosition.topMinMatch
+                                (position == PopupPosition.top ||
+                                        position == PopupPosition.topMatch ||
+                                        position == PopupPosition.topMinMatch
                                     ? 0
                                     : size.height) -
                                 offsety -
-                                (widget.screenPadding?.bottom ?? 0);
+                                (screenPadding?.bottom ?? 0);
                         }
                       }() <
                       requiredSpace;
                 }()
               : false;
           popup = getPopup(context, mirrored);
-          if (_catchHover) {
+          if (_getCatchHover(parameters)) {
             popup = MouseRegion(
                 onEnter: (_) {
                   _popupHovered = true;
-                  _setHovered(true);
+                  _setHovered(parameters, true);
                 },
                 onExit: (_) {
                   _popupHovered = false;
-                  _setHovered(false);
+                  _setHovered(parameters, false);
                 },
                 child: popup);
           }
@@ -447,7 +620,7 @@ class ComboState<T extends Combo> extends State<T> {
             builder: (context, snapshot) {
               if (snapshot.data != null) updatePopup();
 
-              switch (widget.position) {
+              switch (position) {
                 case PopupPosition.bottomMatch:
                 case PopupPosition.topMatch:
                   popup = SizedBox(width: size.width, child: popup);
@@ -469,27 +642,25 @@ class ComboState<T extends Combo> extends State<T> {
                       future: _sizeCompleter.future,
                       builder: (context, snapshot) => Positioned(
                             top: (snapshot.data?.dy ?? 0) -
-                                (widget.screenPadding?.top ?? 0),
+                                (screenPadding?.top ?? 0),
                             left: (snapshot.data?.dx ?? 0) -
-                                (widget.screenPadding?.left ?? 0),
+                                (screenPadding?.left ?? 0),
                             child: _DynamicTransformFollower(
                               key: ValueKey(mirrored),
                               link: _layerLink,
                               showWhenUnlinked: false,
                               offsetBuilder: (popupSize) {
-                                final offsetx = widget.offset?.dx ?? 0;
-                                final offsety = widget.offset?.dy ?? 0;
-                                final position = mirrored &&
-                                        (widget.position ==
-                                                PopupPosition.left ||
-                                            widget.position ==
-                                                PopupPosition.right)
-                                    ? widget.position == PopupPosition.left
+                                final offsetx = parameters.offset?.dx ?? 0;
+                                final offsety = parameters.offset?.dy ?? 0;
+                                final pos = mirrored &&
+                                        (position == PopupPosition.left ||
+                                            position == PopupPosition.right)
+                                    ? position == PopupPosition.left
                                         ? PopupPosition.right
                                         : PopupPosition.left
-                                    : widget.position;
+                                    : position;
                                 final dx = () {
-                                  switch (position) {
+                                  switch (pos) {
                                     case PopupPosition.left:
                                       return -popupSize.width - offsetx;
                                     case PopupPosition.right:
@@ -503,13 +674,12 @@ class ComboState<T extends Combo> extends State<T> {
                                           screenSize.width -
                                               offset.dx -
                                               popupSize.width -
-                                              (widget.screenPadding?.right ??
-                                                  0));
+                                              (screenPadding?.right ?? 0));
                                   }
                                 }();
                                 final dy = () {
                                   var overlapped = false;
-                                  switch (position) {
+                                  switch (pos) {
                                     case PopupPosition.left:
                                     case PopupPosition.right:
                                       return math.min(
@@ -517,8 +687,7 @@ class ComboState<T extends Combo> extends State<T> {
                                           screenSize.height -
                                               offset.dy -
                                               popupSize.height -
-                                              (widget.screenPadding?.bottom ??
-                                                  0));
+                                              (screenPadding?.bottom ?? 0));
                                     case PopupPosition.top:
                                     case PopupPosition.topMatch:
                                     case PopupPosition.topMinMatch:
@@ -567,9 +736,9 @@ class ComboState<T extends Combo> extends State<T> {
           overlay = animate(1.0, _closeCompleter.future, overlay);
         }
 
-        if (widget.screenPadding != null) {
-          overlay = Padding(
-              padding: widget.screenPadding, child: ClipRect(child: overlay));
+        if (screenPadding != null) {
+          overlay =
+              Padding(padding: screenPadding, child: ClipRect(child: overlay));
         }
 
         if (widget.autoClose != PopupAutoClose.none &&
@@ -595,14 +764,15 @@ class ComboState<T extends Combo> extends State<T> {
     if (child == null) {
       child = const SizedBox();
     } else {
-      if (widget.autoOpen != PopupAutoOpen.none) {
-        final catchHover = _catchHover;
-        final openOnHover = widget.autoOpen == PopupAutoOpen.hovered;
+      final parameters = getParameters();
+      if (parameters.autoOpen != PopupAutoOpen.none) {
+        final catchHover = _getCatchHover(parameters);
+        final openOnHover = parameters.autoOpen == PopupAutoOpen.hovered;
 
         if (widget.onTap == null && (openOnHover && (kIsWeb || !hasPopup))) {
           child = MouseRegion(
-            onEnter: (_) => _setHovered(true),
-            onExit: (_) => _setHovered(false),
+            onEnter: (_) => _setHovered(parameters, true),
+            onExit: (_) => _setHovered(parameters, false),
             child: child,
           );
         } else {
@@ -621,7 +791,8 @@ class ComboState<T extends Combo> extends State<T> {
             },
             onLongPress:
                 openOnHover && !kIsWeb && hasPopup ? widget.onTap : null,
-            onHover: catchHover ? _setHovered : null,
+            onHover:
+                catchHover ? (value) => _setHovered(parameters, value) : null,
           );
         }
       }
@@ -1191,6 +1362,10 @@ class ListCombo<T> extends AwaitCombo {
 class ListComboState<W extends ListCombo<T>, T>
     extends AwaitComboStateBase<W, List<T>> {
   @override
+  ComboParameters createDefaultParameters() =>
+      super.getParameters().copyWith(position: PopupPosition.bottomMatch);
+
+  @override
   Widget buildContent(List<T> list, bool mirrored) => widget.listPopupBuilder(
       context,
       list,
@@ -1461,6 +1636,10 @@ class TypeaheadComboState<W extends TypeaheadCombo<T>, T>
   final FocusNode _focusNode;
   String _text;
   int get _textLength => _controller.text?.length ?? 0;
+
+  @override
+  ComboParameters getParameters() =>
+      super.getParameters().copyWith(autoOpen: PopupAutoOpen.none);
 
   @override
   void initState() {
@@ -1735,45 +1914,51 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
           getList: item.getChildren,
           itemBuilder: (context, item) => item == MenuItem.separator
               ? divider
-              : MenuItemCombo<T>(
-                  item: item,
-                  divider: divider,
-                  itemBuilder: showSubmenuArrows
-                      ? (context, item) {
-                          final widget = itemBuilder(context, item);
-                          return item.getChildren == null ||
-                                  widget is _ArrowedItem
-                              ? widget
-                              : _ArrowedItem(child: widget);
-                        }
-                      : itemBuilder,
-                  onItemTapped: onItemTapped,
-                  popupBuilder: popupBuilder ?? buildDefaultPopup,
-                  getIsSelectable: getIsSelectable,
-                  progressDecoratorBuilder: progressDecoratorBuilder,
-                  refreshOnOpened: refreshOnOpened,
-                  waitChanged: waitChanged,
-                  progressPosition: progressPosition,
-                  position: PopupPosition.right,
-                  offset: offset,
-                  autoMirror: true,
-                  requiredSpace: requiredSpace,
-                  screenPadding: screenPadding,
-                  autoOpen: PopupAutoOpen.hovered,
-                  autoClose: PopupAutoClose.notHovered,
-                  animation: animation,
-                  animationDuration: animationDuration,
-                  openedChanged: openedChanged,
-                  onTap: canTapOnFolder || item.getChildren == null
-                      ? () {
-                          Combo.closeAll();
-                          onItemTapped(item);
-                        }
-                      : null,
-                  focusColor: focusColor,
-                  hoverColor: hoverColor,
-                  highlightColor: highlightColor,
-                  splashColor: splashColor,
+              : ComboContext(
+                  parameters: ComboParameters(
+                    position: PopupPosition.right,
+                    autoOpen: PopupAutoOpen.hovered,
+                  ),
+                  child: MenuItemCombo<T>(
+                    item: item,
+                    divider: divider,
+                    itemBuilder: showSubmenuArrows
+                        ? (context, item) {
+                            final widget = itemBuilder(context, item);
+                            return item.getChildren == null ||
+                                    widget is _ArrowedItem
+                                ? widget
+                                : _ArrowedItem(child: widget);
+                          }
+                        : itemBuilder,
+                    onItemTapped: onItemTapped,
+                    popupBuilder: popupBuilder ?? buildDefaultPopup,
+                    getIsSelectable: getIsSelectable,
+                    progressDecoratorBuilder: progressDecoratorBuilder,
+                    refreshOnOpened: refreshOnOpened,
+                    waitChanged: waitChanged,
+                    progressPosition: progressPosition,
+                    position: PopupPosition.right,
+                    offset: offset,
+                    autoMirror: true,
+                    requiredSpace: requiredSpace,
+                    screenPadding: screenPadding,
+                    autoOpen: PopupAutoOpen.hovered,
+                    autoClose: PopupAutoClose.notHovered,
+                    animation: animation,
+                    animationDuration: animationDuration,
+                    openedChanged: openedChanged,
+                    onTap: canTapOnFolder || item.getChildren == null
+                        ? () {
+                            Combo.closeAll();
+                            onItemTapped(item);
+                          }
+                        : null,
+                    focusColor: focusColor,
+                    hoverColor: hoverColor,
+                    highlightColor: highlightColor,
+                    splashColor: splashColor,
+                  ),
                 ),
           onItemTapped: onItemTapped,
           popupBuilder: (context, list, itemBuilder, onItemTapped, mirrored,

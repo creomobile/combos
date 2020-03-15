@@ -529,6 +529,26 @@ class DemoItem<TProperties extends ComboProperties>
 class DemoItemState<TProperties extends ComboProperties>
     extends DemoItemStateBase<TProperties> {
   @override
+  Widget buildChild() {
+    final properties = widget.properties;
+    return ComboContext(
+        parameters: ComboParameters(
+          position: properties.position.value,
+          offset: Offset(
+            properties.offsetX.value?.toDouble(),
+            properties.offsetY.value?.toDouble(),
+          ),
+          autoMirror: properties.autoMirror.value,
+          screenPadding: EdgeInsets.symmetric(
+            horizontal: properties.screenPaddingHorizontal.value.toDouble(),
+            vertical: properties.screenPaddingVertical.value.toDouble(),
+          ),
+          autoOpen: properties.autoOpen.value,
+        ),
+        child: super.buildChild());
+  }
+
+  @override
   Widget buildProperties() {
     final editors = widget.properties.editors;
     return EditorsContext(
@@ -648,34 +668,4 @@ class MenuProperties extends ListProperties {
   @override
   List<Editor> get editors =>
       [showSubmenuArrows, canTapOnFolder, ...super.editors];
-}
-
-class IntTextInputFormatter extends TextInputFormatter {
-  IntTextInputFormatter({this.minValue, this.maxValue});
-
-  final int minValue;
-  final int maxValue;
-
-  String format(String oldValue, String newValue) {
-    if (newValue?.isNotEmpty != true) return '';
-    if (newValue.contains('-')) return oldValue;
-
-    var i = int.tryParse(newValue);
-    if (i == null) return oldValue;
-    if (minValue != null && i < minValue) i = minValue;
-    if (maxValue != null && i > maxValue) i = maxValue;
-
-    return i.toString();
-  }
-
-  @override
-  TextEditingValue formatEditUpdate(
-      TextEditingValue oldValue, TextEditingValue newValue) {
-    final value = format(oldValue.text, newValue.text);
-    return value != newValue.text
-        ? newValue.copyWith(
-            text: value,
-            selection: TextSelection.collapsed(offset: value.length))
-        : newValue.copyWith(text: value);
-  }
 }
