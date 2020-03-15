@@ -1362,8 +1362,9 @@ class ListCombo<T> extends AwaitCombo {
 class ListComboState<W extends ListCombo<T>, T>
     extends AwaitComboStateBase<W, List<T>> {
   @override
-  ComboParameters createDefaultParameters() =>
-      super.getParameters().copyWith(position: PopupPosition.bottomMatch);
+  ComboParameters createDefaultParameters() => super
+      .createDefaultParameters()
+      .copyWith(position: PopupPosition.bottomMatch);
 
   @override
   Widget buildContent(List<T> list, bool mirrored) => widget.listPopupBuilder(
