@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:combos/combos.dart';
+import 'package:demo_items/demo_items.dart';
+import 'package:editors/editors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter/services.dart';
@@ -25,784 +27,372 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   final _comboKey = GlobalKey<ComboState>();
   final _awaitComboKey = GlobalKey<ComboState>();
-  GlobalKey<_TestPopupState> _popupKey;
-  GlobalKey<_TestPopupState> _awaitPopupKey;
-  final _offsetXController = TextEditingController(text: '0');
-  final _offsetYController = TextEditingController(text: '0');
-  final _screenPaddingHorizontalController = TextEditingController(text: '0');
-  final _screenPaddingVerticalController = TextEditingController(text: '0');
-  final _animationDurationController = TextEditingController(text: '150');
-  final _requiredSpaceController = TextEditingController(text: '300');
-  final _popupWidthController = TextEditingController(text: '300');
-  final _itemsCountController = TextEditingController(text: '3');
-  final _spaceAboveController = TextEditingController(text: '16');
-  final _comboWidthController = TextEditingController(text: '200');
+  GlobalKey<_TestPopupState> _popupKey2;
+  GlobalKey<_TestPopupState> _awaitPopupKey2;
 
-  var _position = PopupPosition.bottomMinMatch;
-  var _offsetX = 0;
-  var _offsetY = 0;
-  var _screenPaddingHorizontal = 0;
-  var _screenPaddingVertical = 0;
-  var _requiredSpace = 300;
-  var _autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer;
-  var _autoOpen = PopupAutoOpen.tap;
-  var _animation = PopupAnimation.fade;
-  var _animationDurationMs = 150;
-  var _popupWidth = 300;
-  var _itemsCount = 3;
-  var _spaceAbove = 16;
-  var _comboWidth = 200;
-  var _comboAlignment = CrossAxisAlignment.center;
-
-  String _selectorItem;
-  String _typeaheadItem;
+  final _comboProperties = ComboProperties();
+  final _awaitComboProperties = AwaitComboProperties();
+  final _listComboProperties = ListProperties();
+  final _selectorProperties = SelectorProperties();
+  final _typeaheadProperties = TypeaheadProperties();
+  final _menuProperties = MenuProperties();
 
   @override
-  Widget build(BuildContext context) {
-    Widget buildEnumSelector<T>(String title, Iterable<T> values, T value,
-            void Function(T value) setValue) =>
-        Row(mainAxisSize: MainAxisSize.min, children: [
-          Text(title,
-              style:
-                  TextStyle(color: Colors.grey, fontWeight: FontWeight.bold)),
-          const SizedBox(width: 8),
-          DropdownButton<T>(
-            items: values
-                .map((_) => DropdownMenuItem<T>(
-                    value: _, child: Text(TextHelper.enumToString(_))))
-                .toList(),
-            value: value,
-            onChanged: (_) => setState(() => setValue(_)),
-          ),
-        ]);
-
-    Widget buildBoolSelector(
-            String title, bool value, void Function(bool value) setValue) =>
-        SizedBox(
-          width: 200,
-          child: CheckboxListTile(
-            value: value,
-            onChanged: (_) => setState(() => setValue(_)),
-            controlAffinity: ListTileControlAffinity.leading,
-            title: Text(title),
-            dense: true,
-          ),
-        );
-
-    Widget buildIntSelector(TextEditingController controller, String labelText,
-            void Function(int value) setValue,
-            [enabled = true]) =>
-        SizedBox(
-          width: 200,
-          child: TextField(
-            controller: controller,
-            enabled: enabled,
-            inputFormatters: [
-              IntTextInputFormatter(minValue: 0, maxValue: 5000)
-            ],
-            decoration: InputDecoration(labelText: labelText),
-            onChanged: (_) => setState(() => setValue(int.tryParse(_) ?? 0)),
-          ),
-        );
-
-    Widget buildComboContainer({String title, Widget child}) =>
-        Row(mainAxisSize: MainAxisSize.min, children: [
-          SizedBox(
-              width: 160,
-              child: Text(
-                title,
-                style: const TextStyle(
-                    color: Colors.grey, fontWeight: FontWeight.bold),
-              )),
-          child,
-        ]);
-
-    return Scaffold(
-      appBar: AppBar(
-        title: Text('Combo Samples'),
-      ),
-      body: ListView(
-        children: [
-          Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [
-            // properties
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Wrap(spacing: 24, runSpacing: 16, children: [
-                // position
-                buildEnumSelector<PopupPosition>('Position:',
-                    PopupPosition.values, _position, (_) => _position = _),
-
-                // offsetX
-                buildIntSelector(
-                    _offsetXController, 'Offset X', (_) => _offsetX = _),
-
-                // offsetY
-                buildIntSelector(
-                    _offsetYController, 'Offset Y', (_) => _offsetY = _),
-
-                // screen padding horizontal
-                buildIntSelector(
-                    _screenPaddingHorizontalController,
-                    'Screen Padding Horizontal',
-                    (_) => _screenPaddingHorizontal = _),
-
-                // screen padding vertical
-                buildIntSelector(
-                    _screenPaddingVerticalController,
-                    'Screen Padding Horizontal',
-                    (_) => _screenPaddingVertical = _),
-
-                // requiredSpace
-                buildIntSelector(_requiredSpaceController, 'Required Space',
-                    (_) => _requiredSpace = _),
-
-                // auto close
-                buildEnumSelector<PopupAutoClose>('Auto Close:',
-                    PopupAutoClose.values, _autoClose, (_) => _autoClose = _),
-
-                // auto open
-                buildEnumSelector<PopupAutoOpen>('Auto Open:',
-                    PopupAutoOpen.values, _autoOpen, (_) => _autoOpen = _),
-
-                // animation
-                buildEnumSelector<PopupAnimation>('Animation:',
-                    PopupAnimation.values, _animation, (_) => _animation = _),
-
-                // animationDuration
-                buildIntSelector(
-                    _animationDurationController,
-                    'Animation Duration (Ms)',
-                    (_) => _animationDurationMs = _,
-                    _animation != PopupAnimation.custom &&
-                        _animation != PopupAnimation.none),
-
-                // popup width
-                buildIntSelector(_popupWidthController, 'Popup Width',
-                    (_) => _popupWidth = _),
-
-                // items count
-                buildIntSelector(_itemsCountController, 'Items Count',
-                    (_) => _itemsCount = _),
-
-                // space above
-                buildIntSelector(_spaceAboveController, 'Space Above',
-                    (_) => _spaceAbove = _),
-
-                // space above
-                buildIntSelector(_comboWidthController, 'Combo Width',
-                    (_) => _comboWidth = _),
-
-                // horizontalBehavior
-                buildEnumSelector<CrossAxisAlignment>(
-                    'Combo Alignment:',
-                    [
-                      CrossAxisAlignment.start,
-                      CrossAxisAlignment.center,
-                      CrossAxisAlignment.end
-                    ],
-                    _comboAlignment,
-                    (_) => _comboAlignment = _),
-
-                // close
-                SizedBox(
-                  width: 200,
-                  child: RaisedButton(
-                      color: Colors.blueAccent,
-                      textColor: Colors.white,
-                      child: Text('Close Popup'),
-                      onPressed: Combo.closeAll),
-                )
-              ]),
-            ),
-
-            // combos
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-              child: Column(crossAxisAlignment: _comboAlignment, children: [
-                // space
-                SizedBox(
-                    key: ValueKey(_spaceAbove), height: _spaceAbove.toDouble()),
-
-                // Combo
-                buildComboContainer(
-                  title: 'Combo',
-                  child: Material(
-                    borderRadius: BorderRadius.circular(29),
-                    child: Combo(
-                      key: _comboKey,
-                      position: _position,
-                      offset: Offset(_offsetX.toDouble(), _offsetY.toDouble()),
-                      requiredSpace: _requiredSpace.toDouble(),
-                      screenPadding: EdgeInsets.symmetric(
-                          horizontal: _screenPaddingHorizontal.toDouble(),
-                          vertical: _screenPaddingVertical.toDouble()),
-                      autoClose: _autoClose,
-                      autoOpen: _autoOpen,
-                      animation: _animation,
-                      animationDuration:
-                          Duration(milliseconds: _animationDurationMs),
-                      openedChanged: (isOpened) {
-                        if (!isOpened && _animation == PopupAnimation.custom) {
-                          _popupKey.currentState?.animatedClose();
-                        }
-                      },
-                      child: Container(
-                        width: _comboWidth.toDouble(),
-                        height: 58,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                              begin: Alignment.topCenter,
-                              end: Alignment.bottomCenter,
-                              colors: [
-                                Colors.blueAccent.withOpacity(0.2),
-                                Colors.blueAccent.withOpacity(0.0),
-                                Colors.blueAccent.withOpacity(0.0),
-                                Colors.blueAccent.withOpacity(0.2),
-                              ]),
-                          borderRadius: BorderRadius.circular(29),
-                          border: Border.all(color: Colors.blueAccent),
-                        ),
-                        child: Row(
-                          children: [
-                            const Expanded(
-                                child: Text('Combo Child',
-                                    textAlign: TextAlign.center,
-                                    style:
-                                        TextStyle(color: Colors.blueAccent))),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 16),
-                              child: Icon(Icons.arrow_drop_down,
-                                  color: Colors.blueAccent),
-                            ),
-                          ],
-                        ),
-                      ),
-                      popupBuilder: (context, mirrored) => TestPopup(
-                          key: _popupKey = GlobalKey<_TestPopupState>(),
-                          mirrored: mirrored,
-                          width: _popupWidth.toDouble(),
-                          itemsCount: _itemsCount,
-                          onClose: () => _comboKey.currentState?.close(),
-                          animated: _animation == PopupAnimation.custom,
-                          radius: const Radius.circular(24)),
-                      highlightColor: Colors.blueAccent.withOpacity(0.1),
-                      splashColor: Colors.blueAccent.withOpacity(0.1),
-                      hoverColor: Colors.blueAccent.withOpacity(0.1),
+  Widget build(BuildContext context) => Scaffold(
+        appBar: AppBar(
+          title: Text('Combo Samples'),
+        ),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+              // combo
+              DemoItem<ComboProperties>(
+                properties: _comboProperties,
+                childBuilder: (properties) => SizedBox(
+                  width: properties.comboWidth.value?.toDouble(),
+                  child: Combo(
+                    key: _comboKey,
+                    position: properties.position.value,
+                    offset: Offset(
+                      properties.offsetX.value?.toDouble(),
+                      properties.offsetY.value?.toDouble(),
                     ),
+                    autoMirror: properties.autoMirror.value,
+                    requiredSpace: properties.requiredSpace.value?.toDouble(),
+                    screenPadding: EdgeInsets.symmetric(
+                      horizontal:
+                          properties.screenPaddingHorizontal.value?.toDouble(),
+                      vertical:
+                          properties.screenPaddingVertical.value?.toDouble(),
+                    ),
+                    autoOpen: properties.autoOpen.value,
+                    autoClose: properties.autoClose.value,
+                    animation: properties.animation.value,
+                    animationDuration: Duration(
+                        milliseconds: properties.animationDurationMs.value),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text('Combo'),
+                    ),
+                    popupBuilder: (context, mirrored) => TestPopup(
+                      key: _popupKey2 = GlobalKey<_TestPopupState>(),
+                      mirrored: mirrored,
+                      animated:
+                          properties.animation.value == PopupAnimation.custom,
+                      itemsCount: properties.itemsCount.value ?? 0,
+                      onClose: () => _comboKey.currentState.close(),
+                      width: properties.popupWidth.value?.toDouble(),
+                    ),
+                    openedChanged: (isOpened) {
+                      if (!isOpened &&
+                          properties.animation.value == PopupAnimation.custom) {
+                        _popupKey2.currentState?.animatedClose();
+                      }
+                    },
                   ),
                 ),
+              ),
 
-                const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-                // AwaitCombo
-                buildComboContainer(
-                  title: 'AwaitCombo',
-                  child: Material(
-                    borderRadius: BorderRadius.circular(29),
-                    child: Builder(builder: (context) {
-                      final horizontal = _position == PopupPosition.left ||
-                          _position == PopupPosition.right;
-                      return AwaitCombo(
-                        key: _awaitComboKey,
-                        refreshOnOpened: true,
-                        progressPosition: horizontal
-                            ? ProgressPosition.child
-                            : ProgressPosition.popup,
-                        progressDecoratorBuilder:
-                            (context, waiting, mirrored, child) =>
-                                ProgressDecorator(
-                          waiting: waiting,
-                          mirrored: mirrored,
-                          child: child,
-                          progressBackgroundColor:
-                              horizontal ? Colors.transparent : null,
-                          progressValueColor: horizontal
-                              ? AlwaysStoppedAnimation(
-                                  Colors.blueAccent.withOpacity(0.2))
-                              : null,
-                          progressHeight: horizontal ? null : 2.0,
-                        ),
-                        position: _position,
-                        offset:
-                            Offset(_offsetX.toDouble(), _offsetY.toDouble()),
-                        requiredSpace: _requiredSpace.toDouble(),
-                        screenPadding: EdgeInsets.symmetric(
-                            horizontal: _screenPaddingHorizontal.toDouble(),
-                            vertical: _screenPaddingVertical.toDouble()),
-                        autoClose: _autoClose,
-                        autoOpen: _autoOpen,
-                        animation: _animation,
-                        animationDuration:
-                            Duration(milliseconds: _animationDurationMs),
-                        openedChanged: (isOpened) {
-                          if (!isOpened &&
-                              _animation == PopupAnimation.custom) {
-                            _popupKey.currentState?.animatedClose();
-                          }
-                        },
-                        child: Container(
-                          width: _comboWidth.toDouble(),
-                          height: 58,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.blueAccent.withOpacity(0.2),
-                                  Colors.blueAccent.withOpacity(0.0),
-                                  Colors.blueAccent.withOpacity(0.0),
-                                  Colors.blueAccent.withOpacity(0.2),
-                                ]),
-                            borderRadius: BorderRadius.circular(29),
-                            border: Border.all(color: Colors.blueAccent),
-                          ),
-                          child: Row(
-                            children: [
-                              const Expanded(
-                                  child: Text('AwaitCombo Child',
-                                      textAlign: TextAlign.center,
-                                      style:
-                                          TextStyle(color: Colors.blueAccent))),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16),
-                                child: Icon(Icons.arrow_drop_down,
-                                    color: Colors.blueAccent),
-                              ),
-                            ],
-                          ),
-                        ),
-                        popupBuilder: (context) async {
-                          await Future.delayed(Duration(milliseconds: 500));
-                          return TestPopup(
-                              key: _awaitPopupKey =
-                                  GlobalKey<_TestPopupState>(),
-                              mirrored: false,
-                              width: _popupWidth.toDouble(),
-                              itemsCount: _itemsCount,
-                              onClose: () => _comboKey.currentState?.close(),
-                              animated: _animation == PopupAnimation.custom,
-                              radius: const Radius.circular(24));
-                        },
-                        highlightColor: Colors.blueAccent.withOpacity(0.1),
-                        splashColor: Colors.blueAccent.withOpacity(0.1),
-                        hoverColor: Colors.blueAccent.withOpacity(0.1),
+              // await combo
+              DemoItem<AwaitComboProperties>(
+                properties: _awaitComboProperties,
+                childBuilder: (properties) => SizedBox(
+                  width: properties.comboWidth.value?.toDouble(),
+                  child: AwaitCombo(
+                    key: _awaitComboKey,
+                    position: properties.position.value,
+                    offset: Offset(
+                      properties.offsetX.value?.toDouble(),
+                      properties.offsetY.value?.toDouble(),
+                    ),
+                    autoMirror: properties.autoMirror.value,
+                    requiredSpace: properties.requiredSpace.value?.toDouble(),
+                    screenPadding: EdgeInsets.symmetric(
+                      horizontal:
+                          properties.screenPaddingHorizontal.value?.toDouble(),
+                      vertical:
+                          properties.screenPaddingVertical.value?.toDouble(),
+                    ),
+                    autoOpen: properties.autoOpen.value,
+                    autoClose: properties.autoClose.value,
+                    animation: properties.animation.value,
+                    animationDuration: Duration(
+                        milliseconds: properties.animationDurationMs.value),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16.0),
+                      child: Text('Await Combo'),
+                    ),
+                    popupBuilder: (context) async {
+                      await Future.delayed(const Duration(milliseconds: 500));
+                      return TestPopup(
+                        key: _awaitPopupKey2 = GlobalKey<_TestPopupState>(),
+                        mirrored: false,
+                        animated:
+                            properties.animation.value == PopupAnimation.custom,
+                        itemsCount: properties.itemsCount.value ?? 0,
+                        onClose: () => _awaitComboKey.currentState.close(),
+                        width: properties.popupWidth.value?.toDouble(),
                       );
-                    }),
+                    },
+                    openedChanged: (isOpened) {
+                      if (!isOpened &&
+                          properties.animation.value == PopupAnimation.custom) {
+                        _awaitPopupKey2.currentState?.animatedClose();
+                      }
+                    },
                   ),
                 ),
+              ),
 
-                const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-                // ListCombo
-                buildComboContainer(
-                  title: 'ListCombo',
-                  child: Material(
-                    borderRadius: BorderRadius.circular(29),
-                    child: Builder(builder: (context) {
-                      final horizontal = _position == PopupPosition.left ||
-                          _position == PopupPosition.right;
-                      return ListCombo<String>(
-                        getList: () async {
-                          await Future.delayed(Duration(milliseconds: 500));
-                          return Iterable.generate(_itemsCount)
-                              .map((_) => 'Item ${_ + 1}')
-                              .toList();
-                        },
-                        itemBuilder: (context, item) =>
-                            ListTile(title: Text(item)),
-                        onItemTapped: (item) {
-                          final dialog =
-                              AlertDialog(content: Text('$item tapped!'));
-                          showDialog(context: context, builder: (_) => dialog);
-                        },
-                        popupBuilder: _position == PopupPosition.bottomMatch ||
-                                _position == PopupPosition.topMatch
-                            ? null
-                            : (context, list, itemBuilder, onItemTapped,
-                                    mirrored, getIsSelectable) =>
-                                ListPopup<String>(
-                                    list: list,
-                                    itemBuilder: itemBuilder,
-                                    onItemTapped: onItemTapped,
-                                    width: 300,
-                                    getIsSelectable: getIsSelectable),
-                        refreshOnOpened: true,
-                        progressPosition: horizontal
-                            ? ProgressPosition.child
-                            : ProgressPosition.popup,
-                        progressDecoratorBuilder:
-                            (context, waiting, mirrored, child) =>
-                                ProgressDecorator(
-                          waiting: waiting,
-                          mirrored: mirrored,
-                          child: child,
-                          progressBackgroundColor:
-                              horizontal ? Colors.transparent : null,
-                          progressValueColor: horizontal
-                              ? AlwaysStoppedAnimation(
-                                  Colors.blueAccent.withOpacity(0.2))
-                              : null,
-                          progressHeight: horizontal ? null : 2.0,
-                        ),
-                        position: _position,
-                        offset:
-                            Offset(_offsetX.toDouble(), _offsetY.toDouble()),
-                        requiredSpace: _requiredSpace.toDouble(),
-                        screenPadding: EdgeInsets.symmetric(
-                            horizontal: _screenPaddingHorizontal.toDouble(),
-                            vertical: _screenPaddingVertical.toDouble()),
-                        autoClose: _autoClose,
-                        autoOpen: _autoOpen,
-                        animation: _animation,
-                        animationDuration:
-                            Duration(milliseconds: _animationDurationMs),
-                        openedChanged: (isOpened) {
-                          if (!isOpened &&
-                              _animation == PopupAnimation.custom) {
-                            _popupKey.currentState?.animatedClose();
-                          }
-                        },
-                        child: Container(
-                          width: _comboWidth.toDouble(),
-                          height: 58,
-                          decoration: BoxDecoration(
-                            gradient: LinearGradient(
-                                begin: Alignment.topCenter,
-                                end: Alignment.bottomCenter,
-                                colors: [
-                                  Colors.blueAccent.withOpacity(0.2),
-                                  Colors.blueAccent.withOpacity(0.0),
-                                  Colors.blueAccent.withOpacity(0.0),
-                                  Colors.blueAccent.withOpacity(0.2),
-                                ]),
-                            borderRadius: BorderRadius.circular(29),
-                            border: Border.all(color: Colors.blueAccent),
-                          ),
-                          child: Row(
-                            children: [
-                              const Expanded(
-                                  child: Text('ListCombo Child',
-                                      textAlign: TextAlign.center,
-                                      style:
-                                          TextStyle(color: Colors.blueAccent))),
-                              const Padding(
-                                padding: EdgeInsets.symmetric(horizontal: 16),
-                                child: Icon(Icons.arrow_drop_down,
-                                    color: Colors.blueAccent),
-                              ),
-                            ],
-                          ),
-                        ),
-                        highlightColor: Colors.blueAccent.withOpacity(0.1),
-                        splashColor: Colors.blueAccent.withOpacity(0.1),
-                        hoverColor: Colors.blueAccent.withOpacity(0.1),
-                      );
-                    }),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // ListCombo
-                buildComboContainer(
-                  title: 'SelectorCombo',
-                  child: Container(
-                    width: _comboWidth.toDouble(),
-                    height: 58,
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.blueAccent.withOpacity(0.2),
-                            Colors.blueAccent.withOpacity(0.0),
-                            Colors.blueAccent.withOpacity(0.0),
-                            Colors.blueAccent.withOpacity(0.2),
-                          ]),
-                      borderRadius: BorderRadius.circular(29),
-                      border: Border.all(color: Colors.blueAccent),
+              // list
+              DemoItem<ListProperties>(
+                properties: _listComboProperties,
+                childBuilder: (properties) => SizedBox(
+                  width: properties.comboWidth.value?.toDouble(),
+                  child: ListCombo<String>(
+                    position: properties.position.value,
+                    offset: Offset(
+                      properties.offsetX.value?.toDouble(),
+                      properties.offsetY.value?.toDouble(),
                     ),
-                    child: Material(
-                      color: Colors.transparent,
-                      borderRadius: BorderRadius.circular(29),
-                      child: Builder(builder: (context) {
-                        final horizontal = _position == PopupPosition.left ||
-                            _position == PopupPosition.right;
-                        return SelectorCombo<String>(
-                          selected: _selectorItem,
-                          childBuilder: (context, item) => item == null
-                              ? const Center(
-                                  child: Text('<None>',
-                                      style: TextStyle(color: Colors.grey)),
-                                )
-                              : ListTile(
-                                  title: Text(item,
-                                      style: const TextStyle(
-                                          color: Colors.blueAccent)),
-                                ),
-                          getList: () async {
-                            await Future.delayed(Duration(milliseconds: 500));
-                            return Iterable.generate(_itemsCount)
-                                .map((_) => 'Item ${_ + 1}')
-                                .toList();
-                          },
-                          itemBuilder: (context, item) =>
-                              ListTile(title: Text(item ?? '')),
-                          onItemTapped: (item) =>
-                              setState(() => _selectorItem = item),
-                          popupBuilder:
-                              _position == PopupPosition.bottomMatch ||
-                                      _position == PopupPosition.topMatch
-                                  ? null
-                                  : (context, list, itemBuilder, onItemTapped,
-                                          mirrored, getIsSelectable) =>
-                                      ListPopup<String>(
-                                          list: list,
-                                          itemBuilder: itemBuilder,
-                                          onItemTapped: onItemTapped,
-                                          width: 300,
-                                          getIsSelectable: getIsSelectable),
-                          refreshOnOpened: true,
-                          progressPosition: horizontal
-                              ? ProgressPosition.child
-                              : ProgressPosition.popup,
-                          progressDecoratorBuilder:
-                              (context, waiting, mirrored, child) =>
-                                  ProgressDecorator(
-                            waiting: waiting,
-                            mirrored: mirrored,
-                            child: child,
-                            progressBackgroundColor:
-                                horizontal ? Colors.transparent : null,
-                            progressValueColor: horizontal
-                                ? AlwaysStoppedAnimation(
-                                    Colors.blueAccent.withOpacity(0.2))
-                                : null,
-                            progressHeight: horizontal ? null : 2.0,
-                          ),
-                          position: _position,
-                          offset:
-                              Offset(_offsetX.toDouble(), _offsetY.toDouble()),
-                          requiredSpace: _requiredSpace.toDouble(),
-                          screenPadding: EdgeInsets.symmetric(
-                              horizontal: _screenPaddingHorizontal.toDouble(),
-                              vertical: _screenPaddingVertical.toDouble()),
-                          autoClose: _autoClose,
-                          autoOpen: _autoOpen,
-                          animation: _animation,
-                          animationDuration:
-                              Duration(milliseconds: _animationDurationMs),
-                          openedChanged: (isOpened) {
-                            if (!isOpened &&
-                                _animation == PopupAnimation.custom) {
-                              _popupKey.currentState?.animatedClose();
-                            }
-                          },
-                          highlightColor: Colors.blueAccent.withOpacity(0.1),
-                          splashColor: Colors.blueAccent.withOpacity(0.1),
-                          hoverColor: Colors.blueAccent.withOpacity(0.1),
-                        );
-                      }),
+                    autoMirror: properties.autoMirror.value,
+                    requiredSpace: properties.requiredSpace.value?.toDouble(),
+                    screenPadding: EdgeInsets.symmetric(
+                      horizontal:
+                          properties.screenPaddingHorizontal.value?.toDouble(),
+                      vertical:
+                          properties.screenPaddingVertical.value?.toDouble(),
                     ),
+                    autoOpen: properties.autoOpen.value,
+                    autoClose: properties.autoClose.value,
+                    animation: properties.animation.value,
+                    animationDuration: Duration(
+                        milliseconds: properties.animationDurationMs.value),
+                    refreshOnOpened: properties.refreshOnOpened.value,
+                    getList: () async {
+                      await Future.delayed(const Duration(milliseconds: 500));
+                      return Iterable.generate(properties.itemsCount.value)
+                          .map((e) => 'Item ${e + 1}')
+                          .toList();
+                    },
+                    itemBuilder: (context, item) =>
+                        ListTile(title: Text(item ?? '')),
+                    child: const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text('List Combo'),
+                    ),
+                    onItemTapped: (value) {},
+                    popupBuilder: properties.position.value ==
+                                PopupPosition.bottomMatch ||
+                            properties.position.value == PopupPosition.topMatch
+                        ? null
+                        : (context, list, itemBuilder, onItemTapped, mirrored,
+                                getIsSelectable) =>
+                            ListPopup<String>(
+                                list: list,
+                                itemBuilder: itemBuilder,
+                                onItemTapped: onItemTapped,
+                                width: properties.popupWidth.value.toDouble(),
+                                getIsSelectable: getIsSelectable),
                   ),
                 ),
+              ),
 
-                const SizedBox(height: 16),
+              const SizedBox(height: 16),
 
-                // TypeaheadCombo
-                buildComboContainer(
-                  title: 'TypeaheadCombo',
-                  child: Container(
-                    width: _comboWidth.toDouble(),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(29),
-                      gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            Colors.blueAccent.withOpacity(0.2),
-                            Colors.blueAccent.withOpacity(0.0),
-                            Colors.blueAccent.withOpacity(0.0),
-                            Colors.blueAccent.withOpacity(0.2),
-                          ]),
+              // selector
+              DemoItem<SelectorProperties>(
+                properties: _selectorProperties,
+                childBuilder: (properties) => SizedBox(
+                  width: properties.comboWidth.value?.toDouble(),
+                  child: SelectorCombo<String>(
+                    position: properties.position.value,
+                    offset: Offset(
+                      properties.offsetX.value?.toDouble(),
+                      properties.offsetY.value?.toDouble(),
                     ),
-                    child: Builder(builder: (context) {
-                      final horizontal = _position == PopupPosition.left ||
-                          _position == PopupPosition.right;
-                      return TypeaheadCombo<String>(
-                        selected: _typeaheadItem,
-                        onItemTapped: (_) => setState(() => _typeaheadItem = _),
-                        getList: (text) async {
-                          await Future.delayed(Duration(seconds: 1));
-                          return [
-                            'Item1',
-                            'Item2',
-                            'Item3',
-                            'Item4',
-                            'Item5',
-                            'Item6',
-                            'Item7',
-                          ];
-                        },
-                        itemBuilder: (context, item) => ListTile(
-                            selected: item == _typeaheadItem,
-                            title: Text(item)),
-                        getItemText: (item) => item,
-                        //minTextLength: 0,
-                        //popupWidth: _popupWidth.toDouble(),
-                        //popupMaxHeight: _popupHeight.toDouble(),
-                        decoration: InputDecoration(
-                          labelText: 'Sample Typeahead',
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(29),
-                            borderSide: BorderSide(color: Colors.blueAccent),
-                          ),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(29),
-                            borderSide: BorderSide(color: Colors.blueAccent),
-                          ),
-                          labelStyle: TextStyle(color: Colors.blueAccent),
-                        ),
-                        popupBuilder: _position == PopupPosition.bottomMatch ||
-                                _position == PopupPosition.topMatch
-                            ? null
-                            : (context, list, itemBuilder, onItemTapped,
-                                    mirrored, getIsSelectable) =>
-                                ListPopup<String>(
-                                    list: list,
-                                    itemBuilder: itemBuilder,
-                                    onItemTapped: onItemTapped,
-                                    width: 300,
-                                    getIsSelectable: getIsSelectable),
-                        progressPosition: horizontal
-                            ? ProgressPosition.child
-                            : ProgressPosition.popup,
-                        progressDecoratorBuilder:
-                            (context, waiting, mirrored, child) =>
-                                ProgressDecorator(
-                          waiting: waiting,
-                          mirrored: mirrored,
-                          child: child,
-                          progressBackgroundColor:
-                              horizontal ? Colors.transparent : null,
-                          progressValueColor: horizontal
-                              ? AlwaysStoppedAnimation(
-                                  Colors.blueAccent.withOpacity(0.2))
-                              : null,
-                          progressHeight: horizontal ? null : 2.0,
-                        ),
-                        position: _position,
-                        offset:
-                            Offset(_offsetX.toDouble(), _offsetY.toDouble()),
-                        requiredSpace: _requiredSpace.toDouble(),
-                        screenPadding: EdgeInsets.symmetric(
-                            horizontal: _screenPaddingHorizontal.toDouble(),
-                            vertical: _screenPaddingVertical.toDouble()),
-                        animation: _animation,
-                        animationDuration:
-                            Duration(milliseconds: _animationDurationMs),
-                      );
-                    }),
+                    autoMirror: properties.autoMirror.value,
+                    requiredSpace: properties.requiredSpace.value?.toDouble(),
+                    screenPadding: EdgeInsets.symmetric(
+                      horizontal:
+                          properties.screenPaddingHorizontal.value?.toDouble(),
+                      vertical:
+                          properties.screenPaddingVertical.value?.toDouble(),
+                    ),
+                    autoOpen: properties.autoOpen.value,
+                    autoClose: properties.autoClose.value,
+                    animation: properties.animation.value,
+                    animationDuration: Duration(
+                        milliseconds: properties.animationDurationMs.value),
+                    refreshOnOpened: properties.refreshOnOpened.value,
+                    getList: () async {
+                      await Future.delayed(const Duration(milliseconds: 500));
+                      return Iterable.generate(properties.itemsCount.value)
+                          .map((e) => 'Item ${e + 1}')
+                          .toList();
+                    },
+                    selected: properties.selected.value,
+                    itemBuilder: (context, item) =>
+                        ListTile(title: Text(item ?? '')),
+                    childBuilder: (context, item) =>
+                        ListTile(title: Text(item ?? 'Selector Combo')),
+                    onItemTapped: (value) =>
+                        setState(() => properties.selected.value = value),
+                    popupBuilder: properties.position.value ==
+                                PopupPosition.bottomMatch ||
+                            properties.position.value == PopupPosition.topMatch
+                        ? null
+                        : (context, list, itemBuilder, onItemTapped, mirrored,
+                                getIsSelectable) =>
+                            ListPopup<String>(
+                                list: list,
+                                itemBuilder: itemBuilder,
+                                onItemTapped: onItemTapped,
+                                width: properties.popupWidth.value.toDouble(),
+                                getIsSelectable: getIsSelectable),
                   ),
                 ),
+              ),
 
-                const SizedBox(height: 16),
+              // typeahead
+              DemoItem<TypeaheadProperties>(
+                properties: _typeaheadProperties,
+                childBuilder: (properties) => SizedBox(
+                  width: properties.comboWidth.value?.toDouble(),
+                  child: TypeaheadCombo<String>(
+                    position: properties.position.value,
+                    offset: Offset(
+                      properties.offsetX.value?.toDouble(),
+                      properties.offsetY.value?.toDouble(),
+                    ),
+                    autoMirror: properties.autoMirror.value,
+                    requiredSpace: properties.requiredSpace.value?.toDouble(),
+                    screenPadding: EdgeInsets.symmetric(
+                      horizontal:
+                          properties.screenPaddingHorizontal.value?.toDouble(),
+                      vertical:
+                          properties.screenPaddingVertical.value?.toDouble(),
+                    ),
+                    animation: properties.animation.value,
+                    animationDuration: Duration(
+                        milliseconds: properties.animationDurationMs.value),
+                    getList: (text) async {
+                      await Future.delayed(const Duration(milliseconds: 500));
+                      return Iterable.generate(properties.itemsCount.value)
+                          .map((e) => 'Item ${e + 1}')
+                          .toList();
+                    },
+                    enabled: properties.enabled.value,
+                    minTextLength: properties.minTextLength.value,
+                    delay: Duration(milliseconds: properties.delayMs.value),
+                    cleanAfterSelection: properties.cleanAfterSelection.value,
+                    decoration: InputDecoration(labelText: 'Typeahead Combo'),
+                    selected: properties.selected.value,
+                    itemBuilder: (context, item) =>
+                        ListTile(title: Text(item ?? '')),
+                    getItemText: (item) => item,
+                    onItemTapped: (value) =>
+                        setState(() => properties.selected.value = value),
+                    popupBuilder: properties.position.value ==
+                                PopupPosition.bottomMatch ||
+                            properties.position.value == PopupPosition.topMatch
+                        ? null
+                        : (context, list, itemBuilder, onItemTapped, mirrored,
+                                getIsSelectable) =>
+                            ListPopup<String>(
+                                list: list,
+                                itemBuilder: itemBuilder,
+                                onItemTapped: onItemTapped,
+                                width: properties.popupWidth.value.toDouble(),
+                                getIsSelectable: getIsSelectable),
+                  ),
+                ),
+              ),
 
-                // MenuItemCombo
-                buildComboContainer(
-                    title: 'MenuItemCombo',
-                    child: SizedBox(
-                      width: _comboWidth.toDouble(),
-                      child: Row(
-                        children: [
-                          MenuItemCombo<String>(
-                            item: MenuItem(
-                                'File',
-                                () => [
-                                      MenuItem('New'),
-                                      MenuItem.separator,
-                                      MenuItem('Open'),
-                                      MenuItem('Save'),
-                                      MenuItem('Save As...'),
-                                      MenuItem.separator,
-                                      MenuItem(
-                                          'Recent',
-                                          () => [
-                                                MenuItem('Folders', () async {
-                                                  await Future.delayed(Duration(
-                                                      milliseconds: 500));
-                                                  return [
-                                                    MenuItem('Folder 1'),
-                                                    MenuItem('Folder 2'),
-                                                    MenuItem('Folder 3'),
-                                                  ];
-                                                }),
-                                                MenuItem('Files', () async {
-                                                  await Future.delayed(Duration(
-                                                      milliseconds: 500));
-                                                  return [
-                                                    MenuItem('File 1'),
-                                                    MenuItem('File 2'),
-                                                    MenuItem('File 3'),
-                                                  ];
-                                                }),
-                                              ]),
-                                      MenuItem.separator,
-                                      MenuItem('Exit'),
-                                    ]),
-                            itemBuilder: (context, item) => Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: Text(item.item),
-                            ),
-                            onItemTapped: (value) {
-                              final dialog = AlertDialog(
-                                  content: Text('${value.item} tapped!'));
-                              showDialog(
-                                  context: context, builder: (_) => dialog);
-                            },
-                            autoOpen: _autoOpen,
-                          ),
-                          MenuItemCombo<String>(
-                            item: MenuItem(
-                                'Edit',
-                                () => [
-                                      MenuItem('Undo'),
-                                      MenuItem('Redo'),
-                                      MenuItem.separator,
-                                      MenuItem('Cut'),
-                                      MenuItem('Copy'),
-                                      MenuItem('Paste'),
-                                      MenuItem.separator,
-                                      MenuItem('Find'),
-                                    ]),
-                            itemBuilder: (context, item) => Padding(
-                              padding: const EdgeInsets.all(16),
-                              child: item.item == 'Edit'
-                                  ? Text(item.item)
-                                  : ConstrainedBox(
-                                      constraints: BoxConstraints(minWidth: 80),
-                                      child: Text(item.item)),
-                            ),
-                            onItemTapped: (value) {
-                              final dialog = AlertDialog(
-                                  content: Text('${value.item} tapped!'));
-                              showDialog(
-                                  context: context, builder: (_) => dialog);
-                            },
-                            autoOpen: _autoOpen,
-                          ),
-                        ],
-                      ),
-                    )),
-              ]),
-            ),
+              const SizedBox(height: 16),
 
-            const SizedBox(height: 800),
-          ])
-        ],
-      ),
-    );
-  }
+              // menu
+              DemoItem<MenuProperties>(
+                properties: _menuProperties,
+                childBuilder: (properties) => SizedBox(
+                  width: properties.comboWidth.value?.toDouble(),
+                  child: MenuItemCombo<String>(
+                    position: properties.position.value,
+                    offset: Offset(
+                      properties.offsetX.value?.toDouble(),
+                      properties.offsetY.value?.toDouble(),
+                    ),
+                    autoMirror: properties.autoMirror.value,
+                    requiredSpace: properties.requiredSpace.value?.toDouble(),
+                    screenPadding: EdgeInsets.symmetric(
+                      horizontal:
+                          properties.screenPaddingHorizontal.value?.toDouble(),
+                      vertical:
+                          properties.screenPaddingVertical.value?.toDouble(),
+                    ),
+                    autoOpen: properties.autoOpen.value,
+                    autoClose: properties.autoClose.value,
+                    animation: properties.animation.value,
+                    animationDuration: Duration(
+                        milliseconds: properties.animationDurationMs.value),
+                    refreshOnOpened: properties.refreshOnOpened.value,
+                    itemBuilder: (context, item) => Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Text(item.item),
+                    ),
+                    onItemTapped: (value) {
+                      final dialog =
+                          AlertDialog(content: Text('${value.item} tapped!'));
+                      showDialog(context: context, builder: (_) => dialog);
+                    },
+                    showSubmenuArrows: properties.showSubmenuArrows.value,
+                    canTapOnFolder: properties.canTapOnFolder.value,
+                    item: MenuItem(
+                        'Menu Item Combo',
+                        () => [
+                              MenuItem('New'),
+                              MenuItem.separator,
+                              MenuItem('Open'),
+                              MenuItem('Save'),
+                              MenuItem('Save As...'),
+                              MenuItem.separator,
+                              MenuItem(
+                                  'Recent',
+                                  () => [
+                                        MenuItem('Folders', () async {
+                                          await Future.delayed(
+                                              Duration(milliseconds: 500));
+                                          return [
+                                            MenuItem('Folder 1'),
+                                            MenuItem('Folder 2'),
+                                            MenuItem('Folder 3'),
+                                          ];
+                                        }),
+                                        MenuItem('Files', () async {
+                                          await Future.delayed(
+                                              Duration(milliseconds: 500));
+                                          return [
+                                            MenuItem('File 1'),
+                                            MenuItem('File 2'),
+                                            MenuItem('File 3'),
+                                          ];
+                                        }),
+                                      ]),
+                              MenuItem.separator,
+                              MenuItem('Exit'),
+                            ]),
+                  ),
+                ),
+              ),
+            ]),
+          ],
+        ),
+      );
 }
 
 class TestPopup extends StatefulWidget {
@@ -925,6 +515,141 @@ class _TestPopupState extends State<TestPopup>
   }
 }
 
+class DemoItem<TProperties extends ComboProperties>
+    extends DemoItemBase<TProperties> {
+  const DemoItem({
+    Key key,
+    @required TProperties properties,
+    @required ChildBuilder<TProperties> childBuilder,
+  }) : super(key: key, properties: properties, childBuilder: childBuilder);
+  @override
+  DemoItemState<TProperties> createState() => DemoItemState<TProperties>();
+}
+
+class DemoItemState<TProperties extends ComboProperties>
+    extends DemoItemStateBase<TProperties> {
+  @override
+  Widget buildProperties() {
+    final editors = widget.properties.editors;
+    return EditorsContext(
+      child: ListView.separated(
+        padding: const EdgeInsets.all(16),
+        shrinkWrap: true,
+        physics: ClampingScrollPhysics(),
+        itemCount: editors.length,
+        itemBuilder: (context, index) => editors[index].build(),
+        separatorBuilder: (context, index) => const SizedBox(height: 8),
+      ),
+    );
+  }
+}
+
+class ComboProperties {
+  final comboWidth = IntEditor(title: 'Combo Width', value: 200);
+  final popupWidth = IntEditor(title: 'Popup Width', value: 300);
+  final itemsCount = IntEditor(title: 'Items Count', value: 3);
+  final position = EnumEditor<PopupPosition>(
+      title: 'Position',
+      value: PopupPosition.bottomMinMatch,
+      getList: () => PopupPosition.values);
+  final offsetX = IntEditor(title: 'Offset X', value: 0);
+  final offsetY = IntEditor(title: 'Offset Y', value: 0);
+  final autoMirror = BoolEditor(title: 'Auto Mirror', value: true);
+  final requiredSpace = IntEditor(title: 'Req. Space');
+  final screenPaddingHorizontal = IntEditor(title: 'S. Padding X', value: 16);
+  final screenPaddingVertical = IntEditor(title: 'S. Padding Y', value: 16);
+  final autoOpen = EnumEditor<PopupAutoOpen>(
+      title: 'Auto Open',
+      value: PopupAutoOpen.tap,
+      getList: () => PopupAutoOpen.values);
+  final autoClose = EnumEditor<PopupAutoClose>(
+      title: 'Auto Close',
+      value: PopupAutoClose.tapOutsideWithChildIgnorePointer,
+      getList: () => PopupAutoClose.values);
+  final animation = EnumEditor<PopupAnimation>(
+      title: 'Animation',
+      value: PopupAnimation.fade,
+      getList: () => PopupAnimation.values);
+  final animationDurationMs = IntEditor(
+      title: 'A. Duration',
+      value: Combo.defaultAnimationDuration.inMilliseconds);
+
+  List<Editor> get editors => [
+        comboWidth,
+        popupWidth,
+        itemsCount,
+        position,
+        offsetX,
+        offsetY,
+        autoMirror,
+        requiredSpace,
+        screenPaddingHorizontal,
+        screenPaddingVertical,
+        autoOpen,
+        autoClose,
+        animation,
+        animationDurationMs,
+      ];
+}
+
+class AwaitComboProperties extends ComboProperties {
+  final refreshOnOpened = BoolEditor(title: 'Refresh On Opened', value: false);
+
+  @override
+  List<Editor> get editors => [refreshOnOpened, ...super.editors];
+}
+
+class ListProperties extends AwaitComboProperties {}
+
+class SelectorProperties extends ListProperties {
+  SelectorProperties() {
+    _selected = EnumEditor<String>(
+        title: 'Selected',
+        getList: () => Iterable.generate(itemsCount.value)
+            .map((e) => 'Item ${e + 1}')
+            .toList());
+  }
+
+  EnumEditor<String> _selected;
+  EnumEditor<String> get selected => _selected;
+
+  @override
+  List<Editor> get editors => [selected, ...super.editors];
+}
+
+class TypeaheadProperties extends SelectorProperties {
+  TypeaheadProperties() {
+    _excludes = {autoOpen, autoClose, refreshOnOpened};
+  }
+  Set<Editor> _excludes;
+
+  final enabled = BoolEditor(title: 'Enabled', value: true);
+  final minTextLength =
+      IntEditor(title: 'Min Text Length', minValue: 0, value: 1);
+  final delayMs = IntEditor(title: 'Delay (ms)', minValue: 0, value: 300);
+  final cleanAfterSelection =
+      BoolEditor(title: 'Clean After Selection', value: false);
+
+  @override
+  List<Editor> get editors => [
+        enabled,
+        minTextLength,
+        delayMs,
+        cleanAfterSelection,
+        ...super.editors.where((e) => !_excludes.contains(e))
+      ];
+}
+
+class MenuProperties extends ListProperties {
+  final showSubmenuArrows =
+      BoolEditor(title: 'Show Submenu Arrows', value: true);
+  final canTapOnFolder = BoolEditor(title: 'Can Tap On Folder', value: false);
+
+  @override
+  List<Editor> get editors =>
+      [showSubmenuArrows, canTapOnFolder, ...super.editors];
+}
+
 class IntTextInputFormatter extends TextInputFormatter {
   IntTextInputFormatter({this.minValue, this.maxValue});
 
@@ -953,19 +678,4 @@ class IntTextInputFormatter extends TextInputFormatter {
             selection: TextSelection.collapsed(offset: value.length))
         : newValue.copyWith(text: value);
   }
-}
-
-class TextHelper {
-  static String _camelToWords(String value) {
-    final codes = value.runes
-        .skip(1)
-        .map((_) => String.fromCharCode(_))
-        .map((_) => _.toUpperCase() == _ ? ' $_' : _)
-        .expand((_) => _.runes);
-
-    return value[0].toUpperCase() + String.fromCharCodes(codes);
-  }
-
-  static String enumToString(dynamic value) =>
-      value == null ? '' : _camelToWords(value.toString().split('.')[1]);
 }
