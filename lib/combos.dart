@@ -533,8 +533,10 @@ class ComboParameters {
           getIsSelectable: getIsSelectable);
 }
 
-/// Specifies [ComboParameters] for all [Combo] widgets in [child]
-class ComboContext extends StatelessWidget {
+/// Specifies the context for all [Combo] widgets in the [child].
+/// Allows to set [ComboParameters] and close combo popups in the context
+/// with [ComboContextData.closeAll] method
+class ComboContext extends StatefulWidget {
   const ComboContext({Key key, @required this.parameters, @required this.child})
       : assert(parameters != null),
         super(key: key);
@@ -545,12 +547,19 @@ class ComboContext extends StatelessWidget {
       context.dependOnInheritedWidgetOfExactType<ComboContextData>();
 
   @override
+  _ComboContextState createState() => _ComboContextState();
+}
+
+class _ComboContextState extends State<ComboContext> {
+  final _closes = StreamController.broadcast();
+
+  @override
   Widget build(BuildContext context) {
     final parentData = ComboContext.of(context);
     final def = parentData == null
         ? ComboParameters.defaultParameters
         : parentData.parameters;
-    final my = parameters;
+    final my = widget.parameters;
     final merged = ComboParameters(
       position: my.position ?? def.position,
       offset: my.offset ?? def.offset,
@@ -580,18 +589,31 @@ class ComboContext extends StatelessWidget {
       menuRefreshOnOpened: my.menuRefreshOnOpened ?? def.menuRefreshOnOpened,
       menuProgressPosition: my.menuProgressPosition ?? def.menuProgressPosition,
     );
-    return ComboContextData(this, merged);
+    return ComboContextData(widget, widget.child, merged, _closes);
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
+    _closes.close();
   }
 }
 
-/// Provides [ComboParameters] for specified [ComboContext].
+/// Provides [ComboParameters] and [closeAll] method for the specified [ComboContext].
 class ComboContextData extends InheritedWidget {
-  ComboContextData(this.widget, this.parameters) : super(child: widget.child);
+  const ComboContextData(
+      this.widget, Widget child, this.parameters, this._closes)
+      : super(child: child);
 
   final ComboContext widget;
 
   // Common parameters for combo widgets
   final ComboParameters parameters;
+
+  final StreamController _closes;
+
+  /// Closes all opened by [Combo] popups in the current combo context
+  void closeAll() => _closes.add(true);
 
   @override
   bool updateShouldNotify(ComboContextData oldWidget) =>
@@ -705,7 +727,8 @@ class ComboState<T extends Combo> extends State<T> {
   final _scrolls = StreamController.broadcast();
   final _layerLink = LayerLink();
   OverlayEntry _overlay;
-  StreamSubscription _subscription;
+  StreamSubscription _widgetClosesSubscription;
+  StreamSubscription _contextClosesSubscription;
   Completer<double> _closeCompleter;
   var _hovered = false;
   bool _lastHovered;
@@ -738,8 +761,8 @@ class ComboState<T extends Combo> extends State<T> {
   ComboParameters getDefaultParameters() => ComboParameters.defaultParameters;
 
   @protected
-  ComboParameters getParameters() =>
-      ComboContext.of(context)?.parameters ?? getDefaultParameters();
+  ComboParameters getParameters(ComboParameters contextParameters) =>
+      contextParameters ?? getDefaultParameters();
 
   ComboParameters _parameters;
   ComboParameters get parameters => _parameters;
@@ -747,7 +770,7 @@ class ComboState<T extends Combo> extends State<T> {
   @override
   void initState() {
     super.initState();
-    _subscription = _closes.stream.listen((_) => close());
+    _widgetClosesSubscription = _closes.stream.listen((_) => close());
   }
 
   @override
@@ -1051,7 +1074,10 @@ class ComboState<T extends Combo> extends State<T> {
 
   @override
   Widget build(BuildContext context) {
-    final parameters = _parameters = getParameters();
+    final contextData = ComboContext.of(context);
+    _contextClosesSubscription ??=
+        contextData._closes.stream.listen((_) => close());
+    final parameters = _parameters = getParameters(contextData?.parameters);
     var child = getChild();
     if (child == null) {
       child = const SizedBox();
@@ -1098,7 +1124,8 @@ class ComboState<T extends Combo> extends State<T> {
   void dispose() {
     close();
     _scrolls.close();
-    _subscription.cancel();
+    _widgetClosesSubscription.cancel();
+    _contextClosesSubscription.cancel();
     super.dispose();
   }
 }
@@ -1675,8 +1702,8 @@ class TypeaheadComboState<W extends TypeaheadCombo<T>, T>
   int get _textLength => _controller.text?.length ?? 0;
 
   @override
-  ComboParameters getParameters() => super
-      .getParameters()
+  ComboParameters getParameters(ComboParameters contextParameters) => super
+      .getParameters(contextParameters)
       .copyWith(autoOpen: ComboAutoOpen.none, refreshOnOpened: false);
 
   @override
