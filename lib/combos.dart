@@ -109,12 +109,12 @@ enum ProgressPosition { child, popup }
 /// [getIsSelectable] determines if the popup item is active for tapping
 typedef ListPopupBuilder<T> = Widget Function(
     BuildContext context,
+    ComboParameters parameters,
     List<T> list,
     PopupListItemBuilder<T> itemBuilder,
+    GetIsSelectable<T> getIsSelectable,
     void Function(T value) onItemTapped,
-    ComboParameters parameters,
-    bool mirrored,
-    GetIsSelectable<T> getIsSelectable);
+    bool mirrored);
 
 /// Default widget to display menu divider
 class MenuDivider extends StatelessWidget {
@@ -1225,14 +1225,17 @@ class ListPopup<T> extends StatelessWidget {
   /// Creates default widget for displaying popup items
   const ListPopup({
     Key key,
+    @required this.parameters,
     @required this.list,
     @required this.itemBuilder,
+    this.getIsSelectable,
     @required this.onItemTapped,
-    @required this.parameters,
     this.width,
     this.maxHeight = 300.0,
-    this.getIsSelectable,
   }) : super(key: key);
+
+  /// Common parameters for combo widgets
+  final ComboParameters parameters;
 
   /// List of the popup items
   final List<T> list;
@@ -1240,11 +1243,11 @@ class ListPopup<T> extends StatelessWidget {
   /// Builds the popup item widget
   final PopupListItemBuilder<T> itemBuilder;
 
+  /// Determines if the popup item is active for tapping
+  final GetIsSelectable<T> getIsSelectable;
+
   /// Calls when user taps on the item
   final ValueSetter<T> onItemTapped;
-
-  /// Common parameters for combo widgets
-  final ComboParameters parameters;
 
   /// The width of the list content
   /// Must be setted if [Combo.position] not is [PopupPosition.bottomMatch]
@@ -1253,9 +1256,6 @@ class ListPopup<T> extends StatelessWidget {
 
   /// Maximum height of popup
   final double maxHeight;
-
-  /// Determines if the popup item is active for tapping
-  final GetIsSelectable<T> getIsSelectable;
 
   @override
   Widget build(BuildContext context) {
@@ -1379,12 +1379,12 @@ class ListComboState<W extends ListCombo<T>, T>
   @override
   Widget buildContent(List<T> list, bool mirrored) => widget.listPopupBuilder(
       context,
+      parameters,
       list,
       widget.itemBuilder,
+      widget.getIsSelectable,
       itemTapped,
-      parameters,
-      mirrored,
-      widget.getIsSelectable);
+      mirrored);
 
   @override
   bool get hasPopup => widget.getList != null;
@@ -1709,16 +1709,19 @@ class MenuListPopup<T extends MenuItem> extends StatelessWidget {
   /// Creates default widget for displaying list of the menu items
   const MenuListPopup(
       {Key key,
+      @required this.parameters,
       @required this.list,
       @required this.itemBuilder,
       @required this.onItemTapped,
-      @required this.parameters,
       this.getIsSelectable,
       this.backgroundColor = Colors.white,
       this.borderRadius,
       this.elevation = 4})
       : assert(itemBuilder != null),
         super(key: key);
+
+  /// Common parameters for combo widgets
+  final ComboParameters parameters;
 
   /// List of the menu items
   final List<T> list;
@@ -1728,9 +1731,6 @@ class MenuListPopup<T extends MenuItem> extends StatelessWidget {
 
   /// Calls when user taps on the menu item
   final ValueSetter<T> onItemTapped;
-
-  /// Common parameters for combo widgets
-  final ComboParameters parameters;
 
   /// Determines if the menu item is active for tapping
   final GetIsSelectable<T> getIsSelectable;
@@ -1826,16 +1826,16 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
                             }
                           : itemBuilder,
                       onItemTapped: onItemTapped,
-                      popupBuilder: (context, list, itemBuilder, onItemTapped,
-                          parameters, mirrored, getIsSelectable) {
+                      popupBuilder: (context, parameters, list, itemBuilder,
+                          getIsSelectable, onItemTapped, mirrored) {
                         final popup = (popupBuilder ?? buildDefaultPopup)(
                             context,
+                            parameters,
                             list,
                             itemBuilder,
+                            getIsSelectable,
                             onItemTapped,
-                            parameters,
-                            mirrored,
-                            getIsSelectable);
+                            mirrored);
                         return ComboContext(
                             parameters: menuParameters, child: popup);
                       },
@@ -1866,16 +1866,16 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
   /// Builds default widget to display list of the menu items
   static Widget buildDefaultPopup<T extends MenuItem>(
           BuildContext context,
+          ComboParameters parameters,
           List<T> list,
           PopupListItemBuilder<T> itemBuilder,
+          GetIsSelectable<T> getIsSelectable,
           void Function(T value) onItemTapped,
-          ComboParameters parameters,
-          bool mirrored,
-          GetIsSelectable<T> getIsSelectable) =>
+          bool mirrored) =>
       MenuListPopup<T>(
+          parameters: parameters,
           list: list,
           itemBuilder: itemBuilder,
           onItemTapped: onItemTapped,
-          parameters: parameters,
           getIsSelectable: getIsSelectable);
 }

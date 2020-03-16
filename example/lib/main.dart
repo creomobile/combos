@@ -135,15 +135,15 @@ class _MyHomePageState extends State<MyHomePage> {
                                 PopupPosition.bottomMatch ||
                             properties.position.value == PopupPosition.topMatch
                         ? null
-                        : (context, list, itemBuilder, onItemTapped, parameters,
-                                mirrored, getIsSelectable) =>
+                        : (context, parameters, list, itemBuilder,
+                                getIsSelectable, onItemTapped, mirrored) =>
                             ListPopup<String>(
+                                parameters: parameters,
                                 list: list,
                                 itemBuilder: itemBuilder,
+                                getIsSelectable: getIsSelectable,
                                 onItemTapped: onItemTapped,
-                                parameters: parameters,
-                                width: properties.popupWidth.value.toDouble(),
-                                getIsSelectable: getIsSelectable),
+                                width: properties.popupWidth.value.toDouble()),
                   ),
                 ),
               ),
@@ -173,15 +173,15 @@ class _MyHomePageState extends State<MyHomePage> {
                                 PopupPosition.bottomMatch ||
                             properties.position.value == PopupPosition.topMatch
                         ? null
-                        : (context, list, itemBuilder, onItemTapped, parameters,
-                                mirrored, getIsSelectable) =>
+                        : (context, parameters, list, itemBuilder,
+                                getIsSelectable, onItemTapped, mirrored) =>
                             ListPopup<String>(
+                                parameters: parameters,
                                 list: list,
                                 itemBuilder: itemBuilder,
+                                getIsSelectable: getIsSelectable,
                                 onItemTapped: onItemTapped,
-                                parameters: parameters,
-                                width: properties.popupWidth.value.toDouble(),
-                                getIsSelectable: getIsSelectable),
+                                width: properties.popupWidth.value.toDouble()),
                   ),
                 ),
               ),
@@ -213,15 +213,15 @@ class _MyHomePageState extends State<MyHomePage> {
                                 PopupPosition.bottomMatch ||
                             properties.position.value == PopupPosition.topMatch
                         ? null
-                        : (context, list, itemBuilder, onItemTapped, parameters,
-                                mirrored, getIsSelectable) =>
+                        : (context, parameters, list, itemBuilder,
+                                getIsSelectable, onItemTapped, mirrored) =>
                             ListPopup<String>(
+                                parameters: parameters,
                                 list: list,
                                 itemBuilder: itemBuilder,
+                                getIsSelectable: getIsSelectable,
                                 onItemTapped: onItemTapped,
-                                parameters: parameters,
-                                width: properties.popupWidth.value.toDouble(),
-                                getIsSelectable: getIsSelectable),
+                                width: properties.popupWidth.value.toDouble()),
                   ),
                 ),
               ),
