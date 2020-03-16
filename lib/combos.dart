@@ -1351,21 +1351,19 @@ class ListCombo<T> extends AwaitCombo {
 
   /// Builds default widget for displaying popup items.
   static Widget buildDefaultPopup<T>(
-      BuildContext context,
-      List<T> list,
-      PopupListItemBuilder<T> itemBuilder,
-      void Function(T value) onItemTapped,
-      ComboParameters parameters,
-      bool mirrored,
-      GetIsSelectable<T> getIsSelectable) {
-    print(parameters);
-    return ListPopup<T>(
-        list: list,
-        itemBuilder: itemBuilder,
-        onItemTapped: onItemTapped,
-        parameters: parameters,
-        getIsSelectable: getIsSelectable);
-  }
+          BuildContext context,
+          ComboParameters parameters,
+          List<T> list,
+          PopupListItemBuilder<T> itemBuilder,
+          GetIsSelectable<T> getIsSelectable,
+          void Function(T value) onItemTapped,
+          bool mirrored) =>
+      ListPopup<T>(
+          parameters: parameters,
+          list: list,
+          itemBuilder: itemBuilder,
+          getIsSelectable: getIsSelectable,
+          onItemTapped: onItemTapped);
 }
 
 /// State for a [ListCombo].
