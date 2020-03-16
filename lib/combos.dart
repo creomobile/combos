@@ -116,12 +116,23 @@ typedef ListPopupBuilder<T> = Widget Function(
     bool mirrored,
     GetIsSelectable<T> getIsSelectable);
 
-/// Default widget for empty list indication
-const Widget defaultEmptyListIndicator = Padding(
-  padding: EdgeInsets.all(16),
-  child: Text('No Items',
-      textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
-);
+/// Default widget to display menu divider
+class MenuDivider extends StatelessWidget {
+  /// Creates default widget to display menu divider
+  const MenuDivider({Key key, this.color = Colors.black12}) : super(key: key);
+
+  // Divider color
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Container(
+          height: 1,
+          color: Colors.black12,
+        ),
+      );
+}
 
 /// Common parameters for combo widgets
 class ComboParameters {
@@ -144,6 +155,9 @@ class ComboParameters {
     this.refreshOnOpened,
     this.progressPosition,
     this.emptyListIndicator,
+    this.menuDivider,
+    this.menuShowArrows,
+    this.menuCanTapOnFolder,
   });
 
   // Common parameters with dafault values for combo widgets
@@ -158,7 +172,14 @@ class ComboParameters {
     progressDecoratorBuilder: buildDefaultProgressDecorator,
     refreshOnOpened: false,
     progressPosition: ProgressPosition.popup,
-    emptyListIndicator: defaultEmptyListIndicator,
+    emptyListIndicator: Padding(
+      padding: EdgeInsets.all(16),
+      child: Text('No Items',
+          textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+    ),
+    menuDivider: MenuDivider(),
+    menuShowArrows: true,
+    menuCanTapOnFolder: false,
   );
 
   // * Combo parameters
@@ -223,6 +244,17 @@ class ComboParameters {
   /// Widget for empty list indication
   final Widget emptyListIndicator;
 
+  // * ListCombo parameters
+
+  /// Menu devider widget
+  final Widget menuDivider;
+
+  /// Indicates that the menu items that contains another items should display 'right arrow'
+  final bool menuShowArrows;
+
+  /// Determines if the menu items that containing another items is selectable
+  final bool menuCanTapOnFolder;
+
   /// Creates a copy of this combo parameters but with the given fields replaced with
   /// the new values.
   ComboParameters copyWith({
@@ -243,6 +275,9 @@ class ComboParameters {
     bool refreshOnOpened,
     ProgressPosition progressPosition,
     Widget emptyListIndicator,
+    Widget menuDivider,
+    bool menuShowArrows,
+    bool menuCanTapOnFolder,
   }) =>
       ComboParameters(
         position: position ?? this.position,
@@ -263,6 +298,9 @@ class ComboParameters {
         refreshOnOpened: refreshOnOpened ?? this.refreshOnOpened,
         progressPosition: progressPosition ?? this.progressPosition,
         emptyListIndicator: emptyListIndicator ?? this.emptyListIndicator,
+        menuDivider: menuDivider ?? this.menuDivider,
+        menuShowArrows: menuShowArrows ?? this.menuShowArrows,
+        menuCanTapOnFolder: menuCanTapOnFolder ?? this.menuCanTapOnFolder,
       );
 
   /// Default value of [Combo.animationDuration]
@@ -314,6 +352,9 @@ class ComboContext extends StatelessWidget {
       refreshOnOpened: my.refreshOnOpened ?? def.refreshOnOpened,
       progressPosition: my.progressPosition ?? def.progressPosition,
       emptyListIndicator: my.emptyListIndicator ?? def.emptyListIndicator,
+      menuDivider: my.menuDivider ?? def.menuDivider,
+      menuShowArrows: my.menuShowArrows ?? def.menuShowArrows,
+      menuCanTapOnFolder: my.menuCanTapOnFolder ?? def.menuCanTapOnFolder,
     );
     return ComboContextData(this, merged);
   }
@@ -1133,7 +1174,8 @@ abstract class AwaitComboStateBase<W extends AwaitCombo, C>
 typedef PopupGetList<T> = FutureOr<List<T>> Function();
 
 /// Signature to build the popup item widget.
-typedef PopupListItemBuilder<T> = Widget Function(BuildContext context, T item);
+typedef PopupListItemBuilder<T> = Widget Function(
+    BuildContext context, ComboParameters parameters, T item);
 
 /// Signature to determine if the popup item is active for tapping
 typedef GetIsSelectable<T> = bool Function(T item);
@@ -1177,6 +1219,7 @@ class ListPopup<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final parameters = this.parameters;
     final emptyIndicator = parameters.emptyListIndicator;
     return ConstrainedBox(
       constraints: BoxConstraints(
@@ -1198,7 +1241,7 @@ class ListPopup<T> extends StatelessWidget {
                 itemCount: list?.length ?? 0,
                 itemBuilder: (context, index) {
                   final item = list[index];
-                  final itemWidget = itemBuilder(context, item);
+                  final itemWidget = itemBuilder(context, parameters, item);
                   return getIsSelectable == null || getIsSelectable(item)
                       ? InkWell(
                           child: itemWidget,
@@ -1388,8 +1431,8 @@ class SelectorComboState<W extends SelectorCombo<T>, T>
   }
 
   @override
-  Widget getChild() =>
-      (widget.childBuilder ?? widget.itemBuilder)(context, _selected);
+  Widget getChild() => (widget.childBuilder ?? widget.itemBuilder)(
+      context, parameters, _selected);
 }
 
 /// Signature to get the popup items using the text from [TypeaheadCombo].
@@ -1622,23 +1665,6 @@ typedef MenuItemPopupBuilder<T> = Widget Function(
     GetIsSelectable<T> getIsSelectable,
     bool canTapOnFolder);
 
-/// Default widget to display menu separator
-class MenuDivider extends StatelessWidget {
-  /// Creates default widget to display menu separator
-  const MenuDivider({Key key, this.color = Colors.black12}) : super(key: key);
-
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Container(
-          height: 1,
-          color: Colors.black12,
-        ),
-      );
-}
-
 const Widget _defaultMenuDivider = MenuDivider();
 
 class _ArrowedItem extends StatelessWidget {
@@ -1704,6 +1730,13 @@ class MenuListPopup<T extends MenuItem> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final parameters = this.parameters;
+
+/*
+  final Widget menuDivider;
+  final bool menuShowArrows;
+  final bool menuCanTapOnFolder;
+    */
     final emptyIndicator = parameters.emptyListIndicator;
     return Material(
         color: backgroundColor,
@@ -1717,7 +1750,7 @@ class MenuListPopup<T extends MenuItem> extends StatelessWidget {
               if (list?.isEmpty == true)
                 emptyIndicator ?? const SizedBox()
               else if (list != null)
-                ...list?.map((item) => itemBuilder(context, item))
+                ...list?.map((item) => itemBuilder(context, parameters, item))
             ],
           ),
         ));
@@ -1760,13 +1793,13 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
     ValueChanged<bool> hoveredChanged,
     GestureTapCallback onTap,
   })  : assert(item != null),
-        assert(divider != null),
+        //assert(divider != null),
         assert(showSubmenuArrows != null),
         assert(canTapOnFolder != null),
         super(
           key: key,
           getList: item.getChildren,
-          itemBuilder: (context, item) => item == MenuItem.separator
+          itemBuilder: (context, parameters, item) => item == MenuItem.separator
               ? divider
               : ComboContext(
                   parameters: ComboParameters(
@@ -1780,8 +1813,9 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
                     item: item,
                     divider: divider,
                     itemBuilder: showSubmenuArrows
-                        ? (context, item) {
-                            final widget = itemBuilder(context, item);
+                        ? (context, parameters, item) {
+                            final widget =
+                                itemBuilder(context, parameters, item);
                             return item.getChildren == null ||
                                     widget is _ArrowedItem
                                 ? widget
@@ -1815,7 +1849,7 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
                   canTapOnFolder),
           getIsSelectable: getIsSelectable,
           waitChanged: waitChanged,
-          child: itemBuilder(null, item),
+          child: itemBuilder(null, ComboParameters.defaultParameters, item),
           openedChanged: openedChanged,
           hoveredChanged: hoveredChanged,
           onTap: onTap,

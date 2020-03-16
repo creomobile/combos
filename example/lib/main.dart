@@ -124,7 +124,7 @@ class _MyHomePageState extends State<MyHomePage> {
                           .map((e) => 'Item ${e + 1}')
                           .toList();
                     },
-                    itemBuilder: (context, item) =>
+                    itemBuilder: (context, parameters, item) =>
                         ListTile(title: Text(item ?? '')),
                     child: const Padding(
                       padding: EdgeInsets.all(16.0),
@@ -163,9 +163,9 @@ class _MyHomePageState extends State<MyHomePage> {
                           .toList();
                     },
                     selected: properties.selected.value,
-                    itemBuilder: (context, item) =>
+                    itemBuilder: (context, parameters, item) =>
                         ListTile(title: Text(item ?? '')),
-                    childBuilder: (context, item) =>
+                    childBuilder: (context, parameters, item) =>
                         ListTile(title: Text(item ?? 'Selector Combo')),
                     onItemTapped: (value) =>
                         setState(() => properties.selected.value = value),
@@ -204,7 +204,7 @@ class _MyHomePageState extends State<MyHomePage> {
                     cleanAfterSelection: properties.cleanAfterSelection.value,
                     decoration: InputDecoration(labelText: 'Typeahead Combo'),
                     selected: properties.selected.value,
-                    itemBuilder: (context, item) =>
+                    itemBuilder: (context, parameters, item) =>
                         ListTile(title: Text(item ?? '')),
                     getItemText: (item) => item,
                     onItemTapped: (value) =>
@@ -234,7 +234,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 childBuilder: (properties) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
                   child: MenuItemCombo<String>(
-                    itemBuilder: (context, item) => Padding(
+                    itemBuilder: (context, parameters, item) => Padding(
                       padding: const EdgeInsets.all(16),
                       child: Text(item.item),
                     ),
