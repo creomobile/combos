@@ -281,6 +281,7 @@ class ComboParameters {
     this.screenPadding,
     this.autoOpen,
     this.autoClose,
+    this.enabled,
     this.animation,
     this.animationDuration,
     this.focusColor,
@@ -308,6 +309,7 @@ class ComboParameters {
     screenPadding: defaultScreenPadding,
     autoOpen: ComboAutoOpen.tap,
     autoClose: ComboAutoClose.tapOutsideWithChildIgnorePointer,
+    enabled: true,
     animation: PopupAnimation.fade,
     animationDuration: defaultAnimationDuration,
     progressDecoratorBuilder: buildDefaultProgressDecorator,
@@ -354,6 +356,10 @@ class ComboParameters {
 
   /// Determines automatically closing mode of the popup
   final ComboAutoClose autoClose;
+
+  /// If false the combo is in "disabled" mode: it ignores taps.
+  /// Setting it to false closes all combo popups in the context
+  final bool enabled;
 
   /// Determines [Combo.popup] open/close animation
   final PopupAnimation animation;
@@ -428,6 +434,7 @@ class ComboParameters {
     EdgeInsets screenPadding,
     ComboAutoOpen autoOpen,
     ComboAutoClose autoClose,
+    bool enabled,
     PopupAnimation animation,
     Duration animationDuration,
     Colors focusColor,
@@ -455,6 +462,7 @@ class ComboParameters {
         screenPadding: screenPadding ?? this.screenPadding,
         autoOpen: autoOpen ?? this.autoOpen,
         autoClose: autoClose ?? this.autoClose,
+        enabled: enabled ?? this.enabled,
         animation: animation ?? this.animation,
         animationDuration: animationDuration ?? this.animationDuration,
         focusColor: focusColor ?? this.focusColor,
@@ -552,6 +560,7 @@ class ComboContext extends StatefulWidget {
 
 class _ComboContextState extends State<ComboContext> {
   final _closes = StreamController.broadcast();
+  var _saveEnabled = true;
 
   @override
   Widget build(BuildContext context) {
@@ -568,6 +577,7 @@ class _ComboContextState extends State<ComboContext> {
       screenPadding: my.screenPadding ?? def.screenPadding,
       autoOpen: my.autoOpen ?? def.autoOpen,
       autoClose: my.autoClose ?? def.autoClose,
+      enabled: (my.enabled ?? true) && def.enabled,
       animation: my.animation ?? def.animation,
       animationDuration: my.animationDuration ?? def.animationDuration,
       focusColor: my.focusColor ?? def.focusColor,
@@ -589,6 +599,9 @@ class _ComboContextState extends State<ComboContext> {
       menuRefreshOnOpened: my.menuRefreshOnOpened ?? def.menuRefreshOnOpened,
       menuProgressPosition: my.menuProgressPosition ?? def.menuProgressPosition,
     );
+    if (merged.enabled != _saveEnabled && !(_saveEnabled = merged.enabled)) {
+      _closes.add(true);
+    }
     return ComboContextData(widget, widget.child, merged, _closes);
   }
 
@@ -624,24 +637,32 @@ class ComboContextData extends InheritedWidget {
 ///
 /// Use [Combo] to link a widget with a popup setting [child] ans [popupBuilder] properties.
 /// The [child] and [popupBuilder] properties is not required.
-/// Popup can be opened or closed automatically by [autoOpen] and [autoClose] properties
-/// or programmatically by [ComboState.open] and [ComboState.close] methods.
+/// [Combo] can be tunned by uses [ComboParameters] from set by [ComboContext].
+/// Popup can be opened or closed automatically by [ComboParameters.autoOpen]
+/// and [ComboParameters.autoClose] properties or programmatically by
+/// [ComboState.open] and [ComboState.close] methods. Also can be used [Combo.closeAll]
+/// and [ComboContextData.closeAll] for closing
 ///
-/// Popup position is determined by [position] property with the [offset]
-/// If [autoMirror] is true, popup position may depends on screen edges using
-/// [requiredSpace] and [screenPadding] predefined values, [screenPadding] also affects popup clipping.
+/// Popup position is determined by [ComboParameters.position] property
+/// with the [ComboParameters.offset].
+/// If [ComboParameters.autoMirror] is true, popup position may depends on screen edges using
+/// [ComboParameters.requiredSpace] and [ComboParameters.screenPadding] values,
+/// [ComboParameters.screenPadding] also affects popup clipping.
 ///
-/// You can apply 'fade' or custom animation to the popup using [animation] and [animationDuration]
-/// properties. In case of custom animation popup will not be closed immediattely, but will wait for
+/// You can apply 'fade' or custom animation to the popup using [ComboParameters.animation]
+/// and [ComboParameters.animationDuration] properties.
+/// In case of custom animation popup will not be closed immediattely, but will wait for
 /// animationDuration with [IgnorePointer].
 ///
 /// [openedChanged] is raised when popup is opening or closing with appropriate bool value.
 /// [hoveredChanged] is raised when mouse pointer enters on or exits from child or popup
 /// and its children - when popup contains another [Combo] widgets.
 /// [onTap] is raised when the user taps on popup and don't paint [InkWell] when it's null.
-/// [onTap] also can be raised by 'long tap' event when [autoOpen] is set to [ComboAutoOpen.hovered]
-/// and platform is not 'Web'
-/// [focusColor], [hoverColor], [highlightColor], [splashColor] are [InkWell] parameters
+/// [onTap] also can be raised by 'long tap' event when [ComboParameters.autoOpen]
+/// is set to [ComboAutoOpen.hovered] and platform is not 'Web'
+/// [ComboParameters.focusColor], [ComboParameters.hoverColor],
+/// [ComboParameters.highlightColor], [ComboParameters.splashColor] are combo [InkWell]
+/// parameters
 ///
 /// See also:
 ///
@@ -657,23 +678,28 @@ class Combo extends StatefulWidget {
   /// The [child] and [popupBuilder] properties is not required.
   /// Popup can be opened or closed automatically by [autoOpen] and [autoClose] properties
   /// or programmatically by [ComboState.open] and [ComboState.close] methods.
+  /// Also can be used [Combo.closeAll] and [ComboContextData.closeAll] for closing
   ///
-  /// Popup position is determined by [position] property with the [offset]
-  /// If [autoMirror] is true, popup position may depends on screen edges using
-  /// [requiredSpace] and [screenPadding] predefined values, [screenPadding] also affects popup clipping.
+  /// Popup position is determined by [ComboParameters.position] property
+  /// with the [ComboParameters.offset].
+  /// If [ComboParameters.autoMirror] is true, popup position may depends on screen edges using
+  /// [ComboParameters.requiredSpace] and [ComboParameters.screenPadding] values,
+  /// [ComboParameters.screenPadding] also affects popup clipping.
   ///
-  /// You can apply 'fade' or custom animation to the popup using [animation] and [animationDuration]
-  /// properties. In case of custom animation popup will not be closed immediattely, but will wait for
+  /// You can apply 'fade' or custom animation to the popup using [ComboParameters.animation]
+  /// and [ComboParameters.animationDuration] properties.
+  /// In case of custom animation popup will not be closed immediattely, but will wait for
   /// animationDuration with [IgnorePointer].
   ///
   /// [openedChanged] is raised when popup is opening or closing with appropriate bool value.
   /// [hoveredChanged] is raised when mouse pointer enters on or exits from child or popup
   /// and its children - when popup contains another [Combo] widgets.
   /// [onTap] is raised when the user taps on popup and don't paint [InkWell] when it's null.
-  /// [onTap] also can be raised by 'long tap' event when [autoOpen] is set to [ComboAutoOpen.hovered]
-  /// and platform is not 'Web'
-  /// [focusColor], [hoverColor], [highlightColor], [splashColor] are [InkWell] parameters
-  ///
+  /// [onTap] also can be raised by 'long tap' event when [ComboParameters.autoOpen]
+  /// is set to [ComboAutoOpen.hovered] and platform is not 'Web'
+  /// [ComboParameters.focusColor], [ComboParameters.hoverColor],
+  /// [ComboParameters.highlightColor], [ComboParameters.splashColor] are combo [InkWell]
+  /// parameters
   ///
   /// See also:
   ///
@@ -1076,8 +1102,9 @@ class ComboState<T extends Combo> extends State<T> {
   Widget build(BuildContext context) {
     final contextData = ComboContext.of(context);
     _contextClosesSubscription ??=
-        contextData._closes.stream.listen((_) => close());
+        contextData?._closes?.stream?.listen((_) => close());
     final parameters = _parameters = getParameters(contextData?.parameters);
+    final enabled = parameters.enabled;
     var child = getChild();
     if (child == null) {
       child = const SizedBox();
@@ -1086,10 +1113,15 @@ class ComboState<T extends Combo> extends State<T> {
         final catchHover = _catchHover;
         final openOnHover = parameters.autoOpen == ComboAutoOpen.hovered;
 
-        if (widget.onTap == null && (openOnHover && (kIsWeb || !hasPopup))) {
+        if ((widget.onTap == null || !enabled) &&
+            (openOnHover && (kIsWeb || !hasPopup))) {
           child = MouseRegion(
-            onEnter: (_) => _setHovered(true),
-            onExit: (_) => _setHovered(false),
+            onEnter: (_) {
+              if (enabled) _setHovered(true);
+            },
+            onExit: (_) {
+              if (enabled) _setHovered(false);
+            },
             child: child,
           );
         } else {
@@ -1099,16 +1131,22 @@ class ComboState<T extends Combo> extends State<T> {
             hoverColor: parameters.hoverColor,
             highlightColor: parameters.highlightColor,
             splashColor: parameters.splashColor,
-            onTap: () {
-              if (!openOnHover || (openOnHover && !kIsWeb && hasPopup)) open();
-              if (widget.onTap != null &&
-                  (kIsWeb || !openOnHover || !hasPopup)) {
-                widget.onTap();
-              }
-            },
-            onLongPress:
-                openOnHover && !kIsWeb && hasPopup ? widget.onTap : null,
-            onHover: catchHover ? (value) => _setHovered(value) : null,
+            onTap: enabled
+                ? () {
+                    if (!openOnHover || (openOnHover && !kIsWeb && hasPopup)) {
+                      open();
+                    }
+                    if (widget.onTap != null &&
+                        (kIsWeb || !openOnHover || !hasPopup)) {
+                      widget.onTap();
+                    }
+                  }
+                : null,
+            onLongPress: enabled && openOnHover && !kIsWeb && hasPopup
+                ? widget.onTap
+                : null,
+            onHover:
+                catchHover && enabled ? (value) => _setHovered(value) : null,
           );
         }
       }
@@ -1125,7 +1163,7 @@ class ComboState<T extends Combo> extends State<T> {
     close();
     _scrolls.close();
     _widgetClosesSubscription.cancel();
-    _contextClosesSubscription.cancel();
+    _contextClosesSubscription?.cancel();
     super.dispose();
   }
 }
@@ -1614,7 +1652,6 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
     Key key,
     @required TypeaheadGetList<T> getList,
     this.decoration,
-    this.enabled = true,
     this.autofocus = false,
     @required this.getItemText,
     this.minTextLength = 1,
@@ -1633,7 +1670,6 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
     GestureTapCallback onTap,
   })  : typeaheadGetList = getList,
         assert(getList != null),
-        assert(enabled != null),
         assert(autofocus != null),
         assert(getItemText != null),
         assert(minTextLength >= 0),
@@ -1656,10 +1692,6 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
 
   /// The decoration to show around the text field.
   final InputDecoration decoration;
-
-  /// If false the text field is "disabled": it ignores taps and its
-  /// [decoration] is rendered in grey.
-  final bool enabled;
 
   /// {@macro flutter.widgets.editableText.autofocus}
   final bool autofocus;
@@ -1745,9 +1777,6 @@ class TypeaheadComboState<W extends TypeaheadCombo<T>, T>
         _controller.text = _text = text;
       }
     }
-    if (oldWidget.enabled != widget.enabled) {
-      setState(() {});
-    }
   }
 
   @override
@@ -1768,7 +1797,7 @@ class TypeaheadComboState<W extends TypeaheadCombo<T>, T>
   Widget getChild() => TextField(
         controller: _controller,
         focusNode: _focusNode,
-        enabled: widget.enabled,
+        enabled: parameters.enabled,
         autofocus: widget.autofocus,
         decoration: widget.decoration ?? const InputDecoration(),
         onTap: () {

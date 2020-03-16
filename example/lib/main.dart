@@ -231,7 +231,6 @@ class _MyHomePageState extends State<MyHomePage> {
                             .map((e) => 'Item ${e + 1}')
                             .toList();
                       },
-                      enabled: properties.enabled.value,
                       minTextLength: properties.minTextLength.value,
                       delay: Duration(milliseconds: properties.delayMs.value),
                       cleanAfterSelection: properties.cleanAfterSelection.value,
@@ -466,6 +465,7 @@ class DemoItemState<TProperties extends ComboProperties>
           ),
           autoOpen: properties.autoOpen.value,
           autoClose: properties.autoClose.value,
+          enabled: properties.enabled.value,
           animation: properties.animation.value,
           refreshOnOpened: awaitProperties?.refreshOnOpened?.value ?? false,
           progressPosition: awaitProperties?.progressPosition?.value ??
@@ -516,6 +516,7 @@ class ComboProperties {
       title: 'Auto Close',
       value: ComboAutoClose.tapOutsideWithChildIgnorePointer,
       getList: () => ComboAutoClose.values);
+  final enabled = BoolEditor(title: 'Enabled', value: true);
   final animation = EnumEditor<PopupAnimation>(
       title: 'Animation',
       value: PopupAnimation.fade,
@@ -537,6 +538,7 @@ class ComboProperties {
         screenPaddingVertical,
         autoOpen,
         autoClose,
+        enabled,
         animation,
         animationDurationMs,
       ];
@@ -578,7 +580,6 @@ class TypeaheadProperties extends SelectorProperties {
   }
   Set<Editor> _excludes;
 
-  final enabled = BoolEditor(title: 'Enabled', value: true);
   final minTextLength =
       IntEditor(title: 'Min Text Length', minValue: 0, value: 1);
   final delayMs = IntEditor(title: 'Delay (ms)', minValue: 0, value: 300);
@@ -587,7 +588,6 @@ class TypeaheadProperties extends SelectorProperties {
 
   @override
   List<Editor> get editors => [
-        enabled,
         minTextLength,
         delayMs,
         cleanAfterSelection,
