@@ -119,29 +119,37 @@ typedef ListPopupBuilder<T> = Widget Function(
 class ComboParameters {
   /// Creates common parameters for combo widgets
   const ComboParameters({
-    this.position = PopupPosition.bottomMinMatch,
+    this.position,
     this.offset,
-    this.autoMirror = true,
+    this.autoMirror,
     this.requiredSpace,
-    this.screenPadding = defaultScreenPadding,
-    this.autoOpen = ComboAutoOpen.tap,
-    this.autoClose = ComboAutoClose.tapOutsideWithChildIgnorePointer,
-    this.animation = PopupAnimation.fade,
-    this.animationDuration = defaultAnimationDuration,
+    this.screenPadding,
+    this.autoOpen,
+    this.autoClose,
+    this.animation,
+    this.animationDuration,
     this.focusColor,
     this.hoverColor,
     this.highlightColor,
     this.splashColor,
-    this.progressDecoratorBuilder = buildDefaultProgressDecorator,
-    this.refreshOnOpened = false,
-    this.progressPosition = ProgressPosition.popup,
-  })  : assert(position != null),
-        assert(autoMirror != null),
-        assert(autoClose != null),
-        assert(animation != null),
-        assert(progressDecoratorBuilder != null),
-        assert(refreshOnOpened != null),
-        assert(progressPosition != null);
+    this.progressDecoratorBuilder,
+    this.refreshOnOpened,
+    this.progressPosition,
+  });
+
+  // Common parameters with dafault values for combo widgets
+  static const defaultParameters = ComboParameters(
+    position: PopupPosition.bottomMinMatch,
+    autoMirror: true,
+    screenPadding: defaultScreenPadding,
+    autoOpen: ComboAutoOpen.tap,
+    autoClose: ComboAutoClose.tapOutsideWithChildIgnorePointer,
+    animation: PopupAnimation.fade,
+    animationDuration: defaultAnimationDuration,
+    progressDecoratorBuilder: buildDefaultProgressDecorator,
+    refreshOnOpened: false,
+    progressPosition: ProgressPosition.popup,
+  );
 
   // * Combo parameters
 
@@ -255,7 +263,8 @@ class ComboParameters {
 /// Specifies [ComboParameters] for all [Combo] widgets in [child]
 class ComboContext extends StatelessWidget {
   const ComboContext({Key key, @required this.parameters, @required this.child})
-      : super(key: key);
+      : assert(parameters != null),
+        super(key: key);
   final ComboParameters parameters;
   final Widget child;
 
@@ -265,55 +274,41 @@ class ComboContext extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final parentData = ComboContext.of(context);
-    return ComboContextData(
-      this,
-      () {
-        final params = parameters;
-        final parent = parentData?.parameters;
-        return params == null
-            ? parent
-            : parent == null
-                ? params
-                : ComboParameters(
-                    position: params.position ?? parent.position,
-                    offset: params.offset ?? parent.offset,
-                    autoMirror: params.autoMirror ?? parent.autoMirror,
-                    requiredSpace: params.requiredSpace ?? parent.requiredSpace,
-                    screenPadding: params.screenPadding ?? parent.screenPadding,
-                    autoOpen: params.autoOpen ?? parent.autoOpen,
-                    autoClose: params.autoClose ?? parent.autoClose,
-                    animation: params.animation ?? parent.animation,
-                    animationDuration:
-                        params.animationDuration ?? parent.animationDuration,
-                    focusColor: params.focusColor ?? parent.focusColor,
-                    hoverColor: params.hoverColor ?? parent.hoverColor,
-                    highlightColor:
-                        params.highlightColor ?? parent.highlightColor,
-                    splashColor: params.splashColor ?? parent.splashColor,
-                    progressDecoratorBuilder: params.progressDecoratorBuilder ??
-                        parent.progressDecoratorBuilder,
-                    refreshOnOpened:
-                        params.refreshOnOpened ?? parent.refreshOnOpened,
-                    progressPosition:
-                        params.progressPosition ?? parent.progressPosition,
-                  );
-      },
+    final def = parentData == null
+        ? ComboParameters.defaultParameters
+        : parentData.parameters;
+    final my = parameters;
+    final merged = ComboParameters(
+      position: my.position ?? def.position,
+      offset: my.offset ?? def.offset,
+      autoMirror: my.autoMirror ?? def.autoMirror,
+      requiredSpace: my.requiredSpace ?? def.requiredSpace,
+      screenPadding: my.screenPadding ?? def.screenPadding,
+      autoOpen: my.autoOpen ?? def.autoOpen,
+      autoClose: my.autoClose ?? def.autoClose,
+      animation: my.animation ?? def.animation,
+      animationDuration: my.animationDuration ?? def.animationDuration,
+      focusColor: my.focusColor ?? def.focusColor,
+      hoverColor: my.hoverColor ?? def.hoverColor,
+      highlightColor: my.highlightColor ?? def.highlightColor,
+      splashColor: my.splashColor ?? def.splashColor,
+      progressDecoratorBuilder:
+          my.progressDecoratorBuilder ?? def.progressDecoratorBuilder,
+      refreshOnOpened: my.refreshOnOpened ?? def.refreshOnOpened,
+      progressPosition: my.progressPosition ?? def.progressPosition,
     );
+    return ComboContextData(this, merged);
   }
 }
 
-typedef _ComboParametersGetter = ComboParameters Function();
-
 /// Provides [ComboParameters] for specified [ComboContext].
 class ComboContextData extends InheritedWidget {
-  ComboContextData(this.widget, this._parametersGetter)
-      : super(child: widget.child);
+  ComboContextData(this.widget, this.parameters) : super(child: widget.child);
 
   final ComboContext widget;
-  final _ComboParametersGetter _parametersGetter;
 
   // Common parameters for combo widgets
-  ComboParameters get parameters => _parametersGetter();
+  final ComboParameters parameters;
 
   @override
   bool updateShouldNotify(ComboContextData oldWidget) =>
@@ -457,11 +452,11 @@ class ComboState<T extends Combo> extends State<T> {
   }
 
   @protected
-  ComboParameters createDefaultParameters() => const ComboParameters();
+  ComboParameters getDefaultParameters() => ComboParameters.defaultParameters;
 
   @protected
   ComboParameters getParameters() =>
-      ComboContext.of(context)?.parameters ?? createDefaultParameters();
+      ComboContext.of(context)?.parameters ?? getDefaultParameters();
 
   ComboParameters _parameters;
   ComboParameters get parameters => _parameters;
@@ -1279,8 +1274,8 @@ class ListCombo<T> extends AwaitCombo {
 class ListComboState<W extends ListCombo<T>, T>
     extends AwaitComboStateBase<W, List<T>> {
   @override
-  ComboParameters createDefaultParameters() => super
-      .createDefaultParameters()
+  ComboParameters getDefaultParameters() => super
+      .getDefaultParameters()
       .copyWith(position: PopupPosition.bottomMatch);
 
   @override
