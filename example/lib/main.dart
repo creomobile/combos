@@ -207,6 +207,8 @@ class _MyHomePageState extends State<MyHomePage> {
                   width: properties.comboWidth.value?.toDouble(),
                   child: ComboContext(
                     parameters: ComboParameters(
+                      inputThrottle: Duration(
+                          milliseconds: properties.inputThrottleMs.value),
                       listPopupBuilder: properties.position.value ==
                                   PopupPosition.bottomMatch ||
                               properties.position.value ==
@@ -232,7 +234,6 @@ class _MyHomePageState extends State<MyHomePage> {
                             .toList();
                       },
                       minTextLength: properties.minTextLength.value,
-                      delay: Duration(milliseconds: properties.delayMs.value),
                       cleanAfterSelection: properties.cleanAfterSelection.value,
                       decoration: InputDecoration(labelText: 'Typeahead Combo'),
                       selected: properties.selected.value,
@@ -582,14 +583,15 @@ class TypeaheadProperties extends SelectorProperties {
 
   final minTextLength =
       IntEditor(title: 'Min Text Length', minValue: 0, value: 1);
-  final delayMs = IntEditor(title: 'Delay (ms)', minValue: 0, value: 300);
+  final inputThrottleMs =
+      IntEditor(title: 'Throttle (ms)', minValue: 0, value: 300);
   final cleanAfterSelection =
       BoolEditor(title: 'Clean After Selection', value: false);
 
   @override
   List<Editor> get editors => [
         minTextLength,
-        delayMs,
+        inputThrottleMs,
         cleanAfterSelection,
         ...super.editors.where((e) => !_excludes.contains(e))
       ];

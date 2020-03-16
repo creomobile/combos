@@ -293,6 +293,7 @@ class ComboParameters {
     this.progressPosition,
     this.listPopupBuilder,
     this.emptyListIndicator,
+    this.inputThrottle,
     this.menuPopupBuilder,
     this.menuDivider,
     this.menuShowArrows,
@@ -321,6 +322,7 @@ class ComboParameters {
       child: Text('No Items',
           textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
     ),
+    inputThrottle: Duration(milliseconds: 300),
     menuPopupBuilder: buildDefaultMenuPopup,
     menuDivider: MenuDivider(),
     menuShowArrows: true,
@@ -332,39 +334,48 @@ class ComboParameters {
 
   // * Combo parameters
 
-  /// Determines popup position depend on [Combo.child] position
+  /// Determines popup position depend on [Combo.child] position.
+  /// Default is [PopupPosition.bottomMinMatch].
   final PopupPosition position;
 
-  /// The offset to apply to the popup position
+  /// The offset to apply to the popup position.
   final Offset offset;
 
   /// If true, popup position may depends on screen edges using [requiredSpace]
   /// and [screenPadding] values.
+  /// Default is true
   final bool autoMirror;
 
   /// Determines required space between popup position and screen edge minus [screenPadding].
   /// If the popup height or width (depends on [position]) is longer the popup will be
-  /// showed on opposite side of [Combo.child] and [Combo.popupBuilder] will be called with mirrored = true
+  /// showed on opposite side of [Combo.child] and [Combo.popupBuilder]
+  /// will be called with mirrored = true.
+  /// Default is 1/3 of screen dimensions.
   final double requiredSpace;
 
   /// Determines the padding of screen edges and clipping popups.
-  /// (may be useful for hiding popups in app bar area)
+  /// (may be useful for hiding popups in app bar area).
+  /// Default is [defaultScreenPadding] value (EdgeInsets.all(16.0)).
   final EdgeInsets screenPadding;
 
-  /// Determines automatically opening mode of the popup
+  /// Determines automatically opening mode of the popup.
+  /// Default is [ComboAutoOpen.tap].
   final ComboAutoOpen autoOpen;
 
-  /// Determines automatically closing mode of the popup
+  /// Determines automatically closing mode of the popup.
+  /// Default is [ComboAutoClose.tapOutsideWithChildIgnorePointer]
   final ComboAutoClose autoClose;
 
   /// If false the combo is in "disabled" mode: it ignores taps.
-  /// Setting it to false closes all combo popups in the context
+  /// Setting it to false closes all combo popups in the context.
   final bool enabled;
 
-  /// Determines [Combo.popup] open/close animation
+  /// Determines [Combo.popup] open/close animation.
+  /// Default is [PopupAnimation.fade].
   final PopupAnimation animation;
 
-  /// Duration of open/close animation
+  /// Duration of open/close animation.
+  /// Default is [defaultAnimationDuration] value (milliseconds: 150).
   final Duration animationDuration;
 
   /// The color of combo the ink response when the parent widget is focused.
@@ -381,47 +392,67 @@ class ComboParameters {
 
   // * AwaitCombo parameters
 
-  /// Define the progress decorator widget
+  /// Define the progress decorator widget.
+  /// Default is [buildDefaultProgressDecorator] value.
   final ProgressDecoratorBuilder progressDecoratorBuilder;
 
   /// Indicates that the popup should call [AwaitCombo.awaitPopupBuilder]
-  /// each time when popup is opened to update the content
+  /// each time when popup is opened to update the content.
+  /// Default is false.
   final bool refreshOnOpened;
 
-  /// Determine the progress container - [Combo.child] or [Combo.popup]
+  /// Determine the progress container - [Combo.child] or [Combo.popup].
+  /// Default is [ProgressPosition.popup].
   final ProgressPosition progressPosition;
 
   // * ListCombo parameters
 
   /// Builder of widget for displaying popup items list.
+  /// Default is [buildDefaultListPopup] value.
   final ListPopupBuilder listPopupBuilder;
 
-  /// Widget for empty list or sub-menus indication
+  /// Widget for empty list or sub-menus indication.
+  /// Default is 'No Items' text caption.
   final Widget emptyListIndicator;
+
+  // * TypeaheadCombo parameters
+
+  /// Define delay between last text change to throttling user's inputs
+  /// in [TypeaheadCombo].
+  /// Default is Duration(milliseconds: 300)
+  final Duration inputThrottle;
 
   // * MenuItemCombo parameters
 
   /// Builder of widget for displaying popup items list.
+  /// Default is [buildDefaultMenuPopup] value.
   final ListPopupBuilder menuPopupBuilder;
 
-  /// Menu devider widget
+  /// Menu devider widget.
+  /// Default is [MenuDivider].
   final Widget menuDivider;
 
-  /// Indicates that the menu items that contains another items should display 'right arrow'
+  /// Indicates that the menu items that contains another items should
+  /// display 'right arrow'.
+  /// Default is true
   final bool menuShowArrows;
 
-  /// Determines if the menu items that containing another items is selectable
+  /// Determines if the menu items that containing another items is selectable.
+  /// Default is false.
   final bool menuCanTapOnFolder;
 
-  /// Define default menu progress decorator
+  /// Define default menu progress decorator.
+  /// Default is [buildDefaultMenuProgressDecorator] value.
   final ProgressDecoratorBuilder menuProgressDecoratorBuilder;
 
   /// Indicates that the menu item should  update sub-items
-  /// each time when menu is opened
+  /// each time when menu is opened.
+  /// Default is false.
   final bool menuRefreshOnOpened;
 
   /// Determine the menu progress container - [Combo.child] for menu item
   /// or [Combo.popup] for its subitems.
+  /// Default is [ProgressPosition.child].
   final ProgressPosition menuProgressPosition;
 
   /// Creates a copy of this combo parameters but with the given fields replaced with
@@ -446,6 +477,7 @@ class ComboParameters {
     ProgressPosition progressPosition,
     ListPopupBuilder listPopupBuilder,
     Widget emptyListIndicator,
+    Duration inputThrottle,
     ListPopupBuilder menuPopupBuilder,
     Widget menuDivider,
     bool menuShowArrows,
@@ -475,6 +507,7 @@ class ComboParameters {
         progressPosition: progressPosition ?? this.progressPosition,
         listPopupBuilder: listPopupBuilder ?? this.listPopupBuilder,
         emptyListIndicator: emptyListIndicator ?? this.emptyListIndicator,
+        inputThrottle: inputThrottle ?? this.inputThrottle,
         menuPopupBuilder: menuPopupBuilder ?? this.menuPopupBuilder,
         menuDivider: menuDivider ?? this.menuDivider,
         menuShowArrows: menuShowArrows ?? this.menuShowArrows,
@@ -489,7 +522,7 @@ class ComboParameters {
   static const defaultAnimationDuration = Duration(milliseconds: 150);
 
   /// Default value of [Combo.screenPadding]
-  static const defaultScreenPadding = EdgeInsets.all(16);
+  static const defaultScreenPadding = EdgeInsets.all(16.0);
 
   /// Builds defaut progress decorator
   static Widget buildDefaultProgressDecorator(
@@ -590,6 +623,7 @@ class _ComboContextState extends State<ComboContext> {
       progressPosition: my.progressPosition ?? def.progressPosition,
       listPopupBuilder: my.listPopupBuilder ?? def.listPopupBuilder,
       emptyListIndicator: my.emptyListIndicator ?? def.emptyListIndicator,
+      inputThrottle: my.inputThrottle ?? def.inputThrottle,
       menuPopupBuilder: my.menuPopupBuilder ?? def.menuPopupBuilder,
       menuDivider: my.menuDivider ?? def.menuDivider,
       menuShowArrows: my.menuShowArrows ?? def.menuShowArrows,
@@ -1656,7 +1690,6 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
     @required this.getItemText,
     this.minTextLength = 1,
     this.focusNode,
-    this.delay = const Duration(milliseconds: 300),
     this.cleanAfterSelection = false,
 
     // inherited
@@ -1706,9 +1739,6 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
   /// Defines the keyboard focus for this widget.
   final FocusNode focusNode;
 
-  /// Delay between last text change to throttling user's inputs
-  final Duration delay;
-
   /// Determine if text should be cleared when user select the item
   final bool cleanAfterSelection;
 
@@ -1754,7 +1784,9 @@ class TypeaheadComboState<W extends TypeaheadCombo<T>, T>
       if (_textLength < widget.minTextLength) {
         super.close();
       } else {
-        await Future.delayed(widget.delay ?? Duration.zero);
+        if ((parameters.inputThrottle ?? Duration.zero) != Duration.zero) {
+          await Future.delayed(parameters.inputThrottle);
+        }
         if (text == _controller.text) await fill();
       }
     });
