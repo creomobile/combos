@@ -5,7 +5,6 @@ import 'package:demo_items/demo_items.dart';
 import 'package:editors/editors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-import 'package:flutter/services.dart';
 
 const _customAnimationDurationMs = 150;
 
@@ -136,12 +135,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                 PopupPosition.bottomMatch ||
                             properties.position.value == PopupPosition.topMatch
                         ? null
-                        : (context, list, itemBuilder, onItemTapped, mirrored,
-                                getIsSelectable) =>
+                        : (context, list, itemBuilder, onItemTapped, parameters,
+                                mirrored, getIsSelectable) =>
                             ListPopup<String>(
                                 list: list,
                                 itemBuilder: itemBuilder,
                                 onItemTapped: onItemTapped,
+                                parameters: parameters,
                                 width: properties.popupWidth.value.toDouble(),
                                 getIsSelectable: getIsSelectable),
                   ),
@@ -173,12 +173,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                 PopupPosition.bottomMatch ||
                             properties.position.value == PopupPosition.topMatch
                         ? null
-                        : (context, list, itemBuilder, onItemTapped, mirrored,
-                                getIsSelectable) =>
+                        : (context, list, itemBuilder, onItemTapped, parameters,
+                                mirrored, getIsSelectable) =>
                             ListPopup<String>(
                                 list: list,
                                 itemBuilder: itemBuilder,
                                 onItemTapped: onItemTapped,
+                                parameters: parameters,
                                 width: properties.popupWidth.value.toDouble(),
                                 getIsSelectable: getIsSelectable),
                   ),
@@ -212,12 +213,13 @@ class _MyHomePageState extends State<MyHomePage> {
                                 PopupPosition.bottomMatch ||
                             properties.position.value == PopupPosition.topMatch
                         ? null
-                        : (context, list, itemBuilder, onItemTapped, mirrored,
-                                getIsSelectable) =>
+                        : (context, list, itemBuilder, onItemTapped, parameters,
+                                mirrored, getIsSelectable) =>
                             ListPopup<String>(
                                 list: list,
                                 itemBuilder: itemBuilder,
                                 onItemTapped: onItemTapped,
+                                parameters: parameters,
                                 width: properties.popupWidth.value.toDouble(),
                                 getIsSelectable: getIsSelectable),
                   ),
@@ -272,6 +274,11 @@ class _MyHomePageState extends State<MyHomePage> {
                                             MenuItem('File 2'),
                                             MenuItem('File 3'),
                                           ];
+                                        }),
+                                        MenuItem('Documents', () async {
+                                          await Future.delayed(
+                                              Duration(milliseconds: 500));
+                                          return [];
                                         }),
                                       ]),
                               MenuItem.separator,

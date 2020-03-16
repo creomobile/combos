@@ -112,8 +112,16 @@ typedef ListPopupBuilder<T> = Widget Function(
     List<T> list,
     PopupListItemBuilder<T> itemBuilder,
     void Function(T value) onItemTapped,
+    ComboParameters parameters,
     bool mirrored,
     GetIsSelectable<T> getIsSelectable);
+
+/// Default widget for empty list indication
+const Widget defaultEmptyListIndicator = Padding(
+  padding: EdgeInsets.all(16),
+  child: Text('No Items',
+      textAlign: TextAlign.center, style: TextStyle(color: Colors.grey)),
+);
 
 /// Common parameters for combo widgets
 class ComboParameters {
@@ -135,6 +143,7 @@ class ComboParameters {
     this.progressDecoratorBuilder,
     this.refreshOnOpened,
     this.progressPosition,
+    this.emptyListIndicator,
   });
 
   // Common parameters with dafault values for combo widgets
@@ -149,6 +158,7 @@ class ComboParameters {
     progressDecoratorBuilder: buildDefaultProgressDecorator,
     refreshOnOpened: false,
     progressPosition: ProgressPosition.popup,
+    emptyListIndicator: defaultEmptyListIndicator,
   );
 
   // * Combo parameters
@@ -208,6 +218,11 @@ class ComboParameters {
   /// Determine the progress container - [Combo.child] or [Combo.popup]
   final ProgressPosition progressPosition;
 
+  // * ListCombo parameters
+
+  /// Widget for empty list indication
+  final Widget emptyListIndicator;
+
   /// Creates a copy of this combo parameters but with the given fields replaced with
   /// the new values.
   ComboParameters copyWith({
@@ -227,6 +242,7 @@ class ComboParameters {
     ProgressDecoratorBuilder progressDecoratorBuilder,
     bool refreshOnOpened,
     ProgressPosition progressPosition,
+    Widget emptyListIndicator,
   }) =>
       ComboParameters(
         position: position ?? this.position,
@@ -246,6 +262,7 @@ class ComboParameters {
             progressDecoratorBuilder ?? this.progressDecoratorBuilder,
         refreshOnOpened: refreshOnOpened ?? this.refreshOnOpened,
         progressPosition: progressPosition ?? this.progressPosition,
+        emptyListIndicator: emptyListIndicator ?? this.emptyListIndicator,
       );
 
   /// Default value of [Combo.animationDuration]
@@ -296,6 +313,7 @@ class ComboContext extends StatelessWidget {
           my.progressDecoratorBuilder ?? def.progressDecoratorBuilder,
       refreshOnOpened: my.refreshOnOpened ?? def.refreshOnOpened,
       progressPosition: my.progressPosition ?? def.progressPosition,
+      emptyListIndicator: my.emptyListIndicator ?? def.emptyListIndicator,
     );
     return ComboContextData(this, merged);
   }
@@ -1120,16 +1138,6 @@ typedef PopupListItemBuilder<T> = Widget Function(BuildContext context, T item);
 /// Signature to determine if the popup item is active for tapping
 typedef GetIsSelectable<T> = bool Function(T item);
 
-/// Default widget for empty list indication
-const Widget defaultEmptyMessage = Padding(
-  padding: EdgeInsets.all(16),
-  child: Text(
-    'No Items',
-    textAlign: TextAlign.center,
-    style: TextStyle(color: Colors.grey),
-  ),
-);
-
 /// Default widget for displaying popup items
 class ListPopup<T> extends StatelessWidget {
   /// Creates default widget for displaying popup items
@@ -1138,9 +1146,9 @@ class ListPopup<T> extends StatelessWidget {
     @required this.list,
     @required this.itemBuilder,
     @required this.onItemTapped,
+    @required this.parameters,
     this.width,
     this.maxHeight = 300.0,
-    this.emptyMessage = defaultEmptyMessage,
     this.getIsSelectable,
   }) : super(key: key);
 
@@ -1153,6 +1161,9 @@ class ListPopup<T> extends StatelessWidget {
   /// Calls when user taps on the item
   final ValueSetter<T> onItemTapped;
 
+  /// Common parameters for combo widgets
+  final ComboParameters parameters;
+
   /// The width of the list content
   /// Must be setted if [Combo.position] not is [PopupPosition.bottomMatch]
   /// or [PopupPosition.topMatch] (ListView cannot be stretched by its content)
@@ -1161,43 +1172,43 @@ class ListPopup<T> extends StatelessWidget {
   /// Maximum height of popup
   final double maxHeight;
 
-  /// Widget for empty list indication
-  final Widget emptyMessage;
-
   /// Determines if the popup item is active for tapping
   final GetIsSelectable<T> getIsSelectable;
 
   @override
-  Widget build(BuildContext context) => ConstrainedBox(
-        constraints: BoxConstraints(
-            maxWidth: width ?? double.infinity,
-            maxHeight: maxHeight ?? double.infinity),
-        child: Material(
-          elevation: 4,
-          child: list?.isEmpty == true
-              ? emptyMessage == null
-                  ? null
-                  : Column(
-                      mainAxisSize: MainAxisSize.min,
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [emptyMessage],
-                    )
-              : ListView.builder(
-                  shrinkWrap: true,
-                  physics: ClampingScrollPhysics(),
-                  itemCount: list?.length ?? 0,
-                  itemBuilder: (context, index) {
-                    final item = list[index];
-                    final itemWidget = itemBuilder(context, item);
-                    return getIsSelectable == null || getIsSelectable(item)
-                        ? InkWell(
-                            child: itemWidget,
-                            onTap: () => onItemTapped(item),
-                          )
-                        : itemWidget;
-                  }),
-        ),
-      );
+  Widget build(BuildContext context) {
+    final emptyIndicator = parameters.emptyListIndicator;
+    return ConstrainedBox(
+      constraints: BoxConstraints(
+          maxWidth: width ?? double.infinity,
+          maxHeight: maxHeight ?? double.infinity),
+      child: Material(
+        elevation: 4,
+        child: list?.isEmpty == true
+            ? emptyIndicator == null
+                ? null
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [emptyIndicator],
+                  )
+            : ListView.builder(
+                shrinkWrap: true,
+                physics: ClampingScrollPhysics(),
+                itemCount: list?.length ?? 0,
+                itemBuilder: (context, index) {
+                  final item = list[index];
+                  final itemWidget = itemBuilder(context, item);
+                  return getIsSelectable == null || getIsSelectable(item)
+                      ? InkWell(
+                          child: itemWidget,
+                          onTap: () => onItemTapped(item),
+                        )
+                      : itemWidget;
+                }),
+      ),
+    );
+  }
 }
 
 /// Combo widget for displaying the items list
@@ -1257,17 +1268,21 @@ class ListCombo<T> extends AwaitCombo {
 
   /// Builds default widget for displaying popup items.
   static Widget buildDefaultPopup<T>(
-          BuildContext context,
-          List<T> list,
-          PopupListItemBuilder<T> itemBuilder,
-          void Function(T value) onItemTapped,
-          bool mirrored,
-          GetIsSelectable<T> getIsSelectable) =>
-      ListPopup<T>(
-          list: list,
-          itemBuilder: itemBuilder,
-          onItemTapped: onItemTapped,
-          getIsSelectable: getIsSelectable);
+      BuildContext context,
+      List<T> list,
+      PopupListItemBuilder<T> itemBuilder,
+      void Function(T value) onItemTapped,
+      ComboParameters parameters,
+      bool mirrored,
+      GetIsSelectable<T> getIsSelectable) {
+    print(parameters);
+    return ListPopup<T>(
+        list: list,
+        itemBuilder: itemBuilder,
+        onItemTapped: onItemTapped,
+        parameters: parameters,
+        getIsSelectable: getIsSelectable);
+  }
 }
 
 /// State for a [ListCombo].
@@ -1284,6 +1299,7 @@ class ListComboState<W extends ListCombo<T>, T>
       list,
       widget.itemBuilder,
       itemTapped,
+      parameters,
       mirrored,
       widget.getIsSelectable);
 
@@ -1601,6 +1617,7 @@ typedef MenuItemPopupBuilder<T> = Widget Function(
     List<T> list,
     PopupListItemBuilder<T> itemBuilder,
     void Function(T value) onItemTapped,
+    ComboParameters parameters,
     bool mirrored,
     GetIsSelectable<T> getIsSelectable,
     bool canTapOnFolder);
@@ -1632,7 +1649,11 @@ class _ArrowedItem extends StatelessWidget {
         Expanded(child: child),
         const SizedBox(width: 16),
         Icon(Icons.arrow_right,
-            color: Theme.of(context)?.textTheme?.body1?.color?.withOpacity(0.5))
+            color: Theme.of(context)
+                ?.textTheme
+                ?.bodyText1
+                ?.color
+                ?.withOpacity(0.5))
       ]);
 }
 
@@ -1644,7 +1665,7 @@ class MenuListPopup<T extends MenuItem> extends StatelessWidget {
       @required this.list,
       @required this.itemBuilder,
       @required this.onItemTapped,
-      this.emptyMessage = defaultEmptyMessage,
+      @required this.parameters,
       this.getIsSelectable,
       this.canTapOnFolder = true,
       this.backgroundColor = Colors.white,
@@ -1663,8 +1684,8 @@ class MenuListPopup<T extends MenuItem> extends StatelessWidget {
   /// Calls when user taps on the menu item
   final ValueSetter<T> onItemTapped;
 
-  /// Widget to displaying empty menu list
-  final Widget emptyMessage;
+  /// Common parameters for combo widgets
+  final ComboParameters parameters;
 
   /// Determines if the menu item is active for tapping
   final GetIsSelectable<T> getIsSelectable;
@@ -1682,22 +1703,25 @@ class MenuListPopup<T extends MenuItem> extends StatelessWidget {
   final double elevation;
 
   @override
-  Widget build(BuildContext context) => Material(
-      color: backgroundColor,
-      borderRadius: borderRadius,
-      elevation: elevation,
-      child: IntrinsicWidth(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            if (list?.isEmpty == true)
-              emptyMessage ?? const SizedBox()
-            else if (list != null)
-              ...list?.map((item) => itemBuilder(context, item))
-          ],
-        ),
-      ));
+  Widget build(BuildContext context) {
+    final emptyIndicator = parameters.emptyListIndicator;
+    return Material(
+        color: backgroundColor,
+        borderRadius: borderRadius,
+        elevation: elevation,
+        child: IntrinsicWidth(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (list?.isEmpty == true)
+                emptyIndicator ?? const SizedBox()
+              else if (list != null)
+                ...list?.map((item) => itemBuilder(context, item))
+            ],
+          ),
+        ));
+  }
 }
 
 /// Combo widget for displaying the menu
@@ -1778,10 +1802,17 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
                   ),
                 ),
           onItemTapped: onItemTapped,
-          popupBuilder: (context, list, itemBuilder, onItemTapped, mirrored,
-                  getIsSelectable) =>
-              (popupBuilder ?? buildDefaultPopup)(context, list, itemBuilder,
-                  onItemTapped, mirrored, getIsSelectable, canTapOnFolder),
+          popupBuilder: (context, list, itemBuilder, onItemTapped, parameters,
+                  mirrored, getIsSelectable) =>
+              (popupBuilder ?? buildDefaultPopup)(
+                  context,
+                  list,
+                  itemBuilder,
+                  onItemTapped,
+                  parameters,
+                  mirrored,
+                  getIsSelectable,
+                  canTapOnFolder),
           getIsSelectable: getIsSelectable,
           waitChanged: waitChanged,
           child: itemBuilder(null, item),
@@ -1796,6 +1827,7 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
           List<T> list,
           PopupListItemBuilder<T> itemBuilder,
           void Function(T value) onItemTapped,
+          ComboParameters parameters,
           bool mirrored,
           GetIsSelectable<T> getIsSelectable,
           bool canTapOnFolder) =>
@@ -1803,6 +1835,7 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
           list: list,
           itemBuilder: itemBuilder,
           onItemTapped: onItemTapped,
+          parameters: parameters,
           getIsSelectable: getIsSelectable,
           canTapOnFolder: canTapOnFolder);
 
