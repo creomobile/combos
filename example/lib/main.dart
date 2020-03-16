@@ -53,24 +53,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   width: properties.comboWidth.value?.toDouble(),
                   child: Combo(
                     key: _comboKey,
-                    position: properties.position.value,
-                    offset: Offset(
-                      properties.offsetX.value?.toDouble(),
-                      properties.offsetY.value?.toDouble(),
-                    ),
-                    autoMirror: properties.autoMirror.value,
-                    requiredSpace: properties.requiredSpace.value?.toDouble(),
-                    screenPadding: EdgeInsets.symmetric(
-                      horizontal:
-                          properties.screenPaddingHorizontal.value?.toDouble(),
-                      vertical:
-                          properties.screenPaddingVertical.value?.toDouble(),
-                    ),
-                    autoOpen: properties.autoOpen.value,
-                    autoClose: properties.autoClose.value,
-                    animation: properties.animation.value,
-                    animationDuration: Duration(
-                        milliseconds: properties.animationDurationMs.value),
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Text('Combo'),
@@ -103,24 +85,6 @@ class _MyHomePageState extends State<MyHomePage> {
                   width: properties.comboWidth.value?.toDouble(),
                   child: AwaitCombo(
                     key: _awaitComboKey,
-                    position: properties.position.value,
-                    offset: Offset(
-                      properties.offsetX.value?.toDouble(),
-                      properties.offsetY.value?.toDouble(),
-                    ),
-                    autoMirror: properties.autoMirror.value,
-                    requiredSpace: properties.requiredSpace.value?.toDouble(),
-                    screenPadding: EdgeInsets.symmetric(
-                      horizontal:
-                          properties.screenPaddingHorizontal.value?.toDouble(),
-                      vertical:
-                          properties.screenPaddingVertical.value?.toDouble(),
-                    ),
-                    autoOpen: properties.autoOpen.value,
-                    autoClose: properties.autoClose.value,
-                    animation: properties.animation.value,
-                    animationDuration: Duration(
-                        milliseconds: properties.animationDurationMs.value),
                     child: Padding(
                       padding: const EdgeInsets.all(16.0),
                       child: Text('Await Combo'),
@@ -155,25 +119,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 childBuilder: (properties) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
                   child: ListCombo<String>(
-                    position: properties.position.value,
-                    offset: Offset(
-                      properties.offsetX.value?.toDouble(),
-                      properties.offsetY.value?.toDouble(),
-                    ),
-                    autoMirror: properties.autoMirror.value,
-                    requiredSpace: properties.requiredSpace.value?.toDouble(),
-                    screenPadding: EdgeInsets.symmetric(
-                      horizontal:
-                          properties.screenPaddingHorizontal.value?.toDouble(),
-                      vertical:
-                          properties.screenPaddingVertical.value?.toDouble(),
-                    ),
-                    autoOpen: properties.autoOpen.value,
-                    autoClose: properties.autoClose.value,
-                    animation: properties.animation.value,
-                    animationDuration: Duration(
-                        milliseconds: properties.animationDurationMs.value),
-                    refreshOnOpened: properties.refreshOnOpened.value,
                     getList: () async {
                       await Future.delayed(const Duration(milliseconds: 500));
                       return Iterable.generate(properties.itemsCount.value)
@@ -211,25 +156,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 childBuilder: (properties) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
                   child: SelectorCombo<String>(
-                    position: properties.position.value,
-                    offset: Offset(
-                      properties.offsetX.value?.toDouble(),
-                      properties.offsetY.value?.toDouble(),
-                    ),
-                    autoMirror: properties.autoMirror.value,
-                    requiredSpace: properties.requiredSpace.value?.toDouble(),
-                    screenPadding: EdgeInsets.symmetric(
-                      horizontal:
-                          properties.screenPaddingHorizontal.value?.toDouble(),
-                      vertical:
-                          properties.screenPaddingVertical.value?.toDouble(),
-                    ),
-                    autoOpen: properties.autoOpen.value,
-                    autoClose: properties.autoClose.value,
-                    animation: properties.animation.value,
-                    animationDuration: Duration(
-                        milliseconds: properties.animationDurationMs.value),
-                    refreshOnOpened: properties.refreshOnOpened.value,
                     getList: () async {
                       await Future.delayed(const Duration(milliseconds: 500));
                       return Iterable.generate(properties.itemsCount.value)
@@ -265,22 +191,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 childBuilder: (properties) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
                   child: TypeaheadCombo<String>(
-                    position: properties.position.value,
-                    offset: Offset(
-                      properties.offsetX.value?.toDouble(),
-                      properties.offsetY.value?.toDouble(),
-                    ),
-                    autoMirror: properties.autoMirror.value,
-                    requiredSpace: properties.requiredSpace.value?.toDouble(),
-                    screenPadding: EdgeInsets.symmetric(
-                      horizontal:
-                          properties.screenPaddingHorizontal.value?.toDouble(),
-                      vertical:
-                          properties.screenPaddingVertical.value?.toDouble(),
-                    ),
-                    animation: properties.animation.value,
-                    animationDuration: Duration(
-                        milliseconds: properties.animationDurationMs.value),
                     getList: (text) async {
                       await Future.delayed(const Duration(milliseconds: 500));
                       return Iterable.generate(properties.itemsCount.value)
@@ -322,25 +232,6 @@ class _MyHomePageState extends State<MyHomePage> {
                 childBuilder: (properties) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
                   child: MenuItemCombo<String>(
-                    position: properties.position.value,
-                    offset: Offset(
-                      properties.offsetX.value?.toDouble(),
-                      properties.offsetY.value?.toDouble(),
-                    ),
-                    autoMirror: properties.autoMirror.value,
-                    requiredSpace: properties.requiredSpace.value?.toDouble(),
-                    screenPadding: EdgeInsets.symmetric(
-                      horizontal:
-                          properties.screenPaddingHorizontal.value?.toDouble(),
-                      vertical:
-                          properties.screenPaddingVertical.value?.toDouble(),
-                    ),
-                    autoOpen: properties.autoOpen.value,
-                    autoClose: properties.autoClose.value,
-                    animation: properties.animation.value,
-                    animationDuration: Duration(
-                        milliseconds: properties.animationDurationMs.value),
-                    refreshOnOpened: properties.refreshOnOpened.value,
                     itemBuilder: (context, item) => Padding(
                       padding: const EdgeInsets.all(16),
                       child: Text(item.item),
@@ -531,6 +422,8 @@ class DemoItemState<TProperties extends ComboProperties>
   @override
   Widget buildChild() {
     final properties = widget.properties;
+    final AwaitComboProperties awaitProperties =
+        properties is AwaitComboProperties ? properties : null;
     return ComboContext(
         parameters: ComboParameters(
           position: properties.position.value,
@@ -544,6 +437,11 @@ class DemoItemState<TProperties extends ComboProperties>
             vertical: properties.screenPaddingVertical.value.toDouble(),
           ),
           autoOpen: properties.autoOpen.value,
+          autoClose: properties.autoClose.value,
+          animation: properties.animation.value,
+          refreshOnOpened: awaitProperties?.refreshOnOpened?.value ?? false,
+          progressPosition: awaitProperties?.progressPosition?.value ??
+              ProgressPosition.popup,
         ),
         child: super.buildChild());
   }
@@ -578,21 +476,21 @@ class ComboProperties {
   final requiredSpace = IntEditor(title: 'Req. Space');
   final screenPaddingHorizontal = IntEditor(title: 'S. Padding X', value: 16);
   final screenPaddingVertical = IntEditor(title: 'S. Padding Y', value: 16);
-  final autoOpen = EnumEditor<PopupAutoOpen>(
+  final autoOpen = EnumEditor<ComboAutoOpen>(
       title: 'Auto Open',
-      value: PopupAutoOpen.tap,
-      getList: () => PopupAutoOpen.values);
-  final autoClose = EnumEditor<PopupAutoClose>(
+      value: ComboAutoOpen.tap,
+      getList: () => ComboAutoOpen.values);
+  final autoClose = EnumEditor<ComboAutoClose>(
       title: 'Auto Close',
-      value: PopupAutoClose.tapOutsideWithChildIgnorePointer,
-      getList: () => PopupAutoClose.values);
+      value: ComboAutoClose.tapOutsideWithChildIgnorePointer,
+      getList: () => ComboAutoClose.values);
   final animation = EnumEditor<PopupAnimation>(
       title: 'Animation',
       value: PopupAnimation.fade,
       getList: () => PopupAnimation.values);
   final animationDurationMs = IntEditor(
       title: 'A. Duration',
-      value: Combo.defaultAnimationDuration.inMilliseconds);
+      value: ComboParameters.defaultAnimationDuration.inMilliseconds);
 
   List<Editor> get editors => [
         comboWidth,
@@ -614,9 +512,14 @@ class ComboProperties {
 
 class AwaitComboProperties extends ComboProperties {
   final refreshOnOpened = BoolEditor(title: 'Refresh On Opened', value: false);
+  final progressPosition = EnumEditor<ProgressPosition>(
+      title: 'Progress Position',
+      getList: () => ProgressPosition.values,
+      value: ProgressPosition.popup);
 
   @override
-  List<Editor> get editors => [refreshOnOpened, ...super.editors];
+  List<Editor> get editors =>
+      [refreshOnOpened, progressPosition, ...super.editors];
 }
 
 class ListProperties extends AwaitComboProperties {}

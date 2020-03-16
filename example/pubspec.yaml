@@ -11,13 +11,21 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^0.1.2
   combos: any
-  editors: ^0.0.2+4
-  demo_items:
-    git: https://github.com/creomobile/demo_items
+  # editors: ^0.0.2+4
+  editors: any
+  demo_items: any
 
 dependency_overrides:
   combos:
     path: ../
+  editors:
+    git:
+      url: https://github.com/creomobile/editors
+      ref: combos_1.1.0
+  demo_items:
+    git:
+      url: https://github.com/creomobile/demo_items
+      ref: combos_1.1.0
 
 dev_dependencies:
   pedantic: ^1.8.0

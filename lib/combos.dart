@@ -35,7 +35,7 @@ enum PopupPosition {
 }
 
 /// Determines automatically opening mode of the popup
-enum PopupAutoOpen {
+enum ComboAutoOpen {
   /// Without automatically opening
   none,
 
@@ -47,7 +47,7 @@ enum PopupAutoOpen {
 }
 
 /// Determines automatically closing mode of the popup
-enum PopupAutoClose {
+enum ComboAutoClose {
   /// Without automatically closing
   none,
 
@@ -91,26 +91,59 @@ enum PopupAnimation {
 /// If [mirrored] is true, then popup position was changed due to screen edges
 typedef PopupBuilder = Widget Function(BuildContext context, bool mirrored);
 
+/// Signature to build the progress decorator.
+/// [waiting] indicates that the popup is getting by [AwaitPopupBuilder]
+/// [mirrored] indicates that the popup position was changed due to screen edges
+/// [child] is popup content
+typedef ProgressDecoratorBuilder = Widget Function(
+    BuildContext context, bool waiting, bool mirrored, Widget child);
+
+/// Determine the progress container - [Combo.child] or [Combo.popup]
+enum ProgressPosition { child, popup }
+
+/// Signature to build the widget containing popup items
+/// [list] of the popup items
+/// [itemBuilder] builds the popup item widget
+/// [onItemTapped] calls when user taps on the item
+/// [mirrored] indicates that the popup position was changed due to screen edges
+/// [getIsSelectable] determines if the popup item is active for tapping
+typedef ListPopupBuilder<T> = Widget Function(
+    BuildContext context,
+    List<T> list,
+    PopupListItemBuilder<T> itemBuilder,
+    void Function(T value) onItemTapped,
+    bool mirrored,
+    GetIsSelectable<T> getIsSelectable);
+
 /// Common parameters for combo widgets
 class ComboParameters {
+  /// Creates common parameters for combo widgets
   const ComboParameters({
     this.position = PopupPosition.bottomMinMatch,
     this.offset,
     this.autoMirror = true,
     this.requiredSpace,
-    this.screenPadding = Combo.defaultScreenPadding,
-    this.autoOpen = PopupAutoOpen.tap,
-    this.autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
+    this.screenPadding = defaultScreenPadding,
+    this.autoOpen = ComboAutoOpen.tap,
+    this.autoClose = ComboAutoClose.tapOutsideWithChildIgnorePointer,
     this.animation = PopupAnimation.fade,
-    this.animationDuration = Combo.defaultAnimationDuration,
+    this.animationDuration = defaultAnimationDuration,
     this.focusColor,
     this.hoverColor,
     this.highlightColor,
     this.splashColor,
+    this.progressDecoratorBuilder = buildDefaultProgressDecorator,
+    this.refreshOnOpened = false,
+    this.progressPosition = ProgressPosition.popup,
   })  : assert(position != null),
         assert(autoMirror != null),
         assert(autoClose != null),
-        assert(animation != null);
+        assert(animation != null),
+        assert(progressDecoratorBuilder != null),
+        assert(refreshOnOpened != null),
+        assert(progressPosition != null);
+
+  // * Combo parameters
 
   /// Determines popup position depend on [Combo.child] position
   final PopupPosition position;
@@ -132,10 +165,10 @@ class ComboParameters {
   final EdgeInsets screenPadding;
 
   /// Determines automatically opening mode of the popup
-  final PopupAutoOpen autoOpen;
+  final ComboAutoOpen autoOpen;
 
   /// Determines automatically closing mode of the popup
-  final PopupAutoClose autoClose;
+  final ComboAutoClose autoClose;
 
   /// Determines [Combo.popup] open/close animation
   final PopupAnimation animation;
@@ -155,6 +188,18 @@ class ComboParameters {
   /// The splash color of the combo ink response.
   final Color splashColor;
 
+  // * AwaitCombo parameters
+
+  /// Define the progress decorator widget
+  final ProgressDecoratorBuilder progressDecoratorBuilder;
+
+  /// Indicates that the popup should call [AwaitCombo.awaitPopupBuilder]
+  /// each time when popup is opened to update the content
+  final bool refreshOnOpened;
+
+  /// Determine the progress container - [Combo.child] or [Combo.popup]
+  final ProgressPosition progressPosition;
+
   /// Creates a copy of this combo parameters but with the given fields replaced with
   /// the new values.
   ComboParameters copyWith({
@@ -163,14 +208,17 @@ class ComboParameters {
     bool autoMirror,
     double requiredSpace,
     EdgeInsets screenPadding,
-    PopupAutoOpen autoOpen,
-    PopupAutoClose autoClose,
+    ComboAutoOpen autoOpen,
+    ComboAutoClose autoClose,
     PopupAnimation animation,
     Duration animationDuration,
     Colors focusColor,
     Colors hoverColor,
     Colors highlightColor,
     Colors splashColor,
+    ProgressDecoratorBuilder progressDecoratorBuilder,
+    bool refreshOnOpened,
+    ProgressPosition progressPosition,
   }) =>
       ComboParameters(
         position: position ?? this.position,
@@ -186,7 +234,22 @@ class ComboParameters {
         hoverColor: hoverColor ?? this.hoverColor,
         highlightColor: highlightColor ?? this.highlightColor,
         splashColor: splashColor ?? this.splashColor,
+        progressDecoratorBuilder:
+            progressDecoratorBuilder ?? this.progressDecoratorBuilder,
+        refreshOnOpened: refreshOnOpened ?? this.refreshOnOpened,
+        progressPosition: progressPosition ?? this.progressPosition,
       );
+
+  /// Default value of [Combo.animationDuration]
+  static const defaultAnimationDuration = Duration(milliseconds: 150);
+
+  /// Default value of [Combo.screenPadding]
+  static const defaultScreenPadding = EdgeInsets.all(16);
+
+  /// Builds defaut progress decorator
+  static Widget buildDefaultProgressDecorator(
+          BuildContext context, bool waiting, bool mirrored, Widget child) =>
+      ProgressDecorator(waiting: waiting, mirrored: mirrored, child: child);
 }
 
 /// Specifies [ComboParameters] for all [Combo] widgets in [child]
@@ -227,6 +290,12 @@ class ComboContext extends StatelessWidget {
                     highlightColor:
                         params.highlightColor ?? parent.highlightColor,
                     splashColor: params.splashColor ?? parent.splashColor,
+                    progressDecoratorBuilder: params.progressDecoratorBuilder ??
+                        parent.progressDecoratorBuilder,
+                    refreshOnOpened:
+                        params.refreshOnOpened ?? parent.refreshOnOpened,
+                    progressPosition:
+                        params.progressPosition ?? parent.progressPosition,
                   );
       },
     );
@@ -270,7 +339,7 @@ class ComboContextData extends InheritedWidget {
 /// [hoveredChanged] is raised when mouse pointer enters on or exits from child or popup
 /// and its children - when popup contains another [Combo] widgets.
 /// [onTap] is raised when the user taps on popup and don't paint [InkWell] when it's null.
-/// [onTap] also can be raised by 'long tap' event when [autoOpen] is set to [PopupAutoOpen.hovered]
+/// [onTap] also can be raised by 'long tap' event when [autoOpen] is set to [ComboAutoOpen.hovered]
 /// and platform is not 'Web'
 /// [focusColor], [hoverColor], [highlightColor], [splashColor] are [InkWell] parameters
 ///
@@ -301,7 +370,7 @@ class Combo extends StatefulWidget {
   /// [hoveredChanged] is raised when mouse pointer enters on or exits from child or popup
   /// and its children - when popup contains another [Combo] widgets.
   /// [onTap] is raised when the user taps on popup and don't paint [InkWell] when it's null.
-  /// [onTap] also can be raised by 'long tap' event when [autoOpen] is set to [PopupAutoOpen.hovered]
+  /// [onTap] also can be raised by 'long tap' event when [autoOpen] is set to [ComboAutoOpen.hovered]
   /// and platform is not 'Web'
   /// [focusColor], [hoverColor], [highlightColor], [splashColor] are [InkWell] parameters
   ///
@@ -317,33 +386,10 @@ class Combo extends StatefulWidget {
     Key key,
     this.child,
     this.popupBuilder,
-    //this.position = PopupPosition.bottomMinMatch,
-    PopupPosition position = PopupPosition.bottomMinMatch,
-    //this.offset,
-    Offset offset,
-    //this.autoMirror = true,
-    bool autoMirror = true,
-    //this.requiredSpace,
-    double requiredSpace,
-    //this.screenPadding = defaultScreenPadding,
-    EdgeInsets screenPadding = defaultScreenPadding,
-    //this.autoOpen = PopupAutoOpen.tap,
-    PopupAutoOpen autoOpen = PopupAutoOpen.tap,
-    this.autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
-    this.animation = PopupAnimation.fade,
-    this.animationDuration = defaultAnimationDuration,
     this.openedChanged,
     this.hoveredChanged,
     this.onTap,
-    this.focusColor,
-    this.hoverColor,
-    this.highlightColor,
-    this.splashColor,
-  })  : assert(position != null),
-        assert(autoMirror != null),
-        assert(autoClose != null),
-        assert(animation != null),
-        super(key: key);
+  }) : super(key: key);
 
   /// The widget below this widget in the tree.
   ///
@@ -353,37 +399,6 @@ class Combo extends StatefulWidget {
   /// Called to obtain the popup widget.
   final PopupBuilder popupBuilder;
 
-  /// Determines popup position depend on [child]
-  //final PopupPosition position;
-
-  /// The offset to apply to the popup position
-  //final Offset offset;
-
-  /// If true, popup position may depends on screen edges using [requiredSpace]
-  /// and [screenPadding] values.
-  //final bool autoMirror;
-
-  /// Determines required space between popup position and screen edge minus [screenPadding].
-  /// If the popup height or width (depends on [position]) is longer the popup will be
-  /// showed on opposite side of [child] and [popupBuilder] will be called with mirrored = true
-  //final double requiredSpace;
-
-  /// Determines the padding of screen edges and clipping popups.
-  /// (may be useful for hiding popups in app bar area)
-  //final EdgeInsets screenPadding;
-
-  /// Determines automatically opening mode of the popup
-  //final PopupAutoOpen autoOpen;
-
-  /// Determines automatically closing mode of the popup
-  final PopupAutoClose autoClose;
-
-  /// Determines [Combo.popup] open/close animation
-  final PopupAnimation animation;
-
-  /// Duration of open/close animation
-  final Duration animationDuration;
-
   /// Callbacks when the popup is opening or closing
   final ValueChanged<bool> openedChanged;
 
@@ -392,27 +407,9 @@ class Combo extends StatefulWidget {
   final ValueChanged<bool> hoveredChanged;
 
   /// Called when the user taps on [child].
-  /// Also can be called by 'long tap' event if [autoOpen] is set to [PopupAutoOpen.hovered]
+  /// Also can be called by 'long tap' event if [autoOpen] is set to [ComboAutoOpen.hovered]
   /// and platform is not 'Web'
   final GestureTapCallback onTap;
-
-  /// The color of the ink response when the parent widget is focused.
-  final Color focusColor;
-
-  /// The color of the ink response when a pointer is hovering over it.
-  final Color hoverColor;
-
-  /// The highlight color of the ink response when pressed.
-  final Color highlightColor;
-
-  /// The splash color of the ink response.
-  final Color splashColor;
-
-  /// Default value of [Combo.animationDuration]
-  static const defaultAnimationDuration = Duration(milliseconds: 150);
-
-  /// Default value of [Combo.screenPadding]
-  static const defaultScreenPadding = EdgeInsets.all(16);
 
   /// Closes all opened by [Combo] popups
   static void closeAll() => ComboState._closes.add(true);
@@ -440,16 +437,24 @@ class ComboState<T extends Combo> extends State<T> {
   // workaround for: https://github.com/flutter/flutter/issues/50800
   Completer<Offset> _sizeCompleter;
 
-  bool get _fadeOpen =>
-      widget.animation == PopupAnimation.fade ||
-      widget.animation == PopupAnimation.fadeOpen;
-  bool get _fadeClose =>
-      widget.animation == PopupAnimation.fade ||
-      widget.animation == PopupAnimation.fadeClose;
-  bool get _delayedClose =>
-      widget.animation == PopupAnimation.fade ||
-      widget.animation == PopupAnimation.fadeClose ||
-      widget.animation == PopupAnimation.custom;
+  bool get _fadeOpen {
+    final animation = parameters.animation;
+    return animation == PopupAnimation.fade ||
+        animation == PopupAnimation.fadeOpen;
+  }
+
+  bool get _fadeClose {
+    final animation = parameters.animation;
+    return animation == PopupAnimation.fade ||
+        animation == PopupAnimation.fadeClose;
+  }
+
+  bool get _delayedClose {
+    final animation = parameters.animation;
+    return animation == PopupAnimation.fade ||
+        animation == PopupAnimation.fadeClose ||
+        animation == PopupAnimation.custom;
+  }
 
   @protected
   ComboParameters createDefaultParameters() => const ComboParameters();
@@ -457,6 +462,9 @@ class ComboState<T extends Combo> extends State<T> {
   @protected
   ComboParameters getParameters() =>
       ComboContext.of(context)?.parameters ?? createDefaultParameters();
+
+  ComboParameters _parameters;
+  ComboParameters get parameters => _parameters;
 
   @override
   void initState() {
@@ -495,21 +503,25 @@ class ComboState<T extends Combo> extends State<T> {
     if (_fadeClose) _closeCompleter?.complete(0.0);
     if (widget.openedChanged != null) widget.openedChanged(false);
     if (_delayedClose) {
-      await Future.delayed(widget.animationDuration == null
+      final animationDuration = parameters.animationDuration;
+      await Future.delayed(animationDuration == null
           ? Duration.zero
-          : widget.animationDuration + Duration(milliseconds: 1));
+          : animationDuration + Duration(milliseconds: 1));
     }
     overlay.remove();
     setState(() {});
   }
 
-  bool _getCatchHover(ComboParameters parameters) =>
-      parameters.autoOpen == PopupAutoOpen.hovered ||
-      widget.autoClose == PopupAutoClose.notHovered;
+  bool get _catchHover {
+    final parameters = this.parameters;
+    return parameters.autoOpen == ComboAutoOpen.hovered ||
+        parameters.autoClose == ComboAutoClose.notHovered;
+  }
 
-  void _setHovered(ComboParameters parameters, bool value) async {
+  void _setHovered(bool value) async {
     if (!value && opened && _popupHovered) return;
-    _parent?._setHovered(parameters, value);
+    final parameters = this.parameters;
+    _parent?._setHovered(value);
     if (value == _hovered || !mounted) return;
     _hovered = value;
     if (value) {
@@ -517,7 +529,7 @@ class ComboState<T extends Combo> extends State<T> {
         _lastHovered = true;
         widget.hoveredChanged(true);
       }
-      if (!opened && parameters.autoOpen == PopupAutoOpen.hovered) {
+      if (!opened && parameters.autoOpen == ComboAutoOpen.hovered) {
         open();
       }
     } else {
@@ -527,7 +539,7 @@ class ComboState<T extends Combo> extends State<T> {
         _lastHovered = false;
         widget.hoveredChanged(false);
       }
-      if (opened && widget.autoClose == PopupAutoClose.notHovered) {
+      if (opened && parameters.autoClose == ComboAutoClose.notHovered) {
         close();
       }
     }
@@ -544,7 +556,7 @@ class ComboState<T extends Combo> extends State<T> {
   OverlayEntry _createOverlay() => OverlayEntry(builder: (context) {
         if (this.context == null) return null;
         _sizeCompleter = Completer<Offset>();
-        final parameters = getParameters();
+        final parameters = this.parameters;
         final position = parameters.position;
         final screenPadding = parameters.screenPadding;
         final RenderBox renderBox = this.context.findRenderObject();
@@ -597,15 +609,15 @@ class ComboState<T extends Combo> extends State<T> {
                 }()
               : false;
           popup = getPopup(context, mirrored);
-          if (_getCatchHover(parameters)) {
+          if (_catchHover) {
             popup = MouseRegion(
                 onEnter: (_) {
                   _popupHovered = true;
-                  _setHovered(parameters, true);
+                  _setHovered(true);
                 },
                 onExit: (_) {
                   _popupHovered = false;
-                  _setHovered(parameters, false);
+                  _setHovered(false);
                 },
                 child: popup);
           }
@@ -726,7 +738,7 @@ class ComboState<T extends Combo> extends State<T> {
                 ignoring: snapshot.data != 1.0,
                 child: AnimatedOpacity(
                   opacity: snapshot.data,
-                  duration: widget.animationDuration ?? Duration.zero,
+                  duration: parameters.animationDuration ?? Duration.zero,
                   child: child,
                 ),
               ),
@@ -741,11 +753,12 @@ class ComboState<T extends Combo> extends State<T> {
               Padding(padding: screenPadding, child: ClipRect(child: overlay));
         }
 
-        if (widget.autoClose != PopupAutoClose.none &&
-            (widget.autoClose != PopupAutoClose.notHovered || !kIsWeb)) {
+        if (parameters.autoClose != ComboAutoClose.none &&
+            (parameters.autoClose != ComboAutoClose.notHovered || !kIsWeb)) {
           overlay = Stack(children: [
             GestureDetector(onPanDown: (_) {
-              if (widget.autoClose != PopupAutoClose.tapOutsideExceptChild ||
+              if (parameters.autoClose !=
+                      ComboAutoClose.tapOutsideExceptChild ||
                   !renderBox.hitTest(BoxHitTestResult(),
                       position: renderBox.globalToLocal(_.globalPosition))) {
                 close();
@@ -760,28 +773,28 @@ class ComboState<T extends Combo> extends State<T> {
 
   @override
   Widget build(BuildContext context) {
+    final parameters = _parameters = getParameters();
     var child = getChild();
     if (child == null) {
       child = const SizedBox();
     } else {
-      final parameters = getParameters();
-      if (parameters.autoOpen != PopupAutoOpen.none) {
-        final catchHover = _getCatchHover(parameters);
-        final openOnHover = parameters.autoOpen == PopupAutoOpen.hovered;
+      if (parameters.autoOpen != ComboAutoOpen.none) {
+        final catchHover = _catchHover;
+        final openOnHover = parameters.autoOpen == ComboAutoOpen.hovered;
 
         if (widget.onTap == null && (openOnHover && (kIsWeb || !hasPopup))) {
           child = MouseRegion(
-            onEnter: (_) => _setHovered(parameters, true),
-            onExit: (_) => _setHovered(parameters, false),
+            onEnter: (_) => _setHovered(true),
+            onExit: (_) => _setHovered(false),
             child: child,
           );
         } else {
           child = InkWell(
             child: child,
-            focusColor: widget.focusColor,
-            hoverColor: widget.hoverColor,
-            highlightColor: widget.highlightColor,
-            splashColor: widget.splashColor,
+            focusColor: parameters.focusColor,
+            hoverColor: parameters.hoverColor,
+            highlightColor: parameters.highlightColor,
+            splashColor: parameters.splashColor,
             onTap: () {
               if (!openOnHover || (openOnHover && !kIsWeb && hasPopup)) open();
               if (widget.onTap != null &&
@@ -791,12 +804,12 @@ class ComboState<T extends Combo> extends State<T> {
             },
             onLongPress:
                 openOnHover && !kIsWeb && hasPopup ? widget.onTap : null,
-            onHover:
-                catchHover ? (value) => _setHovered(parameters, value) : null,
+            onHover: catchHover ? (value) => _setHovered(value) : null,
           );
         }
       }
-      if (widget.autoClose == PopupAutoClose.tapOutsideWithChildIgnorePointer) {
+      if (parameters.autoClose ==
+          ComboAutoClose.tapOutsideWithChildIgnorePointer) {
         child = IgnorePointer(ignoring: _overlay != null, child: child);
       }
     }
@@ -878,16 +891,6 @@ class _DynamicRenderFollowerLayer extends RenderFollowerLayer {
 /// Signature for futured popup builder.
 /// ('Mirrored' flag cannot be passed as there is no possibility to get popup size immediately)
 typedef AwaitPopupBuilder = FutureOr<Widget> Function(BuildContext context);
-
-/// Signature to build the progress decorator.
-/// [waiting] indicates that the popup is getting by [AwaitPopupBuilder]
-/// [mirrored] indicates that the popup position was changed due to screen edges
-/// [child] is popup content
-typedef ProgressDecoratorBuilder = Widget Function(
-    BuildContext context, bool waiting, bool mirrored, Widget child);
-
-/// Determine the progress container - [Combo.child] or [Combo.popup]
-enum ProgressPosition { child, popup }
 
 /// Default widget for progress indication for futured popups
 class ProgressDecorator extends StatefulWidget {
@@ -979,76 +982,31 @@ class AwaitCombo extends Combo {
   /// Creates combo widget with the delayed getting of the popup content and progress indication
   const AwaitCombo({
     Key key,
-    this.progressDecoratorBuilder = buildDefaultProgressDecorator,
-    this.refreshOnOpened = false,
     this.waitChanged,
-    this.progressPosition = ProgressPosition.popup,
 
     // inherited
     Widget child,
     AwaitPopupBuilder popupBuilder,
-    PopupPosition position = PopupPosition.bottomMinMatch,
-    Offset offset,
-    bool autoMirror = true,
-    double requiredSpace,
-    EdgeInsets screenPadding = Combo.defaultScreenPadding,
-    PopupAutoOpen autoOpen = PopupAutoOpen.tap,
-    PopupAutoClose autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
-    PopupAnimation animation = PopupAnimation.fade,
-    Duration animationDuration = Combo.defaultAnimationDuration,
     ValueChanged<bool> openedChanged,
     ValueChanged<bool> hoveredChanged,
     GestureTapCallback onTap,
-    Color focusColor,
-    Color hoverColor,
-    Color highlightColor,
-    Color splashColor,
   })  : awaitPopupBuilder = popupBuilder,
-        assert(refreshOnOpened != null),
         super(
           key: key,
           child: child,
-          position: position,
-          offset: offset,
-          autoMirror: autoMirror,
-          requiredSpace: requiredSpace,
-          screenPadding: screenPadding,
-          autoOpen: autoOpen,
-          autoClose: autoClose,
-          animation: animation,
-          animationDuration: animationDuration,
           openedChanged: openedChanged,
           hoveredChanged: hoveredChanged,
           onTap: onTap,
-          focusColor: focusColor,
-          hoverColor: hoverColor,
-          highlightColor: highlightColor,
-          splashColor: splashColor,
         );
-
-  /// Define the progress decorator widget
-  final ProgressDecoratorBuilder progressDecoratorBuilder;
 
   /// Called to obtain the futured popup content.
   final AwaitPopupBuilder awaitPopupBuilder;
 
-  /// Indicates that the popup should call [awaitPopupBuilder]
-  /// each time when popup is opened to update the content
-  final bool refreshOnOpened;
-
   /// Called when the popup content is getting or got
   final ValueChanged<bool> waitChanged;
 
-  /// Determine the progress container - [Combo.child] or [Combo.popup]
-  final ProgressPosition progressPosition;
-
   @override
   AwaitComboStateBase createState() => AwaitComboState();
-
-  /// Builds defaut progress decorator
-  static Widget buildDefaultProgressDecorator(
-          BuildContext context, bool waiting, bool mirrored, Widget child) =>
-      ProgressDecorator(waiting: waiting, mirrored: mirrored, child: child);
 }
 
 /// State for a [AwaitCombo].
@@ -1084,33 +1042,39 @@ abstract class AwaitComboStateBase<W extends AwaitCombo, C>
   void clearContent() => _content = null;
 
   @override
-  Widget getChild() => widget.progressDecoratorBuilder == null ||
-          widget.progressPosition != ProgressPosition.child
-      ? super.getChild()
-      : StreamBuilder<int>(
-          initialData: _waitCount,
-          stream: _waitController.stream,
-          builder: (context, snapshot) => widget.progressDecoratorBuilder(
-              context, snapshot.data != 0, false, super.getChild()));
+  Widget getChild() {
+    final parameters = this.parameters;
+    return parameters.progressDecoratorBuilder == null ||
+            parameters.progressPosition != ProgressPosition.child
+        ? super.getChild()
+        : StreamBuilder<int>(
+            initialData: _waitCount,
+            stream: _waitController.stream,
+            builder: (context, snapshot) => parameters.progressDecoratorBuilder(
+                context, snapshot.data != 0, false, super.getChild()));
+  }
 
   @override
-  Widget getPopup(BuildContext context, bool mirrored) => StreamBuilder<int>(
-        initialData: _waitCount,
-        stream: _waitController.stream,
-        builder: (context, snapshot) {
-          final content = StreamBuilder<C>(
-            initialData: _content,
-            stream: _contentController.stream,
-            builder: (context, snapshot) =>
-                buildContent(snapshot.data, mirrored) ?? const SizedBox(),
-          );
-          return widget.progressDecoratorBuilder == null ||
-                  widget.progressPosition != ProgressPosition.popup
-              ? content
-              : widget.progressDecoratorBuilder(
-                  context, snapshot.data != 0, mirrored, content);
-        },
-      );
+  Widget getPopup(BuildContext context, bool mirrored) {
+    final parameters = this.parameters;
+    return StreamBuilder<int>(
+      initialData: _waitCount,
+      stream: _waitController.stream,
+      builder: (context, snapshot) {
+        final content = StreamBuilder<C>(
+          initialData: _content,
+          stream: _contentController.stream,
+          builder: (context, snapshot) =>
+              buildContent(snapshot.data, mirrored) ?? const SizedBox(),
+        );
+        return parameters.progressDecoratorBuilder == null ||
+                parameters.progressPosition != ProgressPosition.popup
+            ? content
+            : parameters.progressDecoratorBuilder(
+                context, snapshot.data != 0, mirrored, content);
+      },
+    );
+  }
 
   @protected
   Future fill() async {
@@ -1142,7 +1106,7 @@ abstract class AwaitComboStateBase<W extends AwaitCombo, C>
 
   @override
   void open() =>
-      (widget.refreshOnOpened || _content == null ? fill : super.open)();
+      (parameters.refreshOnOpened || _content == null ? fill : super.open)();
 
   @override
   void dispose() {
@@ -1160,20 +1124,6 @@ typedef PopupListItemBuilder<T> = Widget Function(BuildContext context, T item);
 
 /// Signature to determine if the popup item is active for tapping
 typedef GetIsSelectable<T> = bool Function(T item);
-
-/// Signature to build the widget containing popup items
-/// [list] of the popup items
-/// [itemBuilder] builds the popup item widget
-/// [onItemTapped] calls when user taps on the item
-/// [mirrored] indicates that the popup position was changed due to screen edges
-/// [getIsSelectable] determines if the popup item is active for tapping
-typedef ListPopupBuilder<T> = Widget Function(
-    BuildContext context,
-    List<T> list,
-    PopupListItemBuilder<T> itemBuilder,
-    void Function(T value) onItemTapped,
-    bool mirrored,
-    GetIsSelectable<T> getIsSelectable);
 
 /// Default widget for empty list indication
 const Widget defaultEmptyMessage = Padding(
@@ -1275,53 +1225,20 @@ class ListCombo<T> extends AwaitCombo {
     this.getIsSelectable,
 
     // inherited
-    ProgressDecoratorBuilder progressDecoratorBuilder =
-        AwaitCombo.buildDefaultProgressDecorator,
-    bool refreshOnOpened = false,
     ValueChanged<bool> waitChanged,
-    ProgressPosition progressPosition = ProgressPosition.popup,
     Widget child,
-    PopupPosition position = PopupPosition.bottomMatch,
-    Offset offset,
-    bool autoMirror = true,
-    double requiredSpace,
-    EdgeInsets screenPadding = Combo.defaultScreenPadding,
-    PopupAutoOpen autoOpen = PopupAutoOpen.tap,
-    PopupAutoClose autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
-    PopupAnimation animation = PopupAnimation.fade,
-    Duration animationDuration = Combo.defaultAnimationDuration,
     ValueChanged<bool> openedChanged,
     ValueChanged<bool> hoveredChanged,
     GestureTapCallback onTap,
-    Color focusColor,
-    Color hoverColor,
-    Color highlightColor,
-    Color splashColor,
   })  : listPopupBuilder = popupBuilder ?? buildDefaultPopup,
         assert(itemBuilder != null),
         super(
           key: key,
-          progressDecoratorBuilder: progressDecoratorBuilder,
-          refreshOnOpened: refreshOnOpened,
           waitChanged: waitChanged,
-          progressPosition: progressPosition,
           child: child,
-          position: position,
-          offset: offset,
-          autoMirror: autoMirror,
-          requiredSpace: requiredSpace,
-          screenPadding: screenPadding,
-          autoOpen: autoOpen,
-          autoClose: autoClose,
-          animation: animation,
-          animationDuration: animationDuration,
           openedChanged: openedChanged,
           hoveredChanged: hoveredChanged,
           onTap: onTap,
-          focusColor: focusColor,
-          hoverColor: hoverColor,
-          highlightColor: highlightColor,
-          splashColor: splashColor,
         );
 
   /// Popup items getter.
@@ -1412,27 +1329,10 @@ class SelectorCombo<T> extends ListCombo<T> {
     @required ValueSetter<T> onItemTapped,
     ListPopupBuilder<T> popupBuilder,
     GetIsSelectable<T> getIsSelectable,
-    ProgressDecoratorBuilder progressDecoratorBuilder =
-        AwaitCombo.buildDefaultProgressDecorator,
-    bool refreshOnOpened = false,
     ValueChanged<bool> waitChanged,
-    ProgressPosition progressPosition = ProgressPosition.popup,
-    PopupPosition position = PopupPosition.bottomMatch,
-    Offset offset,
-    bool autoMirror = true,
-    double requiredSpace,
-    EdgeInsets screenPadding = Combo.defaultScreenPadding,
-    PopupAutoOpen autoOpen = PopupAutoOpen.tap,
-    PopupAutoClose autoClose = PopupAutoClose.tapOutsideWithChildIgnorePointer,
-    PopupAnimation animation = PopupAnimation.fade,
-    Duration animationDuration = Combo.defaultAnimationDuration,
     ValueChanged<bool> openedChanged,
     ValueChanged<bool> hoveredChanged,
     GestureTapCallback onTap,
-    Color focusColor,
-    Color hoverColor,
-    Color highlightColor,
-    Color splashColor,
   }) : super(
           key: key,
           getList: getList,
@@ -1440,26 +1340,10 @@ class SelectorCombo<T> extends ListCombo<T> {
           onItemTapped: onItemTapped,
           popupBuilder: popupBuilder,
           getIsSelectable: getIsSelectable,
-          progressDecoratorBuilder: progressDecoratorBuilder,
-          refreshOnOpened: refreshOnOpened,
           waitChanged: waitChanged,
-          progressPosition: progressPosition,
-          position: position,
-          offset: offset,
-          autoMirror: autoMirror,
-          requiredSpace: requiredSpace,
-          screenPadding: screenPadding,
-          autoOpen: autoOpen,
-          autoClose: autoClose,
-          animation: animation,
-          animationDuration: animationDuration,
           openedChanged: openedChanged,
           hoveredChanged: hoveredChanged,
           onTap: onTap,
-          focusColor: focusColor,
-          hoverColor: hoverColor,
-          highlightColor: highlightColor,
-          splashColor: splashColor,
         );
 
   /// The 'selected' item to display in [Combo.child] area
@@ -1533,24 +1417,10 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
     @required ValueSetter<T> onItemTapped,
     ListPopupBuilder<T> popupBuilder,
     GetIsSelectable<T> getIsSelectable,
-    ProgressDecoratorBuilder progressDecoratorBuilder =
-        AwaitCombo.buildDefaultProgressDecorator,
     ValueChanged<bool> waitChanged,
-    ProgressPosition progressPosition = ProgressPosition.popup,
-    PopupPosition position = PopupPosition.bottomMatch,
-    Offset offset,
-    bool autoMirror = true,
-    double requiredSpace,
-    EdgeInsets screenPadding = Combo.defaultScreenPadding,
-    PopupAnimation animation = PopupAnimation.fade,
-    Duration animationDuration = Combo.defaultAnimationDuration,
     ValueChanged<bool> openedChanged,
     ValueChanged<bool> hoveredChanged,
     GestureTapCallback onTap,
-    Color focusColor,
-    Color hoverColor,
-    Color highlightColor,
-    Color splashColor,
   })  : typeaheadGetList = getList,
         assert(getList != null),
         assert(enabled != null),
@@ -1566,26 +1436,10 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
           onItemTapped: onItemTapped,
           popupBuilder: popupBuilder,
           getIsSelectable: getIsSelectable,
-          progressDecoratorBuilder: progressDecoratorBuilder,
-          refreshOnOpened: false,
           waitChanged: waitChanged,
-          progressPosition: progressPosition,
-          position: position,
-          offset: offset,
-          autoMirror: autoMirror,
-          requiredSpace: requiredSpace,
-          screenPadding: screenPadding,
-          autoOpen: PopupAutoOpen.none,
-          autoClose: PopupAutoClose.tapOutsideExceptChild,
-          animation: animation,
-          animationDuration: animationDuration,
           openedChanged: openedChanged,
           hoveredChanged: hoveredChanged,
           onTap: onTap,
-          focusColor: focusColor,
-          hoverColor: hoverColor,
-          highlightColor: highlightColor,
-          splashColor: splashColor,
         );
 
   /// Popup items getter using user's text.
@@ -1639,8 +1493,9 @@ class TypeaheadComboState<W extends TypeaheadCombo<T>, T>
   int get _textLength => _controller.text?.length ?? 0;
 
   @override
-  ComboParameters getParameters() =>
-      super.getParameters().copyWith(autoOpen: PopupAutoOpen.none);
+  ComboParameters getParameters() => super
+      .getParameters()
+      .copyWith(autoOpen: ComboAutoOpen.none, refreshOnOpened: false);
 
   @override
   void initState() {
@@ -1881,31 +1736,10 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
     @required ValueSetter<MenuItem<T>> onItemTapped,
     MenuItemPopupBuilder<MenuItem<T>> popupBuilder,
     GetIsSelectable<MenuItem<T>> getIsSelectable,
-    ProgressDecoratorBuilder progressDecoratorBuilder =
-        buildDefaultProgressDecorator,
-    bool refreshOnOpened = false,
     ValueChanged<bool> waitChanged,
-    ProgressPosition progressPosition = ProgressPosition.child,
-    PopupPosition position = PopupPosition.bottomMinMatch,
-    Offset offset,
-    bool autoMirror = true,
-    double requiredSpace,
-    EdgeInsets screenPadding = Combo.defaultScreenPadding,
-    PopupAutoOpen autoOpen = PopupAutoOpen.tap,
-    PopupAutoClose autoClose = PopupAutoClose.notHovered,
-    PopupAnimation animation = PopupAnimation.fade,
-    Duration animationDuration = Combo.defaultAnimationDuration,
     ValueChanged<bool> openedChanged,
     ValueChanged<bool> hoveredChanged,
     GestureTapCallback onTap,
-    Color focusColor,
-    Color hoverColor,
-    Color highlightColor,
-    Color splashColor,
-    Color rootFocusColor,
-    Color rootHoverColor,
-    Color rootHighlightColor,
-    Color rootSplashColor,
   })  : assert(item != null),
         assert(divider != null),
         assert(showSubmenuArrows != null),
@@ -1918,7 +1752,10 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
               : ComboContext(
                   parameters: ComboParameters(
                     position: PopupPosition.right,
-                    autoOpen: PopupAutoOpen.hovered,
+                    autoOpen: ComboAutoOpen.hovered,
+                    autoClose: ComboAutoClose.notHovered,
+                    progressDecoratorBuilder: buildDefaultProgressDecorator,
+                    progressPosition: ProgressPosition.child,
                   ),
                   child: MenuItemCombo<T>(
                     item: item,
@@ -1935,19 +1772,7 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
                     onItemTapped: onItemTapped,
                     popupBuilder: popupBuilder ?? buildDefaultPopup,
                     getIsSelectable: getIsSelectable,
-                    progressDecoratorBuilder: progressDecoratorBuilder,
-                    refreshOnOpened: refreshOnOpened,
                     waitChanged: waitChanged,
-                    progressPosition: progressPosition,
-                    position: PopupPosition.right,
-                    offset: offset,
-                    autoMirror: true,
-                    requiredSpace: requiredSpace,
-                    screenPadding: screenPadding,
-                    autoOpen: PopupAutoOpen.hovered,
-                    autoClose: PopupAutoClose.notHovered,
-                    animation: animation,
-                    animationDuration: animationDuration,
                     openedChanged: openedChanged,
                     onTap: canTapOnFolder || item.getChildren == null
                         ? () {
@@ -1955,10 +1780,6 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
                             onItemTapped(item);
                           }
                         : null,
-                    focusColor: focusColor,
-                    hoverColor: hoverColor,
-                    highlightColor: highlightColor,
-                    splashColor: splashColor,
                   ),
                 ),
           onItemTapped: onItemTapped,
@@ -1967,27 +1788,11 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
               (popupBuilder ?? buildDefaultPopup)(context, list, itemBuilder,
                   onItemTapped, mirrored, getIsSelectable, canTapOnFolder),
           getIsSelectable: getIsSelectable,
-          progressDecoratorBuilder: progressDecoratorBuilder,
-          refreshOnOpened: refreshOnOpened,
           waitChanged: waitChanged,
-          progressPosition: progressPosition,
           child: itemBuilder(null, item),
-          position: position,
-          offset: offset,
-          autoMirror: autoMirror,
-          requiredSpace: requiredSpace,
-          screenPadding: screenPadding,
-          autoOpen: autoOpen,
-          autoClose: autoClose,
-          animation: animation,
-          animationDuration: animationDuration,
           openedChanged: openedChanged,
           hoveredChanged: hoveredChanged,
           onTap: onTap,
-          focusColor: rootFocusColor ?? focusColor,
-          hoverColor: rootHoverColor ?? hoverColor,
-          highlightColor: rootHighlightColor ?? highlightColor,
-          splashColor: rootSplashColor ?? splashColor,
         );
 
   /// Builds default widget to display list of the menu items

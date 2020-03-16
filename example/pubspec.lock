@@ -26,17 +26,19 @@ packages:
     dependency: "direct main"
     description:
       path: "."
-      ref: HEAD
-      resolved-ref: f0df03be9fc315a9a2d813f9de6d3781d5ae726b
+      ref: "combos_1.1.0"
+      resolved-ref: d4ceacf05481fb71a6cfba5926728139c6f97b6e
       url: "https://github.com/creomobile/demo_items"
     source: git
     version: "0.0.1"
   editors:
     dependency: "direct main"
     description:
-      name: editors
-      url: "https://pub.dartlang.org"
-    source: hosted
+      path: "."
+      ref: "combos_1.1.0"
+      resolved-ref: "9a7c0e15c708d00b1130c95d9531902aa4727c90"
+      url: "https://github.com/creomobile/editors"
+    source: git
     version: "0.0.2+4"
   flutter:
     dependency: "direct main"
