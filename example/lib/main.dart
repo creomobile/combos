@@ -117,33 +117,40 @@ class _MyHomePageState extends State<MyHomePage> {
                 properties: _listComboProperties,
                 childBuilder: (properties) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
-                  child: ListCombo<String>(
-                    getList: () async {
-                      await Future.delayed(const Duration(milliseconds: 500));
-                      return Iterable.generate(properties.itemsCount.value)
-                          .map((e) => 'Item ${e + 1}')
-                          .toList();
-                    },
-                    itemBuilder: (context, parameters, item) =>
-                        ListTile(title: Text(item ?? '')),
-                    child: const Padding(
-                      padding: EdgeInsets.all(16.0),
-                      child: Text('List Combo'),
+                  child: ComboContext(
+                    parameters: ComboParameters(
+                      listPopupBuilder: properties.position.value ==
+                                  PopupPosition.bottomMatch ||
+                              properties.position.value ==
+                                  PopupPosition.topMatch
+                          ? null
+                          : (context, parameters, list, itemBuilder,
+                                  getIsSelectable, onItemTapped, mirrored) =>
+                              ListPopup(
+                                  parameters: parameters,
+                                  list: list,
+                                  itemBuilder: (context, parameters, item) =>
+                                      itemBuilder(context, parameters, item),
+                                  getIsSelectable: getIsSelectable,
+                                  onItemTapped: onItemTapped,
+                                  width:
+                                      properties.popupWidth.value.toDouble()),
                     ),
-                    onItemTapped: (value) {},
-                    popupBuilder: properties.position.value ==
-                                PopupPosition.bottomMatch ||
-                            properties.position.value == PopupPosition.topMatch
-                        ? null
-                        : (context, parameters, list, itemBuilder,
-                                getIsSelectable, onItemTapped, mirrored) =>
-                            ListPopup<String>(
-                                parameters: parameters,
-                                list: list,
-                                itemBuilder: itemBuilder,
-                                getIsSelectable: getIsSelectable,
-                                onItemTapped: onItemTapped,
-                                width: properties.popupWidth.value.toDouble()),
+                    child: ListCombo<String>(
+                      getList: () async {
+                        await Future.delayed(const Duration(milliseconds: 500));
+                        return Iterable.generate(properties.itemsCount.value)
+                            .map((e) => 'Item ${e + 1}')
+                            .toList();
+                      },
+                      itemBuilder: (context, parameters, item) =>
+                          ListTile(title: Text(item ?? '')),
+                      child: const Padding(
+                        padding: EdgeInsets.all(16.0),
+                        child: Text('List Combo'),
+                      ),
+                      onItemTapped: (value) {},
+                    ),
                   ),
                 ),
               ),
@@ -155,33 +162,40 @@ class _MyHomePageState extends State<MyHomePage> {
                 properties: _selectorProperties,
                 childBuilder: (properties) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
-                  child: SelectorCombo<String>(
-                    getList: () async {
-                      await Future.delayed(const Duration(milliseconds: 500));
-                      return Iterable.generate(properties.itemsCount.value)
-                          .map((e) => 'Item ${e + 1}')
-                          .toList();
-                    },
-                    selected: properties.selected.value,
-                    itemBuilder: (context, parameters, item) =>
-                        ListTile(title: Text(item ?? '')),
-                    childBuilder: (context, parameters, item) =>
-                        ListTile(title: Text(item ?? 'Selector Combo')),
-                    onItemTapped: (value) =>
-                        setState(() => properties.selected.value = value),
-                    popupBuilder: properties.position.value ==
-                                PopupPosition.bottomMatch ||
-                            properties.position.value == PopupPosition.topMatch
-                        ? null
-                        : (context, parameters, list, itemBuilder,
-                                getIsSelectable, onItemTapped, mirrored) =>
-                            ListPopup<String>(
-                                parameters: parameters,
-                                list: list,
-                                itemBuilder: itemBuilder,
-                                getIsSelectable: getIsSelectable,
-                                onItemTapped: onItemTapped,
-                                width: properties.popupWidth.value.toDouble()),
+                  child: ComboContext(
+                    parameters: ComboParameters(
+                      listPopupBuilder: properties.position.value ==
+                                  PopupPosition.bottomMatch ||
+                              properties.position.value ==
+                                  PopupPosition.topMatch
+                          ? null
+                          : (context, parameters, list, itemBuilder,
+                                  getIsSelectable, onItemTapped, mirrored) =>
+                              ListPopup(
+                                  parameters: parameters,
+                                  list: list,
+                                  itemBuilder: (context, parameters, item) =>
+                                      itemBuilder(context, parameters, item),
+                                  getIsSelectable: getIsSelectable,
+                                  onItemTapped: onItemTapped,
+                                  width:
+                                      properties.popupWidth.value.toDouble()),
+                    ),
+                    child: SelectorCombo<String>(
+                      getList: () async {
+                        await Future.delayed(const Duration(milliseconds: 500));
+                        return Iterable.generate(properties.itemsCount.value)
+                            .map((e) => 'Item ${e + 1}')
+                            .toList();
+                      },
+                      selected: properties.selected.value,
+                      itemBuilder: (context, parameters, item) =>
+                          ListTile(title: Text(item ?? '')),
+                      childBuilder: (context, parameters, item) =>
+                          ListTile(title: Text(item ?? 'Selector Combo')),
+                      onItemTapped: (value) =>
+                          setState(() => properties.selected.value = value),
+                    ),
                   ),
                 ),
               ),
@@ -191,37 +205,44 @@ class _MyHomePageState extends State<MyHomePage> {
                 properties: _typeaheadProperties,
                 childBuilder: (properties) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
-                  child: TypeaheadCombo<String>(
-                    getList: (text) async {
-                      await Future.delayed(const Duration(milliseconds: 500));
-                      return Iterable.generate(properties.itemsCount.value)
-                          .map((e) => 'Item ${e + 1}')
-                          .toList();
-                    },
-                    enabled: properties.enabled.value,
-                    minTextLength: properties.minTextLength.value,
-                    delay: Duration(milliseconds: properties.delayMs.value),
-                    cleanAfterSelection: properties.cleanAfterSelection.value,
-                    decoration: InputDecoration(labelText: 'Typeahead Combo'),
-                    selected: properties.selected.value,
-                    itemBuilder: (context, parameters, item) =>
-                        ListTile(title: Text(item ?? '')),
-                    getItemText: (item) => item,
-                    onItemTapped: (value) =>
-                        setState(() => properties.selected.value = value),
-                    popupBuilder: properties.position.value ==
-                                PopupPosition.bottomMatch ||
-                            properties.position.value == PopupPosition.topMatch
-                        ? null
-                        : (context, parameters, list, itemBuilder,
-                                getIsSelectable, onItemTapped, mirrored) =>
-                            ListPopup<String>(
-                                parameters: parameters,
-                                list: list,
-                                itemBuilder: itemBuilder,
-                                getIsSelectable: getIsSelectable,
-                                onItemTapped: onItemTapped,
-                                width: properties.popupWidth.value.toDouble()),
+                  child: ComboContext(
+                    parameters: ComboParameters(
+                      listPopupBuilder: properties.position.value ==
+                                  PopupPosition.bottomMatch ||
+                              properties.position.value ==
+                                  PopupPosition.topMatch
+                          ? null
+                          : (context, parameters, list, itemBuilder,
+                                  getIsSelectable, onItemTapped, mirrored) =>
+                              ListPopup(
+                                  parameters: parameters,
+                                  list: list,
+                                  itemBuilder: (context, parameters, item) =>
+                                      itemBuilder(context, parameters, item),
+                                  getIsSelectable: getIsSelectable,
+                                  onItemTapped: onItemTapped,
+                                  width:
+                                      properties.popupWidth.value.toDouble()),
+                    ),
+                    child: TypeaheadCombo<String>(
+                      getList: (text) async {
+                        await Future.delayed(const Duration(milliseconds: 500));
+                        return Iterable.generate(properties.itemsCount.value)
+                            .map((e) => 'Item ${e + 1}')
+                            .toList();
+                      },
+                      enabled: properties.enabled.value,
+                      minTextLength: properties.minTextLength.value,
+                      delay: Duration(milliseconds: properties.delayMs.value),
+                      cleanAfterSelection: properties.cleanAfterSelection.value,
+                      decoration: InputDecoration(labelText: 'Typeahead Combo'),
+                      selected: properties.selected.value,
+                      itemBuilder: (context, parameters, item) =>
+                          ListTile(title: Text(item ?? '')),
+                      getItemText: (item) => item,
+                      onItemTapped: (value) =>
+                          setState(() => properties.selected.value = value),
+                    ),
                   ),
                 ),
               ),
