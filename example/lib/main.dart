@@ -243,8 +243,6 @@ class _MyHomePageState extends State<MyHomePage> {
                           AlertDialog(content: Text('${value.item} tapped!'));
                       showDialog(context: context, builder: (_) => dialog);
                     },
-                    showSubmenuArrows: properties.showSubmenuArrows.value,
-                    canTapOnFolder: properties.canTapOnFolder.value,
                     item: MenuItem(
                         'Menu Item Combo',
                         () => [
@@ -431,6 +429,8 @@ class DemoItemState<TProperties extends ComboProperties>
     final properties = widget.properties;
     final AwaitComboProperties awaitProperties =
         properties is AwaitComboProperties ? properties : null;
+    final MenuProperties menuProperties =
+        properties is MenuProperties ? properties : null;
     return ComboContext(
         parameters: ComboParameters(
           position: properties.position.value,
@@ -449,6 +449,10 @@ class DemoItemState<TProperties extends ComboProperties>
           refreshOnOpened: awaitProperties?.refreshOnOpened?.value ?? false,
           progressPosition: awaitProperties?.progressPosition?.value ??
               ProgressPosition.popup,
+          menuShowArrows: menuProperties?.showArrows?.value,
+          menuCanTapOnFolder: menuProperties?.canTapOnFolder?.value,
+          menuRefreshOnOpened: menuProperties?.menuRefreshOnOpened?.value,
+          menuProgressPosition: menuProperties?.menuProgressPosition?.value,
         ),
         child: super.buildChild());
   }
@@ -571,11 +575,20 @@ class TypeaheadProperties extends SelectorProperties {
 }
 
 class MenuProperties extends ListProperties {
-  final showSubmenuArrows =
-      BoolEditor(title: 'Show Submenu Arrows', value: true);
+  final showArrows = BoolEditor(title: 'Show Arrows', value: true);
   final canTapOnFolder = BoolEditor(title: 'Can Tap On Folder', value: false);
-
+  final menuRefreshOnOpened =
+      BoolEditor(title: 'Menu Refresh On Opened', value: false);
+  final menuProgressPosition = EnumEditor<ProgressPosition>(
+      title: 'Menu Progress Position',
+      getList: () => ProgressPosition.values,
+      value: ProgressPosition.child);
   @override
-  List<Editor> get editors =>
-      [showSubmenuArrows, canTapOnFolder, ...super.editors];
+  List<Editor> get editors => [
+        showArrows,
+        canTapOnFolder,
+        menuRefreshOnOpened,
+        menuProgressPosition,
+        ...super.editors
+      ];
 }

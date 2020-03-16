@@ -158,6 +158,9 @@ class ComboParameters {
     this.menuDivider,
     this.menuShowArrows,
     this.menuCanTapOnFolder,
+    this.menuProgressDecoratorBuilder,
+    this.menuRefreshOnOpened,
+    this.menuProgressPosition,
   });
 
   // Common parameters with dafault values for combo widgets
@@ -180,6 +183,9 @@ class ComboParameters {
     menuDivider: MenuDivider(),
     menuShowArrows: true,
     menuCanTapOnFolder: false,
+    menuProgressDecoratorBuilder: buildDefaultMenuProgressDecorator,
+    menuRefreshOnOpened: false,
+    menuProgressPosition: ProgressPosition.child,
   );
 
   // * Combo parameters
@@ -244,7 +250,7 @@ class ComboParameters {
   /// Widget for empty list indication
   final Widget emptyListIndicator;
 
-  // * ListCombo parameters
+  // * MenuItemCombo parameters
 
   /// Menu devider widget
   final Widget menuDivider;
@@ -254,6 +260,17 @@ class ComboParameters {
 
   /// Determines if the menu items that containing another items is selectable
   final bool menuCanTapOnFolder;
+
+  /// Define default menu progress decorator
+  final ProgressDecoratorBuilder menuProgressDecoratorBuilder;
+
+  /// Indicates that the menu item should  update sub-items
+  /// each time when menu is opened
+  final bool menuRefreshOnOpened;
+
+  /// Determine the menu progress container - [Combo.child] for menu item
+  /// or [Combo.popup] for its subitems.
+  final ProgressPosition menuProgressPosition;
 
   /// Creates a copy of this combo parameters but with the given fields replaced with
   /// the new values.
@@ -278,6 +295,9 @@ class ComboParameters {
     Widget menuDivider,
     bool menuShowArrows,
     bool menuCanTapOnFolder,
+    ProgressDecoratorBuilder menuProgressDecoratorBuilder,
+    bool menuRefreshOnOpened,
+    ProgressPosition menuProgressPosition,
   }) =>
       ComboParameters(
         position: position ?? this.position,
@@ -301,6 +321,10 @@ class ComboParameters {
         menuDivider: menuDivider ?? this.menuDivider,
         menuShowArrows: menuShowArrows ?? this.menuShowArrows,
         menuCanTapOnFolder: menuCanTapOnFolder ?? this.menuCanTapOnFolder,
+        menuProgressDecoratorBuilder:
+            menuProgressDecoratorBuilder ?? this.menuProgressDecoratorBuilder,
+        menuRefreshOnOpened: menuRefreshOnOpened ?? this.menuRefreshOnOpened,
+        menuProgressPosition: menuProgressPosition ?? this.menuProgressPosition,
       );
 
   /// Default value of [Combo.animationDuration]
@@ -313,6 +337,18 @@ class ComboParameters {
   static Widget buildDefaultProgressDecorator(
           BuildContext context, bool waiting, bool mirrored, Widget child) =>
       ProgressDecorator(waiting: waiting, mirrored: mirrored, child: child);
+
+  /// Builds default menu progress decorator
+  static Widget buildDefaultMenuProgressDecorator(
+          BuildContext context, bool waiting, bool mirrored, Widget child) =>
+      ProgressDecorator(
+          waiting: waiting,
+          mirrored: false,
+          progressBackgroundColor: Colors.transparent,
+          progressValueColor:
+              AlwaysStoppedAnimation(Colors.blueAccent.withOpacity(0.2)),
+          child: child,
+          progressHeight: null);
 }
 
 /// Specifies [ComboParameters] for all [Combo] widgets in [child]
@@ -355,6 +391,10 @@ class ComboContext extends StatelessWidget {
       menuDivider: my.menuDivider ?? def.menuDivider,
       menuShowArrows: my.menuShowArrows ?? def.menuShowArrows,
       menuCanTapOnFolder: my.menuCanTapOnFolder ?? def.menuCanTapOnFolder,
+      menuProgressDecoratorBuilder:
+          my.menuProgressDecoratorBuilder ?? def.menuProgressDecoratorBuilder,
+      menuRefreshOnOpened: my.menuRefreshOnOpened ?? def.menuRefreshOnOpened,
+      menuProgressPosition: my.menuProgressPosition ?? def.menuProgressPosition,
     );
     return ComboContextData(this, merged);
   }
@@ -1648,25 +1688,6 @@ class MenuItem<T> {
   final PopupGetList<MenuItem<T>> getChildren;
 }
 
-/// Signature to build the widget containing menu items
-/// [list] of the menu items
-/// [itemBuilder] builds the menu item widget
-/// [onItemTapped] calls when user taps on the menu item
-/// [mirrored] indicates that the popup position was changed due to screen edges
-/// [getIsSelectable] determines if the menu item is active for tapping
-/// [canTapOnFolder] determines if the menu items that containing another items is selectable
-typedef MenuItemPopupBuilder<T> = Widget Function(
-    BuildContext context,
-    List<T> list,
-    PopupListItemBuilder<T> itemBuilder,
-    void Function(T value) onItemTapped,
-    ComboParameters parameters,
-    bool mirrored,
-    GetIsSelectable<T> getIsSelectable,
-    bool canTapOnFolder);
-
-const Widget _defaultMenuDivider = MenuDivider();
-
 class _ArrowedItem extends StatelessWidget {
   const _ArrowedItem({Key key, this.child}) : super(key: key);
   final Widget child;
@@ -1693,12 +1714,10 @@ class MenuListPopup<T extends MenuItem> extends StatelessWidget {
       @required this.onItemTapped,
       @required this.parameters,
       this.getIsSelectable,
-      this.canTapOnFolder = true,
       this.backgroundColor = Colors.white,
       this.borderRadius,
       this.elevation = 4})
       : assert(itemBuilder != null),
-        assert(canTapOnFolder != null),
         super(key: key);
 
   /// List of the menu items
@@ -1716,9 +1735,6 @@ class MenuListPopup<T extends MenuItem> extends StatelessWidget {
   /// Determines if the menu item is active for tapping
   final GetIsSelectable<T> getIsSelectable;
 
-  /// Determines if the menu items that containing another items is selectable
-  final bool canTapOnFolder;
-
   /// Menu bachground color
   final Color backgroundColor;
 
@@ -1731,13 +1747,6 @@ class MenuListPopup<T extends MenuItem> extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final parameters = this.parameters;
-
-/*
-  final Widget menuDivider;
-  final bool menuShowArrows;
-  final bool menuCanTapOnFolder;
-    */
-    final emptyIndicator = parameters.emptyListIndicator;
     return Material(
         color: backgroundColor,
         borderRadius: borderRadius,
@@ -1748,7 +1757,7 @@ class MenuListPopup<T extends MenuItem> extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (list?.isEmpty == true)
-                emptyIndicator ?? const SizedBox()
+                parameters.emptyListIndicator ?? const SizedBox()
               else if (list != null)
                 ...list?.map((item) => itemBuilder(context, parameters, item))
             ],
@@ -1774,82 +1783,81 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
     /// Menu item
     @required MenuItem<T> item,
 
-    /// Menu separator widget
-    Widget divider = _defaultMenuDivider,
-
-    /// Indicates that the menu items that contains another items should display 'right arrow'
-    bool showSubmenuArrows = true,
-
-    /// Determines if the menu items that containing another items is selectable
-    bool canTapOnFolder = false,
+    /// Defines menu item child, if null use itemBuilder with default combo parameters
+    Widget child,
 
     // inherited
     @required PopupListItemBuilder<MenuItem<T>> itemBuilder,
     @required ValueSetter<MenuItem<T>> onItemTapped,
-    MenuItemPopupBuilder<MenuItem<T>> popupBuilder,
+    ListPopupBuilder<MenuItem<T>> popupBuilder,
     GetIsSelectable<MenuItem<T>> getIsSelectable,
     ValueChanged<bool> waitChanged,
     ValueChanged<bool> openedChanged,
     ValueChanged<bool> hoveredChanged,
     GestureTapCallback onTap,
   })  : assert(item != null),
-        //assert(divider != null),
-        assert(showSubmenuArrows != null),
-        assert(canTapOnFolder != null),
         super(
           key: key,
           getList: item.getChildren,
-          itemBuilder: (context, parameters, item) => item == MenuItem.separator
-              ? divider
-              : ComboContext(
-                  parameters: ComboParameters(
-                    position: PopupPosition.right,
-                    autoOpen: ComboAutoOpen.hovered,
-                    autoClose: ComboAutoClose.notHovered,
-                    progressDecoratorBuilder: buildDefaultProgressDecorator,
-                    progressPosition: ProgressPosition.child,
-                  ),
-                  child: MenuItemCombo<T>(
-                    item: item,
-                    divider: divider,
-                    itemBuilder: showSubmenuArrows
-                        ? (context, parameters, item) {
-                            final widget =
-                                itemBuilder(context, parameters, item);
-                            return item.getChildren == null ||
-                                    widget is _ArrowedItem
-                                ? widget
-                                : _ArrowedItem(child: widget);
-                          }
-                        : itemBuilder,
-                    onItemTapped: onItemTapped,
-                    popupBuilder: popupBuilder ?? buildDefaultPopup,
-                    getIsSelectable: getIsSelectable,
-                    waitChanged: waitChanged,
-                    openedChanged: openedChanged,
-                    onTap: canTapOnFolder || item.getChildren == null
-                        ? () {
-                            Combo.closeAll();
-                            onItemTapped(item);
-                          }
-                        : null,
-                  ),
-                ),
+          itemBuilder: (context, parameters, item) {
+            final menuParameters = parameters.copyWith(
+              position: PopupPosition.right,
+              autoOpen: ComboAutoOpen.hovered,
+              autoClose: ComboAutoClose.notHovered,
+              progressDecoratorBuilder: parameters.menuProgressDecoratorBuilder,
+              refreshOnOpened: parameters.menuRefreshOnOpened,
+              progressPosition: parameters.menuProgressPosition,
+            );
+
+            return item == MenuItem.separator
+                ? parameters.menuDivider
+                : ComboContext(
+                    parameters: menuParameters,
+                    child: MenuItemCombo<T>(
+                      item: item,
+                      itemBuilder: parameters.menuShowArrows
+                          ? (context, parameters, item) {
+                              final widget =
+                                  itemBuilder(context, parameters, item);
+                              return item.getChildren == null ||
+                                      widget is _ArrowedItem
+                                  ? widget
+                                  : _ArrowedItem(child: widget);
+                            }
+                          : itemBuilder,
+                      onItemTapped: onItemTapped,
+                      popupBuilder: (context, list, itemBuilder, onItemTapped,
+                          parameters, mirrored, getIsSelectable) {
+                        final popup = (popupBuilder ?? buildDefaultPopup)(
+                            context,
+                            list,
+                            itemBuilder,
+                            onItemTapped,
+                            parameters,
+                            mirrored,
+                            getIsSelectable);
+                        return ComboContext(
+                            parameters: menuParameters, child: popup);
+                      },
+                      getIsSelectable: getIsSelectable,
+                      waitChanged: waitChanged,
+                      openedChanged: openedChanged,
+                      onTap: parameters.menuCanTapOnFolder ||
+                              item.getChildren == null
+                          ? () {
+                              Combo.closeAll();
+                              onItemTapped(item);
+                            }
+                          : null,
+                    ),
+                  );
+          },
           onItemTapped: onItemTapped,
-          popupBuilder: (context, list, itemBuilder, onItemTapped, parameters,
-                  mirrored, getIsSelectable) =>
-              (popupBuilder ?? buildDefaultPopup)(
-                  context,
-                  list,
-                  itemBuilder,
-                  onItemTapped,
-                  parameters,
-                  mirrored,
-                  getIsSelectable,
-                  canTapOnFolder),
+          popupBuilder: popupBuilder ?? buildDefaultPopup,
           getIsSelectable: getIsSelectable,
           waitChanged: waitChanged,
-          child: itemBuilder(null, ComboParameters.defaultParameters, item),
+          child: child ??
+              itemBuilder(null, ComboParameters.defaultParameters, item),
           openedChanged: openedChanged,
           hoveredChanged: hoveredChanged,
           onTap: onTap,
@@ -1863,25 +1871,11 @@ class MenuItemCombo<T> extends ListCombo<MenuItem<T>> {
           void Function(T value) onItemTapped,
           ComboParameters parameters,
           bool mirrored,
-          GetIsSelectable<T> getIsSelectable,
-          bool canTapOnFolder) =>
+          GetIsSelectable<T> getIsSelectable) =>
       MenuListPopup<T>(
           list: list,
           itemBuilder: itemBuilder,
           onItemTapped: onItemTapped,
           parameters: parameters,
-          getIsSelectable: getIsSelectable,
-          canTapOnFolder: canTapOnFolder);
-
-  /// Builds default separator widget
-  static Widget buildDefaultProgressDecorator(
-          BuildContext context, bool waiting, bool mirrored, Widget child) =>
-      ProgressDecorator(
-          waiting: waiting,
-          mirrored: false,
-          progressBackgroundColor: Colors.transparent,
-          progressValueColor:
-              AlwaysStoppedAnimation(Colors.blueAccent.withOpacity(0.2)),
-          child: child,
-          progressHeight: null);
+          getIsSelectable: getIsSelectable);
 }
