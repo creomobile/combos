@@ -496,9 +496,9 @@ class ComboProperties {
   final offsetX = IntEditor(title: 'Offset X', value: 0);
   final offsetY = IntEditor(title: 'Offset Y', value: 0);
   final autoMirror = BoolEditor(title: 'Auto Mirror', value: true);
-  final requiredSpace = IntEditor(title: 'Req. Space');
-  final screenPaddingHorizontal = IntEditor(title: 'S. Padding X', value: 16);
-  final screenPaddingVertical = IntEditor(title: 'S. Padding Y', value: 16);
+  final requiredSpace = IntEditor(title: 'Required Space');
+  final screenPaddingHorizontal = IntEditor(title: 'Screen Padding X', value: 16);
+  final screenPaddingVertical = IntEditor(title: 'Screen Padding Y', value: 16);
   final autoOpen = EnumEditor<ComboAutoOpen>(
       title: 'Auto Open',
       value: ComboAutoOpen.tap,
@@ -513,7 +513,7 @@ class ComboProperties {
       value: PopupAnimation.fade,
       getList: () => PopupAnimation.values);
   final animationDurationMs = IntEditor(
-      title: 'A. Duration',
+      title: 'Animation Duration',
       value: ComboParameters.defaultAnimationDuration.inMilliseconds);
   final useChildDecorator =
       BoolEditor(title: 'Use Child Decorator', value: true);
