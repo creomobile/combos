@@ -66,7 +66,7 @@ ListCombo<String>(
     await Future.delayed(const Duration(milliseconds: 500));
     return ['Item1', 'Item2', 'Item3'];
   },
-  itemBuilder: (context, item) => ListTile(title: Text(item)),
+  itemBuilder: (context, parameters, item) => ListTile(title: Text(item)),
   onItemTapped: (item) {},
 )
 ```
@@ -85,7 +85,7 @@ SizedBox(
       await Future.delayed(const Duration(milliseconds: 500));
       return ['Item1', 'Item2', 'Item3'];
     },
-    itemBuilder: (context, item) =>
+    itemBuilder: (context, parameters, item) =>
         ListTile(title: Text(item ?? '<Empty>')),
     onItemTapped: (item) => setState(() => _item = item),
   ),
@@ -106,7 +106,7 @@ SizedBox(
       await Future.delayed(const Duration(milliseconds: 500));
       return ['Item1', 'Item2', 'Item3'];
     },
-    itemBuilder: (context, item) =>
+    itemBuilder: (context, parameters, item) =>
         ListTile(title: Text(item ?? '<Empty>')),
     onItemTapped: (item) => setState(() => _item = item),
     getItemText: (item) => item,
@@ -152,7 +152,7 @@ MenuItemCombo<String>(
             MenuItem.separator,
             MenuItem('Exit'),
           ]),
-  itemBuilder: (context, item) => Padding(
+  itemBuilder: (context, parameters, item) => Padding(
     padding: const EdgeInsets.all(16),
     child: Text(item.item),
   ),
