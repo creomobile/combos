@@ -308,7 +308,6 @@ class ComboParameters {
 
   // Common parameters with dafault values for combo widgets
   static const defaultParameters = ComboParameters(
-    position: PopupPosition.bottomMinMatch,
     autoMirror: true,
     screenPadding: defaultScreenPadding,
     autoOpen: ComboAutoOpen.tap,
@@ -339,7 +338,8 @@ class ComboParameters {
   // * Combo parameters
 
   /// Determines popup position depend on [Combo.child] position.
-  /// Default is [PopupPosition.bottomMinMatch].
+  /// Default is [PopupPosition.bottomMatch] for [ListCombo]s and
+  /// [PopupPosition.bottomMinMatch] for others.
   final PopupPosition position;
 
   /// The offset to apply to the popup position.
@@ -900,11 +900,12 @@ class ComboState<T extends Combo> extends State<T> {
   }
 
   @protected
-  ComboParameters getDefaultParameters() => ComboParameters.defaultParameters;
-
-  @protected
-  ComboParameters getParameters(ComboParameters contextParameters) =>
-      contextParameters ?? getDefaultParameters();
+  ComboParameters getParameters(ComboParameters contextParameters) {
+    final parameters = contextParameters ?? ComboParameters.defaultParameters;
+    return parameters.position == null
+        ? parameters.copyWith(position: PopupPosition.bottomMinMatch)
+        : parameters;
+  }
 
   ComboParameters _parameters;
   ComboParameters get parameters => _parameters;
@@ -1658,18 +1659,18 @@ class ListCombo<T> extends AwaitCombo {
   @override
   ListComboState<ListCombo<T>, T> createState() =>
       ListComboState<ListCombo<T>, T>();
-
-  static ComboParameters getDefaultListParameters() =>
-      ComboParameters.defaultParameters
-          .copyWith(position: PopupPosition.bottomMatch);
 }
 
 /// State for a [ListCombo].
 class ListComboState<W extends ListCombo<T>, T>
     extends AwaitComboStateBase<W, List<T>> {
   @override
-  ComboParameters getDefaultParameters() =>
-      ListCombo.getDefaultListParameters();
+  ComboParameters getParameters(ComboParameters contextParameters) {
+    final parameters = contextParameters ?? ComboParameters.defaultParameters;
+    return parameters.position == null
+        ? parameters.copyWith(position: PopupPosition.bottomMatch)
+        : parameters;
+  }
 
   @override
   Widget buildContent(List<T> list, bool mirrored) =>
@@ -2048,8 +2049,12 @@ class MenuItemCombo<T> extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final parameters = ComboContext.of(context)?.parameters ??
-        ListCombo.getDefaultListParameters();
+    var parameters = ComboContext.of(context)?.parameters ??
+        ComboParameters.defaultParameters;
+    if (parameters.position == null) {
+      parameters = parameters.copyWith(position: PopupPosition.bottomMatch);
+    }
+
     final divider = parameters.menuDivider;
     final showArrows = parameters.menuShowArrows;
     final canTapOnFolder = parameters.menuCanTapOnFolder;

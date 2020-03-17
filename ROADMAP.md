@@ -1,5 +1,8 @@
 # Future plans
 
+* Automatically set throlle to zero if items was provided immediatelly
+* Remove backgroundColor, borderRadius, elevation params from MenuListPopup
+  (use decorator instead)
 * Group InkWell parameters
 * Implement common combo context demo in example
 * Adapt to mobile devices 
