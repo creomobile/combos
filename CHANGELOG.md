@@ -1,3 +1,6 @@
+## [1.1.4] - 3/17/2020
+* fix exception when render box is not attached
+
 ## [1.1.3] - 3/17/2020
 * fix typeahed autoclose behavior
 

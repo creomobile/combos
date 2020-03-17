@@ -1018,9 +1018,9 @@ class ComboState<T extends Combo> extends State<T> {
         Widget popup;
 
         void updatePopup() {
-          offset = mounted
+          offset = renderBox.attached
               ? lastOffset = renderBox.localToGlobal(Offset.zero)
-              : lastOffset;
+              : lastOffset ?? Offset.zero;
           mirrored = parameters.autoMirror
               ? () {
                   final offsetx = parameters.offset?.dx ?? 0;
