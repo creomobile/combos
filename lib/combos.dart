@@ -1952,12 +1952,11 @@ class _ArrowedItem extends StatelessWidget {
   Widget build(BuildContext context) => Row(children: [
         Expanded(child: child),
         const SizedBox(width: 16),
-        Icon(Icons.arrow_right,
-            color: Theme.of(context)
-                ?.textTheme
-                ?.bodyText1
-                ?.color
-                ?.withOpacity(0.5))
+        Icon(
+          Icons.arrow_right,
+          // move back from bodyText1 to update rating on pub.dev !!!
+          color: Theme.of(context)?.textTheme?.body1?.color?.withOpacity(0.5),
+        )
       ]);
 }
 
