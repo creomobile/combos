@@ -119,22 +119,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   width: properties.comboWidth.value?.toDouble(),
                   child: ComboContext(
                     parameters: ComboParameters(
-                      listPopupBuilder: properties.position.value ==
-                                  PopupPosition.bottomMatch ||
-                              properties.position.value ==
-                                  PopupPosition.topMatch
+                      popupContraints: properties.hasSize
                           ? null
-                          : (context, parameters, list, itemBuilder,
-                                  getIsSelectable, onItemTapped, mirrored) =>
-                              ListPopup(
-                                  parameters: parameters,
-                                  list: list,
-                                  itemBuilder: (context, parameters, item) =>
-                                      itemBuilder(context, parameters, item),
-                                  getIsSelectable: getIsSelectable,
-                                  onItemTapped: onItemTapped,
-                                  width:
-                                      properties.popupWidth.value.toDouble()),
+                          : BoxConstraints(
+                              maxWidth: properties.popupWidth.value.toDouble()),
                     ),
                     child: ListCombo<String>(
                       getList: () async {
@@ -164,22 +152,10 @@ class _MyHomePageState extends State<MyHomePage> {
                   width: properties.comboWidth.value?.toDouble(),
                   child: ComboContext(
                     parameters: ComboParameters(
-                      listPopupBuilder: properties.position.value ==
-                                  PopupPosition.bottomMatch ||
-                              properties.position.value ==
-                                  PopupPosition.topMatch
+                      popupContraints: properties.hasSize
                           ? null
-                          : (context, parameters, list, itemBuilder,
-                                  getIsSelectable, onItemTapped, mirrored) =>
-                              ListPopup(
-                                  parameters: parameters,
-                                  list: list,
-                                  itemBuilder: (context, parameters, item) =>
-                                      itemBuilder(context, parameters, item),
-                                  getIsSelectable: getIsSelectable,
-                                  onItemTapped: onItemTapped,
-                                  width:
-                                      properties.popupWidth.value.toDouble()),
+                          : BoxConstraints(
+                              maxWidth: properties.popupWidth.value.toDouble()),
                     ),
                     child: SelectorCombo<String>(
                       getList: () async {
@@ -209,22 +185,10 @@ class _MyHomePageState extends State<MyHomePage> {
                     parameters: ComboParameters(
                       inputThrottle: Duration(
                           milliseconds: properties.inputThrottleMs.value),
-                      listPopupBuilder: properties.position.value ==
-                                  PopupPosition.bottomMatch ||
-                              properties.position.value ==
-                                  PopupPosition.topMatch
+                      popupContraints: properties.hasSize
                           ? null
-                          : (context, parameters, list, itemBuilder,
-                                  getIsSelectable, onItemTapped, mirrored) =>
-                              ListPopup(
-                                  parameters: parameters,
-                                  list: list,
-                                  itemBuilder: (context, parameters, item) =>
-                                      itemBuilder(context, parameters, item),
-                                  getIsSelectable: getIsSelectable,
-                                  onItemTapped: onItemTapped,
-                                  width:
-                                      properties.popupWidth.value.toDouble()),
+                          : BoxConstraints(
+                              maxWidth: properties.popupWidth.value.toDouble()),
                     ),
                     child: TypeaheadCombo<String>(
                       getList: (text) async {
@@ -503,6 +467,11 @@ class ComboProperties {
       title: 'Position',
       value: PopupPosition.bottomMinMatch,
       getList: () => PopupPosition.values);
+
+  bool get hasSize =>
+      position.value == PopupPosition.bottomMatch ||
+      position.value == PopupPosition.topMatch;
+
   final offsetX = IntEditor(title: 'Offset X', value: 0);
   final offsetY = IntEditor(title: 'Offset Y', value: 0);
   final autoMirror = BoolEditor(title: 'Auto Mirror', value: true);

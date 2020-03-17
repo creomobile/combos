@@ -1,6 +1,5 @@
 # v. 1.1.0
 
-* Add popup constraints to context
 * Add child, popup decorators to context
 
 # Future plans

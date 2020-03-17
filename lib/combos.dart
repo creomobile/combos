@@ -284,6 +284,7 @@ class ComboParameters {
     this.enabled,
     this.animation,
     this.animationDuration,
+    this.popupContraints,
     this.focusColor,
     this.hoverColor,
     this.highlightColor,
@@ -378,6 +379,12 @@ class ComboParameters {
   /// Default is [defaultAnimationDuration] value (milliseconds: 150).
   final Duration animationDuration;
 
+  /// Define constraints for the combo popup content.
+  /// (May be useful for [ListCombo] with position different of
+  /// [PopupPosition.bottomMatch] or [PopupPosition.topMatch]
+  /// because [ListView] cannot automatically calculate its width).
+  final BoxConstraints popupContraints;
+
   /// The color of combo the ink response when the parent widget is focused.
   final Color focusColor;
 
@@ -468,6 +475,7 @@ class ComboParameters {
     bool enabled,
     PopupAnimation animation,
     Duration animationDuration,
+    BoxConstraints popupContraints,
     Colors focusColor,
     Colors hoverColor,
     Colors highlightColor,
@@ -497,6 +505,7 @@ class ComboParameters {
         enabled: enabled ?? this.enabled,
         animation: animation ?? this.animation,
         animationDuration: animationDuration ?? this.animationDuration,
+        popupContraints: popupContraints ?? this.popupContraints,
         focusColor: focusColor ?? this.focusColor,
         hoverColor: hoverColor ?? this.hoverColor,
         highlightColor: highlightColor ?? this.highlightColor,
@@ -602,6 +611,22 @@ class _ComboContextState extends State<ComboContext> {
         ? ComboParameters.defaultParameters
         : parentData.parameters;
     final my = widget.parameters;
+
+    BoxConstraints getConstraints() {
+      final myCon = my.popupContraints;
+      final defCon = def.popupContraints;
+      if (myCon == null) return defCon;
+      if (defCon == null) return myCon;
+      final maxWidth = math.min(myCon.maxWidth, defCon.maxWidth);
+      final maxHeight = math.min(myCon.maxHeight, defCon.maxHeight);
+      return BoxConstraints(
+        minWidth: math.min(myCon.minWidth, maxWidth),
+        maxWidth: maxWidth,
+        minHeight: math.min(myCon.minHeight, maxHeight),
+        maxHeight: maxHeight,
+      );
+    }
+
     final merged = ComboParameters(
       position: my.position ?? def.position,
       offset: my.offset ?? def.offset,
@@ -613,6 +638,7 @@ class _ComboContextState extends State<ComboContext> {
       enabled: (my.enabled ?? true) && def.enabled,
       animation: my.animation ?? def.animation,
       animationDuration: my.animationDuration ?? def.animationDuration,
+      popupContraints: getConstraints(),
       focusColor: my.focusColor ?? def.focusColor,
       hoverColor: my.hoverColor ?? def.hoverColor,
       highlightColor: my.highlightColor ?? def.highlightColor,
@@ -970,6 +996,12 @@ class ComboState<T extends Combo> extends State<T> {
                 }()
               : false;
           popup = getPopup(context, mirrored);
+
+          final constraints = parameters.popupContraints;
+          if (constraints != null) {
+            popup = ConstrainedBox(constraints: constraints, child: popup);
+          }
+
           if (_catchHover) {
             popup = MouseRegion(
                 onEnter: (_) {
@@ -1505,6 +1537,11 @@ typedef GetIsSelectable<T> = bool Function(T item);
 
 /// Combo widget for displaying the items list
 /// Combo widget with the delayed getting of the popup content and progress indication
+/// If [ComboParameters.position] is different of
+/// [PopupPosition.bottomMatch] or [PopupPosition.topMatch]
+/// you need to define [ComboParameters.popupContraints]
+/// because [ListView] cannot automatically calculate its width.
+///
 /// See also:
 ///
 ///  * [Combo]
