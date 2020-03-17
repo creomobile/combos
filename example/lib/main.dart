@@ -14,16 +14,16 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MaterialApp(
         title: 'Combo Samples',
-        home: MyHomePage(),
+        home: HomePage(),
       );
 }
 
-class MyHomePage extends StatefulWidget {
+class HomePage extends StatefulWidget {
   @override
-  _MyHomePageState createState() => _MyHomePageState();
+  _HomePageState createState() => _HomePageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
+class _HomePageState extends State<HomePage> {
   final _comboKey = GlobalKey<ComboState>();
   final _awaitComboKey = GlobalKey<ComboState>();
   GlobalKey<_TestPopupState> _popupKey2;
