@@ -52,10 +52,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   width: properties.comboWidth.value?.toDouble(),
                   child: Combo(
                     key: _comboKey,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text('Combo'),
-                    ),
+                    child: ListTile(title: Text('Combo')),
                     popupBuilder: (context, mirrored) => TestPopup(
                       key: _popupKey2 = GlobalKey<_TestPopupState>(),
                       mirrored: mirrored,
@@ -84,10 +81,7 @@ class _MyHomePageState extends State<MyHomePage> {
                   width: properties.comboWidth.value?.toDouble(),
                   child: AwaitCombo(
                     key: _awaitComboKey,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16.0),
-                      child: Text('Await Combo'),
-                    ),
+                    child: ListTile(title: Text('Await Combo')),
                     popupBuilder: (context) async {
                       await Future.delayed(const Duration(milliseconds: 500));
                       return TestPopup(
@@ -133,10 +127,7 @@ class _MyHomePageState extends State<MyHomePage> {
                       },
                       itemBuilder: (context, parameters, item) =>
                           ListTile(title: Text(item ?? '')),
-                      child: const Padding(
-                        padding: EdgeInsets.all(16.0),
-                        child: Text('List Combo'),
-                      ),
+                      child: ListTile(title: Text('List Combo')),
                       onItemTapped: (value) {},
                     ),
                   ),
@@ -176,6 +167,8 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
 
+              const SizedBox(height: 12),
+
               // typeahead
               DemoItem<TypeaheadProperties>(
                 properties: _typeaheadProperties,
@@ -211,7 +204,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
               // menu
               DemoItem<MenuProperties>(
@@ -404,11 +397,33 @@ class DemoItem<TProperties extends ComboProperties>
     @required ChildBuilder<TProperties> childBuilder,
   }) : super(key: key, properties: properties, childBuilder: childBuilder);
   @override
-  DemoItemState<TProperties> createState() => DemoItemState<TProperties>();
+  _DemoItemState<TProperties> createState() => _DemoItemState<TProperties>();
 }
 
-class DemoItemState<TProperties extends ComboProperties>
+class _DemoItemState<TProperties extends ComboProperties>
     extends DemoItemStateBase<TProperties> {
+  Widget _buildChildDecoration(Widget child) => Container(
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          clipBehavior: Clip.antiAlias,
+          child: child,
+        ),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.blueAccent),
+          borderRadius: BorderRadius.circular(16),
+        ),
+      );
+  Widget _buildPopupDecoration(Widget child) => Container(
+        child: Material(
+          elevation: 4,
+          borderRadius: BorderRadius.circular(16),
+          clipBehavior: Clip.antiAlias,
+          child: child,
+        ),
+      );
+
   @override
   Widget buildChild() {
     final properties = widget.properties;
@@ -432,6 +447,12 @@ class DemoItemState<TProperties extends ComboProperties>
           autoClose: properties.autoClose.value,
           enabled: properties.enabled.value,
           animation: properties.animation.value,
+          animationDuration:
+              Duration(milliseconds: properties.animationDurationMs.value),
+          childDecoratorBuilder:
+              properties.useChildDecorator.value ? _buildChildDecoration : null,
+          popupDecoratorBuilder:
+              properties.usePopupDecorator.value ? _buildPopupDecoration : null,
           refreshOnOpened: awaitProperties?.refreshOnOpened?.value ?? false,
           progressPosition: awaitProperties?.progressPosition?.value ??
               ProgressPosition.popup,
@@ -494,6 +515,10 @@ class ComboProperties {
   final animationDurationMs = IntEditor(
       title: 'A. Duration',
       value: ComboParameters.defaultAnimationDuration.inMilliseconds);
+  final useChildDecorator =
+      BoolEditor(title: 'Use Child Decorator', value: true);
+  final usePopupDecorator =
+      BoolEditor(title: 'Use Popup Decorator', value: false);
 
   List<Editor> get editors => [
         comboWidth,
@@ -511,6 +536,8 @@ class ComboProperties {
         enabled,
         animation,
         animationDurationMs,
+        useChildDecorator,
+        usePopupDecorator,
       ];
 }
 
@@ -546,7 +573,7 @@ class SelectorProperties extends ListProperties {
 
 class TypeaheadProperties extends SelectorProperties {
   TypeaheadProperties() {
-    _excludes = {autoOpen, autoClose, refreshOnOpened};
+    _excludes = {autoOpen, autoClose, refreshOnOpened, useChildDecorator};
   }
   Set<Editor> _excludes;
 
@@ -581,6 +608,6 @@ class MenuProperties extends ListProperties {
         canTapOnFolder,
         menuRefreshOnOpened,
         menuProgressPosition,
-        ...super.editors
+        ...super.editors.where((e) => e != useChildDecorator)
       ];
 }

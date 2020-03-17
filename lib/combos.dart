@@ -144,8 +144,7 @@ class ListPopup extends StatelessWidget {
     @required this.itemBuilder,
     this.getIsSelectable,
     @required this.onItemTapped,
-    this.width,
-    this.maxHeight = 300.0,
+    this.maxHeight = 308.0,
   }) : super(key: key);
 
   /// Common parameters for combo widgets
@@ -163,11 +162,6 @@ class ListPopup extends StatelessWidget {
   /// Calls when user taps on the item
   final ValueSetter onItemTapped;
 
-  /// The width of the list content
-  /// Must be setted if [Combo.position] not is [PopupPosition.bottomMatch]
-  /// or [PopupPosition.topMatch] (ListView cannot be stretched by its content)
-  final double width;
-
   /// Maximum height of popup
   final double maxHeight;
 
@@ -175,35 +169,34 @@ class ListPopup extends StatelessWidget {
   Widget build(BuildContext context) {
     final parameters = this.parameters;
     final emptyIndicator = parameters.emptyListIndicator;
+    final child = list?.isEmpty == true
+        ? emptyIndicator == null
+            ? null
+            : Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [emptyIndicator],
+              )
+        : ListView.builder(
+            shrinkWrap: true,
+            physics: ClampingScrollPhysics(),
+            itemCount: list?.length ?? 0,
+            itemBuilder: (context, index) {
+              final item = list[index];
+              final itemWidget = itemBuilder(context, parameters, item);
+              return getIsSelectable == null || getIsSelectable(item)
+                  ? InkWell(
+                      child: itemWidget,
+                      onTap: () => onItemTapped(item),
+                    )
+                  : itemWidget;
+            });
+
     return ConstrainedBox(
-      constraints: BoxConstraints(
-          maxWidth: width ?? double.infinity,
-          maxHeight: maxHeight ?? double.infinity),
-      child: Material(
-        elevation: 4,
-        child: list?.isEmpty == true
-            ? emptyIndicator == null
-                ? null
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [emptyIndicator],
-                  )
-            : ListView.builder(
-                shrinkWrap: true,
-                physics: ClampingScrollPhysics(),
-                itemCount: list?.length ?? 0,
-                itemBuilder: (context, index) {
-                  final item = list[index];
-                  final itemWidget = itemBuilder(context, parameters, item);
-                  return getIsSelectable == null || getIsSelectable(item)
-                      ? InkWell(
-                          child: itemWidget,
-                          onTap: () => onItemTapped(item),
-                        )
-                      : itemWidget;
-                }),
-      ),
+      constraints: BoxConstraints(maxHeight: maxHeight ?? double.infinity),
+      child: parameters.popupDecoratorBuilder == null
+          ? Material(elevation: 4, child: child)
+          : child,
     );
   }
 }
@@ -270,6 +263,11 @@ class MenuListPopup extends StatelessWidget {
   }
 }
 
+/// Signature to build the widget decorator.
+/// Uses for [ComboParameters.childDecoratorBuilder],
+/// [ComboParameters.popupDecoratorBuilder].
+typedef ComboDecoratorBuilder = Widget Function(Widget child);
+
 /// Common parameters for combo widgets
 class ComboParameters {
   /// Creates common parameters for combo widgets
@@ -284,6 +282,8 @@ class ComboParameters {
     this.enabled,
     this.animation,
     this.animationDuration,
+    this.childDecoratorBuilder,
+    this.popupDecoratorBuilder,
     this.popupContraints,
     this.focusColor,
     this.hoverColor,
@@ -378,6 +378,13 @@ class ComboParameters {
   /// Duration of open/close animation.
   /// Default is [defaultAnimationDuration] value (milliseconds: 150).
   final Duration animationDuration;
+
+  /// Define decorator widget for all [Combo.child] widgets
+  /// with [Combo.ignoreChildDecorator] = false in the context.
+  final ComboDecoratorBuilder childDecoratorBuilder;
+
+  /// Define decorator widget for all [Combo] popup widgets in the context.
+  final ComboDecoratorBuilder popupDecoratorBuilder;
 
   /// Define constraints for the combo popup content.
   /// (May be useful for [ListCombo] with position different of
@@ -475,6 +482,8 @@ class ComboParameters {
     bool enabled,
     PopupAnimation animation,
     Duration animationDuration,
+    ComboDecoratorBuilder childDecoratoBuilder,
+    ComboDecoratorBuilder popupDecoratoBuilder,
     BoxConstraints popupContraints,
     Colors focusColor,
     Colors hoverColor,
@@ -505,6 +514,10 @@ class ComboParameters {
         enabled: enabled ?? this.enabled,
         animation: animation ?? this.animation,
         animationDuration: animationDuration ?? this.animationDuration,
+        childDecoratorBuilder:
+            childDecoratoBuilder ?? this.childDecoratorBuilder,
+        popupDecoratorBuilder:
+            popupDecoratoBuilder ?? this.popupDecoratorBuilder,
         popupContraints: popupContraints ?? this.popupContraints,
         focusColor: focusColor ?? this.focusColor,
         hoverColor: hoverColor ?? this.hoverColor,
@@ -638,6 +651,10 @@ class _ComboContextState extends State<ComboContext> {
       enabled: (my.enabled ?? true) && def.enabled,
       animation: my.animation ?? def.animation,
       animationDuration: my.animationDuration ?? def.animationDuration,
+      childDecoratorBuilder:
+          my.childDecoratorBuilder ?? def.childDecoratorBuilder,
+      popupDecoratorBuilder:
+          my.popupDecoratorBuilder ?? def.popupDecoratorBuilder,
       popupContraints: getConstraints(),
       focusColor: my.focusColor ?? def.focusColor,
       hoverColor: my.hoverColor ?? def.hoverColor,
@@ -775,7 +792,9 @@ class Combo extends StatefulWidget {
     this.openedChanged,
     this.hoveredChanged,
     this.onTap,
-  }) : super(key: key);
+    this.ignoreChildDecorator = false,
+  })  : assert(ignoreChildDecorator != null),
+        super(key: key);
 
   /// The widget below this widget in the tree.
   ///
@@ -796,6 +815,9 @@ class Combo extends StatefulWidget {
   /// Also can be called by 'long tap' event if [autoOpen] is set to [ComboAutoOpen.hovered]
   /// and platform is not 'Web'
   final GestureTapCallback onTap;
+
+  /// if true, [ComboParameters.childDecoratorBuilder] will not be applied.
+  final bool ignoreChildDecorator;
 
   /// Closes all opened by [Combo] popups
   static void closeAll() => ComboState._closes.add(true);
@@ -934,6 +956,7 @@ class ComboState<T extends Combo> extends State<T> {
 
   @protected
   Widget getChild() => widget.child;
+
   @protected
   Widget getPopup(BuildContext context, bool mirrored) =>
       widget.popupBuilder == null
@@ -1000,6 +1023,10 @@ class ComboState<T extends Combo> extends State<T> {
           final constraints = parameters.popupContraints;
           if (constraints != null) {
             popup = ConstrainedBox(constraints: constraints, child: popup);
+          }
+          final decorator = parameters.popupDecoratorBuilder;
+          if (decorator != null) {
+            popup = decorator(popup);
           }
 
           if (_catchHover) {
@@ -1220,6 +1247,10 @@ class ComboState<T extends Combo> extends State<T> {
           ComboAutoClose.tapOutsideWithChildIgnorePointer) {
         child = IgnorePointer(ignoring: _overlay != null, child: child);
       }
+      if (!widget.ignoreChildDecorator) {
+        final decorator = parameters.childDecoratorBuilder;
+        if (decorator != null) child = decorator(child);
+      }
     }
     return CompositedTransformTarget(link: _layerLink, child: child);
   }
@@ -1399,6 +1430,7 @@ class AwaitCombo extends Combo {
     ValueChanged<bool> openedChanged,
     ValueChanged<bool> hoveredChanged,
     GestureTapCallback onTap,
+    bool ignoreChildDecorator = false,
   })  : awaitPopupBuilder = popupBuilder,
         super(
           key: key,
@@ -1406,6 +1438,7 @@ class AwaitCombo extends Combo {
           openedChanged: openedChanged,
           hoveredChanged: hoveredChanged,
           onTap: onTap,
+          ignoreChildDecorator: ignoreChildDecorator,
         );
 
   /// Called to obtain the futured popup content.
@@ -1564,6 +1597,7 @@ class ListCombo<T> extends AwaitCombo {
     ValueChanged<bool> openedChanged,
     ValueChanged<bool> hoveredChanged,
     GestureTapCallback onTap,
+    bool ignoreChildDecorator = false,
   })  : assert(itemBuilder != null),
         super(
           key: key,
@@ -1572,6 +1606,7 @@ class ListCombo<T> extends AwaitCombo {
           openedChanged: openedChanged,
           hoveredChanged: hoveredChanged,
           onTap: onTap,
+          ignoreChildDecorator: ignoreChildDecorator,
         );
 
   /// Popup items getter.
@@ -1654,6 +1689,7 @@ class SelectorCombo<T> extends ListCombo<T> {
     ValueChanged<bool> openedChanged,
     ValueChanged<bool> hoveredChanged,
     GestureTapCallback onTap,
+    bool ignoreChildDecorator = false,
   }) : super(
           key: key,
           getList: getList,
@@ -1664,6 +1700,7 @@ class SelectorCombo<T> extends ListCombo<T> {
           openedChanged: openedChanged,
           hoveredChanged: hoveredChanged,
           onTap: onTap,
+          ignoreChildDecorator: ignoreChildDecorator,
         );
 
   /// The 'selected' item to display in [Combo.child] area
@@ -1755,6 +1792,7 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
           openedChanged: openedChanged,
           hoveredChanged: hoveredChanged,
           onTap: onTap,
+          ignoreChildDecorator: true,
         );
 
   /// Popup items getter using user's text.
@@ -2039,6 +2077,7 @@ class MenuItemCombo<T> extends StatelessWidget {
         openedChanged: openedChanged,
         hoveredChanged: hoveredChanged,
         onTap: onTap,
+        ignoreChildDecorator: true,
       ),
     );
   }

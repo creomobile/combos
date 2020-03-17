@@ -1,10 +1,9 @@
-# v. 1.1.0
-
-* Add child, popup decorators to context
-
 # Future plans
 
-* Adapt to mobile devices
+* Implement common combo context demo in example
+* Adapt to mobile devices 
+  - fix list top padding
+  - aplly correct mirroring when keyboard opened
 * Adapt to desktop
 * MultiSelector
 * Menu icons
