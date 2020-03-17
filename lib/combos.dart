@@ -1874,9 +1874,11 @@ class TypeaheadComboState<W extends TypeaheadCombo<T>, T>
   int get _textLength => _controller.text?.length ?? 0;
 
   @override
-  ComboParameters getParameters(ComboParameters contextParameters) => super
-      .getParameters(contextParameters)
-      .copyWith(autoOpen: ComboAutoOpen.none, refreshOnOpened: false);
+  ComboParameters getParameters(ComboParameters contextParameters) =>
+      super.getParameters(contextParameters).copyWith(
+          autoOpen: ComboAutoOpen.none,
+          autoClose: ComboAutoClose.tapOutsideExceptChild,
+          refreshOnOpened: false);
 
   @override
   void initState() {

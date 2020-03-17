@@ -1,3 +1,6 @@
+## [1.1.3] - 3/17/2020
+* fix typeahed autoclose behavior
+
 ## [1.1.2] - 3/17/2020
 * fix default list combos position
 
