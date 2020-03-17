@@ -1,5 +1,6 @@
 # Future plans
 
+* Group InkWell parameters
 * Implement common combo context demo in example
 * Adapt to mobile devices 
   - fix list top padding

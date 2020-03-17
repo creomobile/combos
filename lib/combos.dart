@@ -300,6 +300,10 @@ class ComboParameters {
     this.menuProgressDecoratorBuilder,
     this.menuRefreshOnOpened,
     this.menuProgressPosition,
+    this.menuFocusColor,
+    this.menuHoverColor,
+    this.menuHighlightColor,
+    this.menuSplashColor,
   });
 
   // Common parameters with dafault values for combo widgets
@@ -472,6 +476,18 @@ class ComboParameters {
   /// Default is [ProgressPosition.child].
   final ProgressPosition menuProgressPosition;
 
+  /// The color of combo the ink response when the parent widget is focused.
+  final Color menuFocusColor;
+
+  /// The color of the combo ink response when a pointer is hovering over it.
+  final Color menuHoverColor;
+
+  /// The highlight color of the combo ink response when pressed.
+  final Color menuHighlightColor;
+
+  /// The splash color of the combo ink response.
+  final Color menuSplashColor;
+
   /// Creates a copy of this combo parameters but with the given fields replaced with
   /// the new values.
   ComboParameters copyWith({
@@ -488,10 +504,10 @@ class ComboParameters {
     ComboDecoratorBuilder childDecoratoBuilder,
     ComboDecoratorBuilder popupDecoratoBuilder,
     BoxConstraints popupContraints,
-    Colors focusColor,
-    Colors hoverColor,
-    Colors highlightColor,
-    Colors splashColor,
+    Color focusColor,
+    Color hoverColor,
+    Color highlightColor,
+    Color splashColor,
     ProgressDecoratorBuilder progressDecoratorBuilder,
     bool refreshOnOpened,
     ProgressPosition progressPosition,
@@ -506,6 +522,10 @@ class ComboParameters {
     ProgressDecoratorBuilder menuProgressDecoratorBuilder,
     bool menuRefreshOnOpened,
     ProgressPosition menuProgressPosition,
+    Color menuFocusColor,
+    Color menuHoverColor,
+    Color menuHighlightColor,
+    Color menuSplashColor,
   }) =>
       ComboParameters(
         position: position ?? this.position,
@@ -543,6 +563,10 @@ class ComboParameters {
             menuProgressDecoratorBuilder ?? this.menuProgressDecoratorBuilder,
         menuRefreshOnOpened: menuRefreshOnOpened ?? this.menuRefreshOnOpened,
         menuProgressPosition: menuProgressPosition ?? this.menuProgressPosition,
+        menuFocusColor: menuFocusColor ?? this.menuFocusColor,
+        menuHoverColor: menuHoverColor ?? this.menuHoverColor,
+        menuHighlightColor: menuHighlightColor ?? this.menuHighlightColor,
+        menuSplashColor: menuSplashColor ?? this.menuSplashColor,
       );
 
   /// Default value of [Combo.animationDuration]
@@ -681,6 +705,10 @@ class _ComboContextState extends State<ComboContext> {
           my.menuProgressDecoratorBuilder ?? def.menuProgressDecoratorBuilder,
       menuRefreshOnOpened: my.menuRefreshOnOpened ?? def.menuRefreshOnOpened,
       menuProgressPosition: my.menuProgressPosition ?? def.menuProgressPosition,
+      menuFocusColor: my.menuFocusColor ?? def.menuFocusColor,
+      menuHoverColor: my.menuHoverColor ?? def.menuHoverColor,
+      menuHighlightColor: my.menuHighlightColor ?? def.menuHighlightColor,
+      menuSplashColor: my.menuSplashColor ?? def.menuSplashColor,
     );
     if (merged.enabled != _saveEnabled && !(_saveEnabled = merged.enabled)) {
       _closes.add(true);
@@ -2033,6 +2061,10 @@ class MenuItemCombo<T> extends StatelessWidget {
       progressDecoratorBuilder: parameters.menuProgressDecoratorBuilder,
       refreshOnOpened: parameters.menuRefreshOnOpened,
       progressPosition: parameters.menuProgressPosition,
+      focusColor: parameters.menuFocusColor,
+      hoverColor: parameters.menuHoverColor,
+      highlightColor: parameters.menuHighlightColor,
+      splashColor: parameters.menuSplashColor,
       listPopupBuilder: (context, parameters, list, itemBuilder,
               getIsSelectable, onItemTapped, mirrored) =>
           ComboContext(

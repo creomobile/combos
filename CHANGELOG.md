@@ -1,4 +1,8 @@
-## [1.1.0] - 3/10/2020
+## [1.1.1] - 3/17/2020
+* implement ComboContext
+* not compatible with 1.0.*
+
+## [1.1.0] - 3/17/2020
 * implement ComboContext
 * not compatible with 1.0.*
 
