@@ -144,7 +144,6 @@ class ListPopup extends StatelessWidget {
     @required this.itemBuilder,
     this.getIsSelectable,
     @required this.onItemTapped,
-    this.maxHeight = 308.0,
   }) : super(key: key);
 
   /// Common parameters for combo widgets
@@ -161,9 +160,6 @@ class ListPopup extends StatelessWidget {
 
   /// Calls when user taps on the item
   final ValueSetter onItemTapped;
-
-  /// Maximum height of popup
-  final double maxHeight;
 
   @override
   Widget build(BuildContext context) {
@@ -193,7 +189,8 @@ class ListPopup extends StatelessWidget {
             });
 
     return ConstrainedBox(
-      constraints: BoxConstraints(maxHeight: maxHeight ?? double.infinity),
+      constraints: BoxConstraints(
+          maxHeight: parameters.listMaxHeight ?? double.infinity),
       child: parameters.popupDecoratorBuilder == null
           ? Material(elevation: 4, child: child)
           : child,
@@ -293,6 +290,7 @@ class ComboParameters {
     this.refreshOnOpened,
     this.progressPosition,
     this.listPopupBuilder,
+    this.listMaxHeight,
     this.emptyListIndicator,
     this.inputThrottle,
     this.menuPopupBuilder,
@@ -318,6 +316,7 @@ class ComboParameters {
     refreshOnOpened: false,
     progressPosition: ProgressPosition.popup,
     listPopupBuilder: buildDefaultListPopup,
+    listMaxHeight: 308.0,
     emptyListIndicator: Padding(
       padding: EdgeInsets.all(16),
       child: Text('No Items',
@@ -425,6 +424,10 @@ class ComboParameters {
   /// Default is [buildDefaultListPopup] value.
   final ListPopupBuilder listPopupBuilder;
 
+  /// Maximum height of list popup.
+  /// Default is 308.0
+  final double listMaxHeight;
+
   /// Widget for empty list or sub-menus indication.
   /// Default is 'No Items' text caption.
   final Widget emptyListIndicator;
@@ -493,6 +496,7 @@ class ComboParameters {
     bool refreshOnOpened,
     ProgressPosition progressPosition,
     ListPopupBuilder listPopupBuilder,
+    double listMaxHeight,
     Widget emptyListIndicator,
     Duration inputThrottle,
     ListPopupBuilder menuPopupBuilder,
@@ -528,6 +532,7 @@ class ComboParameters {
         refreshOnOpened: refreshOnOpened ?? this.refreshOnOpened,
         progressPosition: progressPosition ?? this.progressPosition,
         listPopupBuilder: listPopupBuilder ?? this.listPopupBuilder,
+        listMaxHeight: listMaxHeight ?? this.listMaxHeight,
         emptyListIndicator: emptyListIndicator ?? this.emptyListIndicator,
         inputThrottle: inputThrottle ?? this.inputThrottle,
         menuPopupBuilder: menuPopupBuilder ?? this.menuPopupBuilder,
@@ -665,6 +670,7 @@ class _ComboContextState extends State<ComboContext> {
       refreshOnOpened: my.refreshOnOpened ?? def.refreshOnOpened,
       progressPosition: my.progressPosition ?? def.progressPosition,
       listPopupBuilder: my.listPopupBuilder ?? def.listPopupBuilder,
+      listMaxHeight: my.listMaxHeight ?? def.listMaxHeight,
       emptyListIndicator: my.emptyListIndicator ?? def.emptyListIndicator,
       inputThrottle: my.inputThrottle ?? def.inputThrottle,
       menuPopupBuilder: my.menuPopupBuilder ?? def.menuPopupBuilder,
