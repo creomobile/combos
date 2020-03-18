@@ -501,8 +501,8 @@ class ComboParameters {
     bool enabled,
     PopupAnimation animation,
     Duration animationDuration,
-    ComboDecoratorBuilder childDecoratoBuilder,
-    ComboDecoratorBuilder popupDecoratoBuilder,
+    ComboDecoratorBuilder childDecoratorBuilder,
+    ComboDecoratorBuilder popupDecoratorBuilder,
     BoxConstraints popupContraints,
     Color focusColor,
     Color hoverColor,
@@ -539,9 +539,9 @@ class ComboParameters {
         animation: animation ?? this.animation,
         animationDuration: animationDuration ?? this.animationDuration,
         childDecoratorBuilder:
-            childDecoratoBuilder ?? this.childDecoratorBuilder,
+            childDecoratorBuilder ?? this.childDecoratorBuilder,
         popupDecoratorBuilder:
-            popupDecoratoBuilder ?? this.popupDecoratorBuilder,
+            popupDecoratorBuilder ?? this.popupDecoratorBuilder,
         popupContraints: popupContraints ?? this.popupContraints,
         focusColor: focusColor ?? this.focusColor,
         hoverColor: hoverColor ?? this.hoverColor,
@@ -631,6 +631,7 @@ class ComboParameters {
 class ComboContext extends StatefulWidget {
   const ComboContext({Key key, @required this.parameters, @required this.child})
       : assert(parameters != null),
+        assert(child != null),
         super(key: key);
   final ComboParameters parameters;
   final Widget child;
@@ -726,10 +727,10 @@ class _ComboContextState extends State<ComboContext> {
 /// Provides [ComboParameters] and [closeAll] method for the specified [ComboContext].
 class ComboContextData extends InheritedWidget {
   const ComboContextData(
-      this.widget, Widget child, this.parameters, this._closes)
+      this._widget, Widget child, this.parameters, this._closes)
       : super(child: child);
 
-  final ComboContext widget;
+  final ComboContext _widget;
 
   // Common parameters for combo widgets
   final ComboParameters parameters;
@@ -741,7 +742,7 @@ class ComboContextData extends InheritedWidget {
 
   @override
   bool updateShouldNotify(ComboContextData oldWidget) =>
-      widget.parameters != oldWidget.widget.parameters;
+      _widget.parameters != oldWidget._widget.parameters;
 }
 
 /// Simple combo box widget
