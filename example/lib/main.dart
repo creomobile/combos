@@ -42,230 +42,247 @@ class _HomePageState extends State<HomePage> {
         appBar: AppBar(
           title: Text('Combo Samples'),
         ),
-        body: ListView(
-          padding: const EdgeInsets.all(16),
-          children: [
-            Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
-              // combo
-              DemoItem<ComboProperties>(
-                properties: _comboProperties,
-                childBuilder: (properties) => SizedBox(
-                  width: properties.comboWidth.value?.toDouble(),
-                  child: Combo(
-                    key: _comboKey,
-                    child: ListTile(title: Text('Combo')),
-                    popupBuilder: (context, mirrored) => TestPopup(
-                      key: _popupKey2 = GlobalKey<_TestPopupState>(),
-                      mirrored: mirrored,
-                      animated:
-                          properties.animation.value == PopupAnimation.custom,
-                      itemsCount: properties.itemsCount.value ?? 0,
-                      onClose: () => _comboKey.currentState.close(),
-                      width: properties.popupWidth.value?.toDouble(),
-                    ),
-                    openedChanged: (isOpened) {
-                      if (!isOpened &&
-                          properties.animation.value == PopupAnimation.custom) {
-                        _popupKey2.currentState?.animatedClose();
-                      }
-                    },
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // await combo
-              DemoItem<AwaitComboProperties>(
-                properties: _awaitComboProperties,
-                childBuilder: (properties) => SizedBox(
-                  width: properties.comboWidth.value?.toDouble(),
-                  child: AwaitCombo(
-                    key: _awaitComboKey,
-                    child: ListTile(title: Text('Await Combo')),
-                    popupBuilder: (context) async {
-                      await Future.delayed(const Duration(milliseconds: 500));
-                      return TestPopup(
-                        key: _awaitPopupKey2 = GlobalKey<_TestPopupState>(),
-                        mirrored: false,
+        body: Theme(
+          data: ThemeData(
+            highlightColor: Colors.blueAccent.withOpacity(0.1),
+            splashColor: Colors.blueAccent.withOpacity(0.3),
+          ),
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
+                // combo
+                DemoItem<ComboProperties>(
+                  properties: _comboProperties,
+                  childBuilder: (properties) => SizedBox(
+                    width: properties.comboWidth.value?.toDouble(),
+                    child: Combo(
+                      key: _comboKey,
+                      child: ListTile(title: Text('Combo')),
+                      popupBuilder: (context, mirrored) => TestPopup(
+                        key: _popupKey2 = GlobalKey<_TestPopupState>(),
+                        mirrored: mirrored,
                         animated:
                             properties.animation.value == PopupAnimation.custom,
                         itemsCount: properties.itemsCount.value ?? 0,
-                        onClose: () => _awaitComboKey.currentState.close(),
+                        onClose: () => _comboKey.currentState.close(),
                         width: properties.popupWidth.value?.toDouble(),
-                      );
-                    },
-                    openedChanged: (isOpened) {
-                      if (!isOpened &&
-                          properties.animation.value == PopupAnimation.custom) {
-                        _awaitPopupKey2.currentState?.animatedClose();
-                      }
-                    },
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 16),
-
-              // list
-              DemoItem<ListProperties>(
-                properties: _listComboProperties,
-                childBuilder: (properties) => SizedBox(
-                  width: properties.comboWidth.value?.toDouble(),
-                  child: ComboContext(
-                    parameters: ComboParameters(
-                      popupContraints: properties.hasSize
-                          ? null
-                          : BoxConstraints(
-                              maxWidth: properties.popupWidth.value.toDouble()),
-                    ),
-                    child: ListCombo<String>(
-                      getList: () async {
-                        await Future.delayed(const Duration(milliseconds: 500));
-                        return Iterable.generate(properties.itemsCount.value)
-                            .map((e) => 'Item ${e + 1}')
-                            .toList();
+                      ),
+                      openedChanged: (isOpened) {
+                        if (!isOpened &&
+                            properties.animation.value ==
+                                PopupAnimation.custom) {
+                          _popupKey2.currentState?.animatedClose();
+                        }
                       },
-                      itemBuilder: (context, parameters, item) =>
-                          ListTile(title: Text(item ?? '')),
-                      child: ListTile(title: Text('List Combo')),
-                      onItemTapped: (value) {},
                     ),
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 16),
+                const SizedBox(height: 16),
 
-              // selector
-              DemoItem<SelectorProperties>(
-                properties: _selectorProperties,
-                childBuilder: (properties) => SizedBox(
-                  width: properties.comboWidth.value?.toDouble(),
-                  child: ComboContext(
-                    parameters: ComboParameters(
-                      popupContraints: properties.hasSize
-                          ? null
-                          : BoxConstraints(
-                              maxWidth: properties.popupWidth.value.toDouble()),
-                    ),
-                    child: SelectorCombo<String>(
-                      getList: () async {
+                // await combo
+                DemoItem<AwaitComboProperties>(
+                  properties: _awaitComboProperties,
+                  childBuilder: (properties) => SizedBox(
+                    width: properties.comboWidth.value?.toDouble(),
+                    child: AwaitCombo(
+                      key: _awaitComboKey,
+                      child: ListTile(title: Text('Await Combo')),
+                      popupBuilder: (context) async {
                         await Future.delayed(const Duration(milliseconds: 500));
-                        return Iterable.generate(properties.itemsCount.value)
-                            .map((e) => 'Item ${e + 1}')
-                            .toList();
+                        return TestPopup(
+                          key: _awaitPopupKey2 = GlobalKey<_TestPopupState>(),
+                          mirrored: false,
+                          animated: properties.animation.value ==
+                              PopupAnimation.custom,
+                          itemsCount: properties.itemsCount.value ?? 0,
+                          onClose: () => _awaitComboKey.currentState.close(),
+                          width: properties.popupWidth.value?.toDouble(),
+                        );
                       },
-                      selected: properties.selected.value,
-                      itemBuilder: (context, parameters, item) =>
-                          ListTile(title: Text(item ?? '')),
-                      childBuilder: (context, parameters, item) =>
-                          ListTile(title: Text(item ?? 'Selector Combo')),
-                      onItemTapped: (value) =>
-                          setState(() => properties.selected.value = value),
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 12),
-
-              // typeahead
-              DemoItem<TypeaheadProperties>(
-                properties: _typeaheadProperties,
-                childBuilder: (properties) => SizedBox(
-                  width: properties.comboWidth.value?.toDouble(),
-                  child: ComboContext(
-                    parameters: ComboParameters(
-                      inputThrottle: Duration(
-                          milliseconds: properties.inputThrottleMs.value),
-                      popupContraints: properties.hasSize
-                          ? null
-                          : BoxConstraints(
-                              maxWidth: properties.popupWidth.value.toDouble()),
-                    ),
-                    child: TypeaheadCombo<String>(
-                      getList: (text) async {
-                        await Future.delayed(const Duration(milliseconds: 500));
-                        return Iterable.generate(properties.itemsCount.value)
-                            .map((e) => 'Item ${e + 1}')
-                            .toList();
+                      openedChanged: (isOpened) {
+                        if (!isOpened &&
+                            properties.animation.value ==
+                                PopupAnimation.custom) {
+                          _awaitPopupKey2.currentState?.animatedClose();
+                        }
                       },
-                      minTextLength: properties.minTextLength.value,
-                      cleanAfterSelection: properties.cleanAfterSelection.value,
-                      decoration: InputDecoration(labelText: 'Typeahead Combo'),
-                      selected: properties.selected.value,
-                      itemBuilder: (context, parameters, item) =>
-                          ListTile(title: Text(item ?? '')),
-                      getItemText: (item) => item,
-                      onItemTapped: (value) =>
-                          setState(() => properties.selected.value = value),
                     ),
                   ),
                 ),
-              ),
 
-              const SizedBox(height: 12),
+                const SizedBox(height: 16),
 
-              // menu
-              DemoItem<MenuProperties>(
-                properties: _menuProperties,
-                childBuilder: (properties) => SizedBox(
-                  width: properties.comboWidth.value?.toDouble(),
-                  child: MenuItemCombo<String>(
-                    itemBuilder: (context, parameters, item) => Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Text(item.item),
+                // list
+                DemoItem<ListProperties>(
+                  properties: _listComboProperties,
+                  childBuilder: (properties) => SizedBox(
+                    width: properties.comboWidth.value?.toDouble(),
+                    child: ComboContext(
+                      parameters: ComboParameters(
+                        popupContraints: properties.hasSize
+                            ? null
+                            : BoxConstraints(
+                                maxWidth:
+                                    properties.popupWidth.value.toDouble()),
+                      ),
+                      child: ListCombo<String>(
+                        getList: () async {
+                          await Future.delayed(
+                              const Duration(milliseconds: 500));
+                          return Iterable.generate(properties.itemsCount.value)
+                              .map((e) => 'Item ${e + 1}')
+                              .toList();
+                        },
+                        itemBuilder: (context, parameters, item) =>
+                            ListTile(title: Text(item ?? '')),
+                        child: ListTile(title: Text('List Combo')),
+                        onItemTapped: (value) {},
+                      ),
                     ),
-                    onItemTapped: (value) {
-                      final dialog =
-                          AlertDialog(content: Text('${value.item} tapped!'));
-                      showDialog(context: context, builder: (_) => dialog);
-                    },
-                    item: MenuItem(
-                        'Menu Item Combo',
-                        () => [
-                              MenuItem('New'),
-                              MenuItem.separator,
-                              MenuItem('Open'),
-                              MenuItem('Save'),
-                              MenuItem('Save As...'),
-                              MenuItem.separator,
-                              MenuItem(
-                                  'Recent',
-                                  () => [
-                                        MenuItem('Folders', () async {
-                                          await Future.delayed(
-                                              Duration(milliseconds: 500));
-                                          return [
-                                            MenuItem('Folder 1'),
-                                            MenuItem('Folder 2'),
-                                            MenuItem('Folder 3'),
-                                          ];
-                                        }),
-                                        MenuItem('Files', () async {
-                                          await Future.delayed(
-                                              Duration(milliseconds: 500));
-                                          return [
-                                            MenuItem('File 1'),
-                                            MenuItem('File 2'),
-                                            MenuItem('File 3'),
-                                          ];
-                                        }),
-                                        MenuItem('Documents', () async {
-                                          await Future.delayed(
-                                              Duration(milliseconds: 500));
-                                          return [];
-                                        }),
-                                      ]),
-                              MenuItem.separator,
-                              MenuItem('Exit'),
-                            ]),
                   ),
                 ),
-              ),
-            ]),
-          ],
+
+                const SizedBox(height: 16),
+
+                // selector
+                DemoItem<SelectorProperties>(
+                  properties: _selectorProperties,
+                  childBuilder: (properties) => SizedBox(
+                    width: properties.comboWidth.value?.toDouble(),
+                    child: ComboContext(
+                      parameters: ComboParameters(
+                        popupContraints: properties.hasSize
+                            ? null
+                            : BoxConstraints(
+                                maxWidth:
+                                    properties.popupWidth.value.toDouble()),
+                      ),
+                      child: SelectorCombo<String>(
+                        getList: () async {
+                          await Future.delayed(
+                              const Duration(milliseconds: 500));
+                          return Iterable.generate(properties.itemsCount.value)
+                              .map((e) => 'Item ${e + 1}')
+                              .toList();
+                        },
+                        selected: properties.selected.value,
+                        itemBuilder: (context, parameters, item) =>
+                            ListTile(title: Text(item ?? '')),
+                        childBuilder: (context, parameters, item) =>
+                            ListTile(title: Text(item ?? 'Selector Combo')),
+                        onItemTapped: (value) =>
+                            setState(() => properties.selected.value = value),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // typeahead
+                DemoItem<TypeaheadProperties>(
+                  properties: _typeaheadProperties,
+                  childBuilder: (properties) => SizedBox(
+                    width: properties.comboWidth.value?.toDouble(),
+                    child: ComboContext(
+                      parameters: ComboParameters(
+                        inputThrottle: Duration(
+                            milliseconds: properties.inputThrottleMs.value),
+                        popupContraints: properties.hasSize
+                            ? null
+                            : BoxConstraints(
+                                maxWidth:
+                                    properties.popupWidth.value.toDouble()),
+                      ),
+                      child: TypeaheadCombo<String>(
+                        getList: (text) async {
+                          await Future.delayed(
+                              const Duration(milliseconds: 500));
+                          return Iterable.generate(properties.itemsCount.value)
+                              .map((e) => 'Item ${e + 1}')
+                              .toList();
+                        },
+                        minTextLength: properties.minTextLength.value,
+                        cleanAfterSelection:
+                            properties.cleanAfterSelection.value,
+                        decoration: InputDecoration(
+                            labelText: 'Typeahead Combo',
+                            border: OutlineInputBorder()),
+                        selected: properties.selected.value,
+                        itemBuilder: (context, parameters, item) =>
+                            ListTile(title: Text(item ?? '')),
+                        getItemText: (item) => item,
+                        onItemTapped: (value) =>
+                            setState(() => properties.selected.value = value),
+                      ),
+                    ),
+                  ),
+                ),
+
+                const SizedBox(height: 12),
+
+                // menu
+                DemoItem<MenuProperties>(
+                  properties: _menuProperties,
+                  childBuilder: (properties) => SizedBox(
+                    width: properties.comboWidth.value?.toDouble(),
+                    child: MenuItemCombo<String>(
+                      itemBuilder: (context, parameters, item) => Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Text(item.item),
+                      ),
+                      onItemTapped: (value) {
+                        final dialog =
+                            AlertDialog(content: Text('${value.item} tapped!'));
+                        showDialog(context: context, builder: (_) => dialog);
+                      },
+                      item: MenuItem(
+                          'Menu Item Combo',
+                          () => [
+                                MenuItem('New'),
+                                MenuItem.separator,
+                                MenuItem('Open'),
+                                MenuItem('Save'),
+                                MenuItem('Save As...'),
+                                MenuItem.separator,
+                                MenuItem(
+                                    'Recent',
+                                    () => [
+                                          MenuItem('Folders', () async {
+                                            await Future.delayed(
+                                                Duration(milliseconds: 500));
+                                            return [
+                                              MenuItem('Folder 1'),
+                                              MenuItem('Folder 2'),
+                                              MenuItem('Folder 3'),
+                                            ];
+                                          }),
+                                          MenuItem('Files', () async {
+                                            await Future.delayed(
+                                                Duration(milliseconds: 500));
+                                            return [
+                                              MenuItem('File 1'),
+                                              MenuItem('File 2'),
+                                              MenuItem('File 3'),
+                                            ];
+                                          }),
+                                          MenuItem('Documents', () async {
+                                            await Future.delayed(
+                                                Duration(milliseconds: 500));
+                                            return [];
+                                          }),
+                                        ]),
+                                MenuItem.separator,
+                                MenuItem('Exit'),
+                              ]),
+                    ),
+                  ),
+                ),
+              ]),
+            ],
+          ),
         ),
       );
 }
@@ -430,7 +447,12 @@ class _DemoItemState<TProperties extends ComboProperties>
               color: Colors.transparent,
               borderRadius: BorderRadius.circular(16),
               clipBehavior: Clip.antiAlias,
-              child: child),
+              child: Theme(
+                  data: ThemeData(
+                    highlightColor: Colors.blueAccent.withOpacity(0.1),
+                    splashColor: Colors.blueAccent.withOpacity(0.3),
+                  ),
+                  child: child)),
         ),
       );
 

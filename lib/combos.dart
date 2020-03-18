@@ -268,10 +268,6 @@ class ComboParameters {
     this.childDecoratorBuilder,
     this.popupDecoratorBuilder,
     this.popupContraints,
-    this.focusColor,
-    this.hoverColor,
-    this.highlightColor,
-    this.splashColor,
     this.progressDecoratorBuilder,
     this.refreshOnOpened,
     this.progressPosition,
@@ -287,10 +283,6 @@ class ComboParameters {
     this.menuProgressDecoratorBuilder,
     this.menuRefreshOnOpened,
     this.menuProgressPosition,
-    this.menuFocusColor,
-    this.menuHoverColor,
-    this.menuHighlightColor,
-    this.menuSplashColor,
   });
 
   // Common parameters with dafault values for combo widgets
@@ -384,18 +376,6 @@ class ComboParameters {
   /// because [ListView] cannot automatically calculate its width).
   final BoxConstraints popupContraints;
 
-  /// The color of combo the ink response when the parent widget is focused.
-  final Color focusColor;
-
-  /// The color of the combo ink response when a pointer is hovering over it.
-  final Color hoverColor;
-
-  /// The highlight color of the combo ink response when pressed.
-  final Color highlightColor;
-
-  /// The splash color of the combo ink response.
-  final Color splashColor;
-
   // * AwaitCombo parameters
 
   /// Define the progress decorator widget.
@@ -468,18 +448,6 @@ class ComboParameters {
   /// Default is [ProgressPosition.child].
   final ProgressPosition menuProgressPosition;
 
-  /// The color of combo the ink response when the parent widget is focused.
-  final Color menuFocusColor;
-
-  /// The color of the combo ink response when a pointer is hovering over it.
-  final Color menuHoverColor;
-
-  /// The highlight color of the combo ink response when pressed.
-  final Color menuHighlightColor;
-
-  /// The splash color of the combo ink response.
-  final Color menuSplashColor;
-
   /// Creates a copy of this combo parameters but with the given fields replaced with
   /// the new values.
   ComboParameters copyWith({
@@ -536,10 +504,6 @@ class ComboParameters {
         popupDecoratorBuilder:
             popupDecoratorBuilder ?? this.popupDecoratorBuilder,
         popupContraints: popupContraints ?? this.popupContraints,
-        focusColor: focusColor ?? this.focusColor,
-        hoverColor: hoverColor ?? this.hoverColor,
-        highlightColor: highlightColor ?? this.highlightColor,
-        splashColor: splashColor ?? this.splashColor,
         progressDecoratorBuilder:
             progressDecoratorBuilder ?? this.progressDecoratorBuilder,
         refreshOnOpened: refreshOnOpened ?? this.refreshOnOpened,
@@ -558,10 +522,6 @@ class ComboParameters {
             menuProgressDecoratorBuilder ?? this.menuProgressDecoratorBuilder,
         menuRefreshOnOpened: menuRefreshOnOpened ?? this.menuRefreshOnOpened,
         menuProgressPosition: menuProgressPosition ?? this.menuProgressPosition,
-        menuFocusColor: menuFocusColor ?? this.menuFocusColor,
-        menuHoverColor: menuHoverColor ?? this.menuHoverColor,
-        menuHighlightColor: menuHighlightColor ?? this.menuHighlightColor,
-        menuSplashColor: menuSplashColor ?? this.menuSplashColor,
       );
 
   /// Default value of [Combo.animationDuration]
@@ -700,10 +660,6 @@ class _ComboContextState extends State<ComboContext> {
       popupDecoratorBuilder:
           my.popupDecoratorBuilder ?? def.popupDecoratorBuilder,
       popupContraints: getConstraints(),
-      focusColor: my.focusColor ?? def.focusColor,
-      hoverColor: my.hoverColor ?? def.hoverColor,
-      highlightColor: my.highlightColor ?? def.highlightColor,
-      splashColor: my.splashColor ?? def.splashColor,
       progressDecoratorBuilder:
           my.progressDecoratorBuilder ?? def.progressDecoratorBuilder,
       refreshOnOpened: my.refreshOnOpened ?? def.refreshOnOpened,
@@ -722,10 +678,6 @@ class _ComboContextState extends State<ComboContext> {
           my.menuProgressDecoratorBuilder ?? def.menuProgressDecoratorBuilder,
       menuRefreshOnOpened: my.menuRefreshOnOpened ?? def.menuRefreshOnOpened,
       menuProgressPosition: my.menuProgressPosition ?? def.menuProgressPosition,
-      menuFocusColor: my.menuFocusColor ?? def.menuFocusColor,
-      menuHoverColor: my.menuHoverColor ?? def.menuHoverColor,
-      menuHighlightColor: my.menuHighlightColor ?? def.menuHighlightColor,
-      menuSplashColor: my.menuSplashColor ?? def.menuSplashColor,
     );
     if (merged.enabled != _saveEnabled && !(_saveEnabled = merged.enabled)) {
       _closes.add(true);
@@ -1270,10 +1222,6 @@ class ComboState<T extends Combo> extends State<T> {
         } else {
           child = InkWell(
             child: child,
-            focusColor: parameters.focusColor,
-            hoverColor: parameters.hoverColor,
-            highlightColor: parameters.highlightColor,
-            splashColor: parameters.splashColor,
             onTap: enabled
                 ? () {
                     if (!openOnHover || (openOnHover && !kIsWeb && hasPopup)) {
@@ -2083,10 +2031,6 @@ class MenuItemCombo<T> extends StatelessWidget {
       progressDecoratorBuilder: parameters.menuProgressDecoratorBuilder,
       refreshOnOpened: parameters.menuRefreshOnOpened,
       progressPosition: parameters.menuProgressPosition,
-      focusColor: parameters.menuFocusColor,
-      hoverColor: parameters.menuHoverColor,
-      highlightColor: parameters.menuHighlightColor,
-      splashColor: parameters.menuSplashColor,
       listPopupBuilder: (context, parameters, list, itemBuilder,
               getIsSelectable, onItemTapped, mirrored) =>
           ComboContext(
