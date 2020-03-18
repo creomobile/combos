@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:ui';
 
 import 'package:combos/combos.dart';
 import 'package:demo_items/demo_items.dart';
@@ -356,28 +357,23 @@ class _TestPopupState extends State<TestPopup>
             .map((_) => ListTile(title: Text('Item ${_ + 1}'), onTap: () {}))
             .toList());
 
-    return Material(
-      elevation: 4,
-      borderRadius: BorderRadius.all(widget.radius),
-      child: AnimatedContainer(
-        width: _width,
-        duration: const Duration(milliseconds: _customAnimationDurationMs),
-        decoration:
-            BoxDecoration(borderRadius: BorderRadius.all(widget.radius)),
-        child: ScaleTransition(
-          scale: _controller,
-          child: Column(children: [
-            if (widget.mirrored) ...[
-              content,
-              size,
-              close
-            ] else ...[
-              close,
-              size,
-              content
-            ],
-          ]),
-        ),
+    return AnimatedContainer(
+      width: _width,
+      duration: const Duration(milliseconds: _customAnimationDurationMs),
+      decoration: BoxDecoration(borderRadius: BorderRadius.all(widget.radius)),
+      child: ScaleTransition(
+        scale: _controller,
+        child: Column(children: [
+          if (widget.mirrored) ...[
+            content,
+            size,
+            close
+          ] else ...[
+            close,
+            size,
+            content
+          ],
+        ]),
       ),
     );
   }
@@ -415,12 +411,26 @@ class _DemoItemState<TProperties extends ComboProperties>
           borderRadius: BorderRadius.circular(16),
         ),
       );
-  Widget _buildPopupDecoration(Widget child) => Container(
-        child: Material(
-          elevation: 4,
-          borderRadius: BorderRadius.circular(16),
-          clipBehavior: Clip.antiAlias,
-          child: child,
+  Widget _buildPopupDecoration(
+          BuildContext context, ComboParameters parameters, Widget child) =>
+      Material(
+        elevation: 4,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.blueAccent),
+            gradient: LinearGradient(colors: [
+              Colors.blueAccent.withOpacity(0.1),
+              Colors.blueAccent.withOpacity(0.0),
+              Colors.blueAccent.withOpacity(0.1),
+            ]),
+          ),
+          child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              clipBehavior: Clip.antiAlias,
+              child: child),
         ),
       );
 
@@ -456,6 +466,8 @@ class _DemoItemState<TProperties extends ComboProperties>
           refreshOnOpened: awaitProperties?.refreshOnOpened?.value ?? false,
           progressPosition: awaitProperties?.progressPosition?.value ??
               ProgressPosition.popup,
+          menuPopupDecoratorBuilder:
+              properties.usePopupDecorator.value ? _buildPopupDecoration : null,
           menuShowArrows: menuProperties?.showArrows?.value,
           menuCanTapOnFolder: menuProperties?.canTapOnFolder?.value,
           menuRefreshOnOpened: menuProperties?.menuRefreshOnOpened?.value,
@@ -497,7 +509,8 @@ class ComboProperties {
   final offsetY = IntEditor(title: 'Offset Y', value: 0);
   final autoMirror = BoolEditor(title: 'Auto Mirror', value: true);
   final requiredSpace = IntEditor(title: 'Required Space');
-  final screenPaddingHorizontal = IntEditor(title: 'Screen Padding X', value: 16);
+  final screenPaddingHorizontal =
+      IntEditor(title: 'Screen Padding X', value: 16);
   final screenPaddingVertical = IntEditor(title: 'Screen Padding Y', value: 16);
   final autoOpen = EnumEditor<ComboAutoOpen>(
       title: 'Auto Open',

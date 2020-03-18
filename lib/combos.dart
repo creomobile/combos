@@ -116,24 +116,6 @@ typedef ListPopupBuilder = Widget Function(
     void Function(dynamic value) onItemTapped,
     bool mirrored);
 
-/// Default widget to display menu divider
-class MenuDivider extends StatelessWidget {
-  /// Creates default widget to display menu divider
-  const MenuDivider({Key key, this.color = Colors.black12}) : super(key: key);
-
-  // Divider color
-  final Color color;
-
-  @override
-  Widget build(BuildContext context) => Padding(
-        padding: const EdgeInsets.symmetric(vertical: 4),
-        child: Container(
-          height: 1,
-          color: Colors.black12,
-        ),
-      );
-}
-
 /// Default widget for displaying list of popup items
 class ListPopup extends StatelessWidget {
   /// Creates default widget for displaying popup items
@@ -189,29 +171,23 @@ class ListPopup extends StatelessWidget {
             });
 
     return ConstrainedBox(
-      constraints: BoxConstraints(
-          maxHeight: parameters.listMaxHeight ?? double.infinity),
-      child: parameters.popupDecoratorBuilder == null
-          ? Material(elevation: 4, child: child)
-          : child,
-    );
+        constraints: BoxConstraints(
+            maxHeight: parameters.listMaxHeight ?? double.infinity),
+        child: child);
   }
 }
 
 /// Default widget for displaying list of the menu items
 class MenuListPopup extends StatelessWidget {
   /// Creates default widget for displaying list of the menu items
-  const MenuListPopup(
-      {Key key,
-      @required this.parameters,
-      @required this.list,
-      @required this.itemBuilder,
-      @required this.onItemTapped,
-      this.getIsSelectable,
-      this.backgroundColor = Colors.white,
-      this.borderRadius,
-      this.elevation = 4})
-      : assert(itemBuilder != null),
+  const MenuListPopup({
+    Key key,
+    @required this.parameters,
+    @required this.list,
+    @required this.itemBuilder,
+    @required this.onItemTapped,
+    this.getIsSelectable,
+  })  : assert(itemBuilder != null),
         super(key: key);
 
   /// Common parameters for combo widgets
@@ -229,41 +205,51 @@ class MenuListPopup extends StatelessWidget {
   /// Determines if the menu item is active for tapping
   final GetIsSelectable getIsSelectable;
 
-  /// Menu bachground color
-  final Color backgroundColor;
-
-  /// The corners of the menu are rounded by this value
-  final BorderRadius borderRadius;
-
-  /// The z-coordinate at which to place the menu relative to its parent.
-  final double elevation;
-
   @override
   Widget build(BuildContext context) {
     final parameters = this.parameters;
-    return Material(
-        color: backgroundColor,
-        borderRadius: borderRadius,
-        elevation: elevation,
-        child: IntrinsicWidth(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (list?.isEmpty == true)
-                parameters.emptyListIndicator ?? const SizedBox()
-              else if (list != null)
-                ...list?.map((item) => itemBuilder(context, parameters, item))
-            ],
-          ),
-        ));
+    return IntrinsicWidth(
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (list?.isEmpty == true)
+            parameters.emptyListIndicator ?? const SizedBox()
+          else if (list != null)
+            ...list?.map((item) => itemBuilder(context, parameters, item))
+        ],
+      ),
+    );
   }
+}
+
+/// Default widget to display menu divider
+class MenuDivider extends StatelessWidget {
+  /// Creates default widget to display menu divider
+  const MenuDivider({Key key, this.color = Colors.black12}) : super(key: key);
+
+  // Divider color
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) => Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Container(
+          height: 1,
+          color: Colors.black12,
+        ),
+      );
 }
 
 /// Signature to build the widget decorator.
 /// Uses for [ComboParameters.childDecoratorBuilder],
 /// [ComboParameters.popupDecoratorBuilder].
 typedef ComboDecoratorBuilder = Widget Function(Widget child);
+
+/// Signature for [ComboParameters.popupDecoratorBuilder],
+/// [ComboParameters.menuPopupDecoratorBuilder].
+typedef PopupDecoratorBuilder = Widget Function(
+    BuildContext context, ComboParameters parameters, Widget child);
 
 /// Common parameters for combo widgets
 class ComboParameters {
@@ -294,6 +280,7 @@ class ComboParameters {
     this.emptyListIndicator,
     this.inputThrottle,
     this.menuPopupBuilder,
+    this.menuPopupDecoratorBuilder,
     this.menuDivider,
     this.menuShowArrows,
     this.menuCanTapOnFolder,
@@ -315,6 +302,7 @@ class ComboParameters {
     enabled: true,
     animation: PopupAnimation.fade,
     animationDuration: defaultAnimationDuration,
+    popupDecoratorBuilder: buildDefaultPopupDecorator,
     progressDecoratorBuilder: buildDefaultProgressDecorator,
     refreshOnOpened: false,
     progressPosition: ProgressPosition.popup,
@@ -327,6 +315,7 @@ class ComboParameters {
     ),
     inputThrottle: Duration(milliseconds: 300),
     menuPopupBuilder: buildDefaultMenuPopup,
+    menuPopupDecoratorBuilder: buildDefaultMenuPopupDecorator,
     menuDivider: MenuDivider(),
     menuShowArrows: true,
     menuCanTapOnFolder: false,
@@ -387,7 +376,7 @@ class ComboParameters {
   final ComboDecoratorBuilder childDecoratorBuilder;
 
   /// Define decorator widget for all [Combo] popup widgets in the context.
-  final ComboDecoratorBuilder popupDecoratorBuilder;
+  final PopupDecoratorBuilder popupDecoratorBuilder;
 
   /// Define constraints for the combo popup content.
   /// (May be useful for [ListCombo] with position different of
@@ -449,6 +438,9 @@ class ComboParameters {
   /// Default is [buildDefaultMenuPopup] value.
   final ListPopupBuilder menuPopupBuilder;
 
+  /// Define decorator widget for all [MenuCombo] popups in the context.
+  final PopupDecoratorBuilder menuPopupDecoratorBuilder;
+
   /// Menu devider widget.
   /// Default is [MenuDivider].
   final Widget menuDivider;
@@ -502,7 +494,7 @@ class ComboParameters {
     PopupAnimation animation,
     Duration animationDuration,
     ComboDecoratorBuilder childDecoratorBuilder,
-    ComboDecoratorBuilder popupDecoratorBuilder,
+    PopupDecoratorBuilder popupDecoratorBuilder,
     BoxConstraints popupContraints,
     Color focusColor,
     Color hoverColor,
@@ -516,6 +508,7 @@ class ComboParameters {
     Widget emptyListIndicator,
     Duration inputThrottle,
     ListPopupBuilder menuPopupBuilder,
+    PopupDecoratorBuilder menuPopupDecoratorBuilder,
     Widget menuDivider,
     bool menuShowArrows,
     bool menuCanTapOnFolder,
@@ -556,6 +549,8 @@ class ComboParameters {
         emptyListIndicator: emptyListIndicator ?? this.emptyListIndicator,
         inputThrottle: inputThrottle ?? this.inputThrottle,
         menuPopupBuilder: menuPopupBuilder ?? this.menuPopupBuilder,
+        menuPopupDecoratorBuilder:
+            menuPopupDecoratorBuilder ?? this.menuPopupDecoratorBuilder,
         menuDivider: menuDivider ?? this.menuDivider,
         menuShowArrows: menuShowArrows ?? this.menuShowArrows,
         menuCanTapOnFolder: menuCanTapOnFolder ?? this.menuCanTapOnFolder,
@@ -574,6 +569,25 @@ class ComboParameters {
 
   /// Default value of [Combo.screenPadding]
   static const defaultScreenPadding = EdgeInsets.all(16.0);
+
+  /// Default popup decorator builder
+  static Widget buildDefaultPopupDecorator(
+          BuildContext context, ComboParameters parameters, Widget child,
+          {double elevation = 4,
+          BorderRadiusGeometry borderRadius =
+              const BorderRadius.all(Radius.circular(4))}) =>
+      Material(
+        elevation: elevation,
+        borderRadius: borderRadius,
+        child: child,
+      );
+
+  static Widget buildDefaultMenuPopupDecorator(
+          BuildContext context, ComboParameters parameters, Widget child,
+          {double elevation = 4,
+          BorderRadiusGeometry borderRadius = BorderRadius.zero}) =>
+      buildDefaultPopupDecorator(context, parameters, child,
+          elevation: elevation, borderRadius: borderRadius);
 
   /// Builds defaut progress decorator
   static Widget buildDefaultProgressDecorator(
@@ -699,6 +713,8 @@ class _ComboContextState extends State<ComboContext> {
       emptyListIndicator: my.emptyListIndicator ?? def.emptyListIndicator,
       inputThrottle: my.inputThrottle ?? def.inputThrottle,
       menuPopupBuilder: my.menuPopupBuilder ?? def.menuPopupBuilder,
+      menuPopupDecoratorBuilder:
+          my.menuPopupDecoratorBuilder ?? def.menuPopupDecoratorBuilder,
       menuDivider: my.menuDivider ?? def.menuDivider,
       menuShowArrows: my.menuShowArrows ?? def.menuShowArrows,
       menuCanTapOnFolder: my.menuCanTapOnFolder ?? def.menuCanTapOnFolder,
@@ -1060,10 +1076,8 @@ class ComboState<T extends Combo> extends State<T> {
           if (constraints != null) {
             popup = ConstrainedBox(constraints: constraints, child: popup);
           }
-          final decorator = parameters.popupDecoratorBuilder;
-          if (decorator != null) {
-            popup = decorator(popup);
-          }
+
+          popup = parameters.popupDecoratorBuilder(context, parameters, popup);
 
           if (_catchHover) {
             popup = MouseRegion(
@@ -2080,11 +2094,13 @@ class MenuItemCombo<T> extends StatelessWidget {
         child: parameters.menuPopupBuilder(context, parameters, list,
             itemBuilder, getIsSelectable, onItemTapped, mirrored),
       ),
+      popupDecoratorBuilder: parameters.menuPopupDecoratorBuilder,
     );
 
     return ComboContext(
-      parameters:
-          ComboParameters(listPopupBuilder: menuParameters.listPopupBuilder),
+      parameters: ComboParameters(
+          listPopupBuilder: menuParameters.listPopupBuilder,
+          popupDecoratorBuilder: parameters.menuPopupDecoratorBuilder),
       child: ListCombo<MenuItem<T>>(
         key: key,
         getList: item.getChildren,
