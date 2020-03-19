@@ -1,3 +1,6 @@
+## [1.1.6] - 3/19/2020
+* fix theme data passing
+
 ## [1.1.5] - 3/19/2020
 * implement default child, popup decorators
 

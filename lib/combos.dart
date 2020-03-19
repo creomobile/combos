@@ -977,6 +977,7 @@ class ComboState<T extends Combo> extends State<T> {
 
   ComboParameters _parameters;
   ComboParameters get parameters => _parameters;
+  ThemeData _theme;
 
   @override
   void initState() {
@@ -1291,12 +1292,12 @@ class ComboState<T extends Combo> extends State<T> {
         }
 
         return _ComboOverlay(
-            child: Theme(data: Theme.of(this.context), child: overlay),
-            comboState: this);
+            child: Theme(data: _theme, child: overlay), comboState: this);
       });
 
   @override
   Widget build(BuildContext context) {
+    _theme = Theme.of(this.context);
     final contextData = ComboContext.of(context);
     _contextClosesSubscription ??=
         contextData?._closes?.stream?.listen((_) => close());
