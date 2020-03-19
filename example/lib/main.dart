@@ -14,6 +14,12 @@ void main() => runApp(MyApp());
 class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MaterialApp(
+        // theme: ThemeData(
+        //   inputDecorationTheme: InputDecorationTheme(
+        //     enabledBorder:
+        //         OutlineInputBorder(borderRadius: BorderRadius.circular(200)),
+        //   ),
+        // ),
         title: 'Combo Samples',
         home: HomePage(),
       );
@@ -179,7 +185,7 @@ class _HomePageState extends State<HomePage> {
                   ),
                 ),
 
-                const SizedBox(height: 12),
+                const SizedBox(height: 16),
 
                 // typeahead
                 DemoItem<TypeaheadProperties>(
@@ -208,8 +214,9 @@ class _HomePageState extends State<HomePage> {
                         cleanAfterSelection:
                             properties.cleanAfterSelection.value,
                         decoration: InputDecoration(
-                            labelText: 'Typeahead Combo',
-                            border: OutlineInputBorder()),
+                          labelText: 'Typeahead Combo',
+                          border: OutlineInputBorder(),
+                        ),
                         selected: properties.selected.value,
                         itemBuilder: (context, parameters, item) =>
                             ListTile(title: Text(item ?? '')),
@@ -415,7 +422,9 @@ class DemoItem<TProperties extends ComboProperties>
 
 class _DemoItemState<TProperties extends ComboProperties>
     extends DemoItemStateBase<TProperties> {
-  Widget _buildChildDecoration(Widget child) => Container(
+  Widget _buildChildDecoration(BuildContext context, ComboParameters parameters,
+          bool opened, Widget child) =>
+      Container(
         child: Material(
           color: Colors.transparent,
           borderRadius: BorderRadius.circular(16),
@@ -481,8 +490,14 @@ class _DemoItemState<TProperties extends ComboProperties>
           animation: properties.animation.value,
           animationDuration:
               Duration(milliseconds: properties.animationDurationMs.value),
-          childDecoratorBuilder:
+          childContentDecoratorBuilder:
               properties.useChildDecorator.value ? _buildChildDecoration : null,
+          childDecoratorBuilder: properties.useChildDecorator.value
+              ? (context, parameters, opened, child) => Material(
+                  borderRadius: BorderRadius.circular(16),
+                  clipBehavior: Clip.antiAlias,
+                  child: child)
+              : null,
           popupDecoratorBuilder:
               properties.usePopupDecorator.value ? _buildPopupDecoration : null,
           refreshOnOpened: awaitProperties?.refreshOnOpened?.value ?? false,
@@ -551,9 +566,9 @@ class ComboProperties {
       title: 'Animation Duration',
       value: ComboParameters.defaultAnimationDuration.inMilliseconds);
   final useChildDecorator =
-      BoolEditor(title: 'Use Child Decorator', value: true);
+      BoolEditor(title: 'Use Custom Child Decorator', value: false);
   final usePopupDecorator =
-      BoolEditor(title: 'Use Popup Decorator', value: false);
+      BoolEditor(title: 'Use Custom Popup Decorator', value: false);
 
   List<Editor> get editors => [
         comboWidth,

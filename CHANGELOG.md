@@ -1,3 +1,6 @@
+## [1.1.5] - 3/19/2020
+* implement default child, popup decorators
+
 ## [1.1.4] - 3/17/2020
 * fix exception when render box is not attached
 

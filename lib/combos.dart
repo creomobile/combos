@@ -241,12 +241,14 @@ class MenuDivider extends StatelessWidget {
       );
 }
 
-/// Signature to build the widget decorator.
-/// Uses for [ComboParameters.childDecoratorBuilder],
-/// [ComboParameters.popupDecoratorBuilder].
-typedef ComboDecoratorBuilder = Widget Function(Widget child);
+/// Signature for building the [Combo.child] decorator.
+/// Using for [ComboParameters.childDecoratorBuilder],
+/// [ComboParameters.childContentDecoratorBuilder].
+typedef ChildDecoratorBuilder = Widget Function(BuildContext context,
+    ComboParameters parameters, bool opened, Widget child);
 
-/// Signature for [ComboParameters.popupDecoratorBuilder],
+/// Signature for building [Combo.popup] decorator.
+/// Using for [ComboParameters.popupDecoratorBuilder],
 /// [ComboParameters.menuPopupDecoratorBuilder].
 typedef PopupDecoratorBuilder = Widget Function(
     BuildContext context, ComboParameters parameters, Widget child);
@@ -265,6 +267,7 @@ class ComboParameters {
     this.enabled,
     this.animation,
     this.animationDuration,
+    this.childContentDecoratorBuilder,
     this.childDecoratorBuilder,
     this.popupDecoratorBuilder,
     this.popupContraints,
@@ -294,6 +297,8 @@ class ComboParameters {
     enabled: true,
     animation: PopupAnimation.fade,
     animationDuration: defaultAnimationDuration,
+    childContentDecoratorBuilder: buildDefaultChildContentDecorator,
+    childDecoratorBuilder: buildDefaultChildDecorator,
     popupDecoratorBuilder: buildDefaultPopupDecorator,
     progressDecoratorBuilder: buildDefaultProgressDecorator,
     refreshOnOpened: false,
@@ -365,7 +370,11 @@ class ComboParameters {
 
   /// Define decorator widget for all [Combo.child] widgets
   /// with [Combo.ignoreChildDecorator] = false in the context.
-  final ComboDecoratorBuilder childDecoratorBuilder;
+  final ChildDecoratorBuilder childContentDecoratorBuilder;
+
+  /// Define decorator widget for all [Combo.child] with its [InkWell]
+  /// with [Combo.ignoreChildDecorator] = false in the context.
+  final ChildDecoratorBuilder childDecoratorBuilder;
 
   /// Define decorator widget for all [Combo] popup widgets in the context.
   final PopupDecoratorBuilder popupDecoratorBuilder;
@@ -461,7 +470,8 @@ class ComboParameters {
     bool enabled,
     PopupAnimation animation,
     Duration animationDuration,
-    ComboDecoratorBuilder childDecoratorBuilder,
+    ChildDecoratorBuilder childContentDecoratorBuilder,
+    ChildDecoratorBuilder childDecoratorBuilder,
     PopupDecoratorBuilder popupDecoratorBuilder,
     BoxConstraints popupContraints,
     Color focusColor,
@@ -499,6 +509,8 @@ class ComboParameters {
         enabled: enabled ?? this.enabled,
         animation: animation ?? this.animation,
         animationDuration: animationDuration ?? this.animationDuration,
+        childContentDecoratorBuilder:
+            childContentDecoratorBuilder ?? this.childContentDecoratorBuilder,
         childDecoratorBuilder:
             childDecoratorBuilder ?? this.childDecoratorBuilder,
         popupDecoratorBuilder:
@@ -529,6 +541,91 @@ class ComboParameters {
 
   /// Default value of [Combo.screenPadding]
   static const defaultScreenPadding = EdgeInsets.all(16.0);
+
+  /// Default child decorator builder
+  static Widget buildDefaultChildContentDecorator(
+    BuildContext context,
+    ComboParameters parameters,
+    bool opened,
+    Widget child, {
+    BorderRadius borderRadius,
+    double borderWidth,
+    Color borderClosedColor,
+    Color borderOpenedColor,
+    Color iconColor,
+    Color disabledColor,
+    IconData icon = Icons.arrow_drop_down,
+    EdgeInsets iconPadding = const EdgeInsets.symmetric(horizontal: 8.0),
+    Duration animationDuration = const Duration(milliseconds: 64),
+  }) {
+    final theme = Theme.of(context);
+    final inputDecorationTheme = theme.inputDecorationTheme;
+    if (borderRadius == null) {
+      final border = opened
+          ? inputDecorationTheme?.focusedBorder
+          : inputDecorationTheme?.enabledBorder;
+      borderRadius = border is OutlineInputBorder
+          ? border.borderRadius
+          : const BorderRadius.all(Radius.circular(4));
+    }
+    if (borderWidth == null) {
+      final border = opened
+          ? inputDecorationTheme?.focusedBorder
+          : inputDecorationTheme?.enabledBorder;
+      borderWidth =
+          border is OutlineInputBorder ? border.borderSide?.width : 1.5;
+    }
+    borderClosedColor ??=
+        inputDecorationTheme?.enabledBorder?.borderSide?.color ??
+            Colors.black26;
+    borderOpenedColor ??= theme.primaryColor;
+    iconColor ??= borderClosedColor;
+    disabledColor ??= theme.disabledColor;
+    final enabled = parameters.enabled;
+    return Stack(
+      children: [
+        Row(
+          children: [
+            Expanded(child: child),
+            Padding(
+                padding: iconPadding,
+                child: Icon(icon, color: enabled ? iconColor : disabledColor)),
+          ],
+        ),
+        Positioned.fill(
+          child: IgnorePointer(
+            child: AnimatedContainer(
+                duration: animationDuration,
+                decoration: BoxDecoration(
+                  border: Border.all(
+                      width: borderWidth,
+                      color: opened
+                          ? borderOpenedColor
+                          : enabled ? borderClosedColor : disabledColor),
+                  borderRadius: borderRadius,
+                )),
+          ),
+        ),
+      ],
+    );
+  }
+
+  static Widget buildDefaultChildDecorator(BuildContext context,
+      ComboParameters parameters, bool opened, Widget child,
+      {BorderRadius borderRadius}) {
+    final theme = Theme.of(context);
+    final inputDecorationTheme = theme.inputDecorationTheme;
+    if (borderRadius == null) {
+      final border = opened
+          ? inputDecorationTheme.focusedBorder
+          : inputDecorationTheme?.enabledBorder;
+      borderRadius = border is OutlineInputBorder
+          ? border.borderRadius
+          : const BorderRadius.all(Radius.circular(4));
+    }
+    return Material(
+        clipBehavior: Clip.antiAlias, borderRadius: borderRadius, child: child);
+  }
 
   /// Default popup decorator builder
   static Widget buildDefaultPopupDecorator(
@@ -655,6 +752,8 @@ class _ComboContextState extends State<ComboContext> {
       enabled: (my.enabled ?? true) && def.enabled,
       animation: my.animation ?? def.animation,
       animationDuration: my.animationDuration ?? def.animationDuration,
+      childContentDecoratorBuilder:
+          my.childContentDecoratorBuilder ?? def.childContentDecoratorBuilder,
       childDecoratorBuilder:
           my.childDecoratorBuilder ?? def.childDecoratorBuilder,
       popupDecoratorBuilder:
@@ -913,6 +1012,7 @@ class ComboState<T extends Combo> extends State<T> {
     if (_overlay == null) return;
     final overlay = _overlay;
     _overlay = null;
+    setState(() {});
     if (_fadeClose) _closeCompleter?.complete(0.0);
     if (widget.openedChanged != null) widget.openedChanged(false);
     if (_delayedClose) {
@@ -1190,7 +1290,9 @@ class ComboState<T extends Combo> extends State<T> {
           ]);
         }
 
-        return _ComboOverlay(child: overlay, comboState: this);
+        return _ComboOverlay(
+            child: Theme(data: Theme.of(this.context), child: overlay),
+            comboState: this);
       });
 
   @override
@@ -1201,9 +1303,18 @@ class ComboState<T extends Combo> extends State<T> {
     final parameters = _parameters = getParameters(contextData?.parameters);
     final enabled = parameters.enabled;
     var child = getChild();
+    void decorate() {
+      if (!widget.ignoreChildDecorator) {
+        child = parameters.childContentDecoratorBuilder(
+            context, parameters, opened, child);
+      }
+    }
+
     if (child == null) {
       child = const SizedBox();
+      decorate();
     } else {
+      decorate();
       if (parameters.autoOpen != ComboAutoOpen.none) {
         final catchHover = _catchHover;
         final openOnHover = parameters.autoOpen == ComboAutoOpen.hovered;
@@ -1240,14 +1351,14 @@ class ComboState<T extends Combo> extends State<T> {
                 catchHover && enabled ? (value) => _setHovered(value) : null,
           );
         }
+        if (!widget.ignoreChildDecorator) {
+          child = parameters.childDecoratorBuilder(
+              context, parameters, opened, child);
+        }
       }
       if (parameters.autoClose ==
           ComboAutoClose.tapOutsideWithChildIgnorePointer) {
         child = IgnorePointer(ignoring: _overlay != null, child: child);
-      }
-      if (!widget.ignoreChildDecorator) {
-        final decorator = parameters.childDecoratorBuilder;
-        if (decorator != null) child = decorator(child);
       }
     }
     return CompositedTransformTarget(link: _layerLink, child: child);
