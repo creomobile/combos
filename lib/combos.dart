@@ -253,9 +253,9 @@ typedef ChildDecoratorBuilder = Widget Function(BuildContext context,
 typedef PopupDecoratorBuilder = Widget Function(
     BuildContext context, ComboParameters parameters, Widget child);
 
-/// Common parameters for combo widgets
+/// Common parameters for combo widgets.
 class ComboParameters {
-  /// Creates common parameters for combo widgets
+  /// Creates common parameters for combo widgets.
   const ComboParameters({
     this.position,
     this.offset,
@@ -536,10 +536,10 @@ class ComboParameters {
         menuProgressPosition: menuProgressPosition ?? this.menuProgressPosition,
       );
 
-  /// Default value of [Combo.animationDuration]
+  /// Default value of [animationDuration].
   static const defaultAnimationDuration = Duration(milliseconds: 150);
 
-  /// Default value of [Combo.screenPadding]
+  /// Default value of [screenPadding].
   static const defaultScreenPadding = EdgeInsets.all(16.0);
 
   /// Default child decorator builder
@@ -914,8 +914,8 @@ class Combo extends StatefulWidget {
   final ValueChanged<bool> hoveredChanged;
 
   /// Called when the user taps on [child].
-  /// Also can be called by 'long tap' event if [autoOpen] is set to [ComboAutoOpen.hovered]
-  /// and platform is not 'Web'
+  /// Also can be called by 'long tap' event if [ComboParameters.autoOpen]
+  /// is set to [ComboAutoOpen.hovered] and platform is not 'Web'
   final GestureTapCallback onTap;
 
   /// if true, [ComboParameters.childDecoratorBuilder] will not be applied.
@@ -929,7 +929,6 @@ class Combo extends StatefulWidget {
 }
 
 /// State for a [Combo].
-///
 /// Can [open] and [close] popups.
 class ComboState<T extends Combo> extends State<T> {
   // ignore: close_sinks
@@ -997,7 +996,7 @@ class ComboState<T extends Combo> extends State<T> {
   bool get opened => _overlay != null;
   bool get hasPopup => widget.popupBuilder != null;
 
-  /// Opens the popup
+  /// Opens the popup.
   void open() {
     if (_overlay != null) return;
     if (widget.openedChanged != null) widget.openedChanged(true);
@@ -1008,7 +1007,7 @@ class ComboState<T extends Combo> extends State<T> {
     setState(() {});
   }
 
-  /// Closes the popup
+  /// Closes the popup.
   void close() async {
     if (_overlay == null) return;
     final overlay = _overlay;

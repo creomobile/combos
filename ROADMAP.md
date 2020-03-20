@@ -1,5 +1,6 @@
 # Future plans
 
+* Investigate position tracking (remove scroll listener)
 * Automatically set throlle to zero if items was provided immediatelly
 * Remove backgroundColor, borderRadius, elevation params from MenuListPopup
   (use decorator instead)
