@@ -632,7 +632,10 @@ extension ComboPropertiesExtension on ComboProperties {
         ),
       );
 
-  Widget apply({@required Widget child}) {
+  Widget apply({
+    @required Widget child,
+    PopupDecoratorBuilder popupDecoratorBuilder = _buildPopupDecoration,
+  }) {
     final AwaitComboProperties awaitProperties =
         this is AwaitComboProperties ? this : null;
     final MenuProperties menuProperties = this is MenuProperties ? this : null;
@@ -662,12 +665,12 @@ extension ComboPropertiesExtension on ComboProperties {
                   child: child)
               : null,
           popupDecoratorBuilder:
-              usePopupDecorator.value ? _buildPopupDecoration : null,
+              usePopupDecorator.value ? popupDecoratorBuilder : null,
           refreshOnOpened: awaitProperties?.refreshOnOpened?.value ?? false,
           progressPosition: awaitProperties?.progressPosition?.value ??
               ProgressPosition.popup,
           menuPopupDecoratorBuilder:
-              usePopupDecorator.value ? _buildPopupDecoration : null,
+              usePopupDecorator.value ? popupDecoratorBuilder : null,
           menuShowArrows: menuProperties?.showArrows?.value,
           menuCanTapOnFolder: menuProperties?.canTapOnFolder?.value,
           menuRefreshOnOpened: menuProperties?.menuRefreshOnOpened?.value,
