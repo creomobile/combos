@@ -1,3 +1,9 @@
+## [1.1.7+1] - 3/21/2020
+* minor refactoring of 'popupContraints'
+
+## [1.1.7] - 3/20/2020
+* update child decorators
+
 ## [1.1.6] - 3/19/2020
 * fix theme data passing
 

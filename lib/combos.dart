@@ -651,18 +651,42 @@ class ComboParameters {
 /// Allows to set [ComboParameters] and close combo popups in the context
 /// with [ComboContextData.closeAll] method
 class ComboContext extends StatefulWidget {
-  const ComboContext({Key key, @required this.parameters, @required this.child})
-      : assert(parameters != null),
+  const ComboContext({
+    Key key,
+    @required this.parameters,
+    @required this.child,
+    this.ignoreParentContraints = false,
+  })  : assert(parameters != null),
         assert(child != null),
+        assert(ignoreParentContraints != null),
         super(key: key);
   final ComboParameters parameters;
   final Widget child;
+
+  /// if true, parent context constraints will not be merged with current
+  final bool ignoreParentContraints;
 
   static ComboContextData of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<ComboContextData>();
 
   @override
   _ComboContextState createState() => _ComboContextState();
+
+  static BoxConstraints mergeConstraints(
+      BoxConstraints myConstraints, BoxConstraints parentConstraints) {
+    if (myConstraints == null) return parentConstraints;
+    if (parentConstraints == null) return myConstraints;
+    final maxWidth =
+        math.min(myConstraints.maxWidth, parentConstraints.maxWidth);
+    final maxHeight =
+        math.min(myConstraints.maxHeight, parentConstraints.maxHeight);
+    return BoxConstraints(
+      minWidth: math.min(myConstraints.minWidth, maxWidth),
+      maxWidth: maxWidth,
+      minHeight: math.min(myConstraints.minHeight, maxHeight),
+      maxHeight: maxHeight,
+    );
+  }
 }
 
 class _ComboContextState extends State<ComboContext> {
@@ -676,21 +700,6 @@ class _ComboContextState extends State<ComboContext> {
         ? ComboParameters.defaultParameters
         : parentData.parameters;
     final my = widget.parameters;
-
-    BoxConstraints getConstraints() {
-      final myCon = my.popupContraints;
-      final defCon = def.popupContraints;
-      if (myCon == null) return defCon;
-      if (defCon == null) return myCon;
-      final maxWidth = math.min(myCon.maxWidth, defCon.maxWidth);
-      final maxHeight = math.min(myCon.maxHeight, defCon.maxHeight);
-      return BoxConstraints(
-        minWidth: math.min(myCon.minWidth, maxWidth),
-        maxWidth: maxWidth,
-        minHeight: math.min(myCon.minHeight, maxHeight),
-        maxHeight: maxHeight,
-      );
-    }
 
     final merged = ComboParameters(
       position: my.position ?? def.position,
@@ -709,7 +718,10 @@ class _ComboContextState extends State<ComboContext> {
           my.childDecoratorBuilder ?? def.childDecoratorBuilder,
       popupDecoratorBuilder:
           my.popupDecoratorBuilder ?? def.popupDecoratorBuilder,
-      popupContraints: getConstraints(),
+      popupContraints: widget.ignoreParentContraints
+          ? my.popupContraints
+          : ComboContext.mergeConstraints(
+              my.popupContraints, def.popupContraints),
       progressDecoratorBuilder:
           my.progressDecoratorBuilder ?? def.progressDecoratorBuilder,
       refreshOnOpened: my.refreshOnOpened ?? def.refreshOnOpened,
