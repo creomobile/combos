@@ -512,14 +512,17 @@ class _DemoItemState<TProperties extends ComboProperties>
   @override
   Widget buildProperties() {
     final editors = widget.properties.editors;
-    return EditorsContext(
+    return Theme(
+      data: ThemeData(
+          inputDecorationTheme:
+              InputDecorationTheme(border: OutlineInputBorder())),
       child: ListView.separated(
         padding: const EdgeInsets.all(16),
         shrinkWrap: true,
         physics: ClampingScrollPhysics(),
         itemCount: editors.length,
         itemBuilder: (context, index) => editors[index].build(),
-        separatorBuilder: (context, index) => const SizedBox(height: 8),
+        separatorBuilder: (context, index) => const SizedBox(height: 16),
       ),
     );
   }
