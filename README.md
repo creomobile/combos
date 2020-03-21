@@ -6,6 +6,8 @@ Combo widgets for Flutter.
 
 [Samples is available here](https://samples.creomobile.com/#/combos)
 
+![alt text](https://samples.creomobile.com/combos.png)
+
 Includes:
 * **Combo** - Simple combo widget for custom child and popup content.
 * **AwaitCombo** - Combo widget with delayed popup content builder for loading data with the progress indication

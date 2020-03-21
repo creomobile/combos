@@ -548,83 +548,34 @@ class ComboParameters {
     ComboParameters parameters,
     bool opened,
     Widget child, {
-    BorderRadius borderRadius,
-    double borderWidth,
-    Color borderClosedColor,
-    Color borderOpenedColor,
-    Color iconColor,
-    Color disabledColor,
     IconData icon = Icons.arrow_drop_down,
     EdgeInsets iconPadding = const EdgeInsets.symmetric(horizontal: 8.0),
-    Duration animationDuration = const Duration(milliseconds: 64),
-  }) {
-    final theme = Theme.of(context);
-    final inputDecorationTheme = theme.inputDecorationTheme;
-    if (borderRadius == null) {
-      final border = opened
-          ? inputDecorationTheme?.focusedBorder
-          : inputDecorationTheme?.enabledBorder;
-      borderRadius = border is OutlineInputBorder
-          ? border.borderRadius
-          : const BorderRadius.all(Radius.circular(4));
-    }
-    if (borderWidth == null) {
-      final border = opened
-          ? inputDecorationTheme?.focusedBorder
-          : inputDecorationTheme?.enabledBorder;
-      borderWidth =
-          border is OutlineInputBorder ? border.borderSide?.width : 1.5;
-    }
-    borderClosedColor ??=
-        inputDecorationTheme?.enabledBorder?.borderSide?.color ??
-            Colors.black26;
-    borderOpenedColor ??= theme.primaryColor;
-    iconColor ??= borderClosedColor;
-    disabledColor ??= theme.disabledColor;
-    final enabled = parameters.enabled;
-    return Stack(
-      children: [
-        Row(
-          children: [
-            Expanded(child: child),
-            Padding(
-                padding: iconPadding,
-                child: Icon(icon, color: enabled ? iconColor : disabledColor)),
-          ],
-        ),
-        Positioned.fill(
-          child: IgnorePointer(
-            child: AnimatedContainer(
-                duration: animationDuration,
-                decoration: BoxDecoration(
-                  border: Border.all(
-                      width: borderWidth,
-                      color: opened
-                          ? borderOpenedColor
-                          : enabled ? borderClosedColor : disabledColor),
-                  borderRadius: borderRadius,
-                )),
-          ),
-        ),
-      ],
-    );
-  }
+  }) =>
+      Row(children: [
+        Expanded(child: child),
+        Padding(
+            padding: iconPadding,
+            child: AnimatedOpacity(
+                duration: kThemeChangeDuration,
+                opacity: parameters.enabled ? 1.0 : 0.5,
+                child: Icon(icon, color: Theme.of(context).disabledColor))),
+      ]);
 
   static Widget buildDefaultChildDecorator(BuildContext context,
-      ComboParameters parameters, bool opened, Widget child,
-      {BorderRadius borderRadius}) {
+      ComboParameters parameters, bool opened, Widget child) {
     final theme = Theme.of(context);
-    final inputDecorationTheme = theme.inputDecorationTheme;
-    if (borderRadius == null) {
-      final border = opened
-          ? inputDecorationTheme.focusedBorder
-          : inputDecorationTheme?.enabledBorder;
-      borderRadius = border is OutlineInputBorder
-          ? border.borderRadius
-          : const BorderRadius.all(Radius.circular(4));
-    }
+    final decoration = InputDecoration(border: OutlineInputBorder())
+        .applyDefaults(theme.inputDecorationTheme)
+        .copyWith(enabled: parameters.enabled, contentPadding: EdgeInsets.zero);
     return Material(
-        clipBehavior: Clip.antiAlias, borderRadius: borderRadius, child: child);
+      borderRadius: (decoration.border as OutlineInputBorder).borderRadius,
+      child: InputDecorator(
+          decoration: decoration,
+          isFocused: opened,
+          isEmpty: true,
+          expands: false,
+          child: child),
+    );
   }
 
   /// Default popup decorator builder
