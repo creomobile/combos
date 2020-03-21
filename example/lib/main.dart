@@ -453,7 +453,7 @@ class ComboProperties {
     if (!withChildDecorator) _excludes.add(useChildDecorator);
   }
 
-  final _excludes = <Editor>{};
+  final _excludes = <EditorsBuilder>{};
 
   final comboWidth = IntEditor(title: 'Combo Width', value: 200);
   final popupWidth = IntEditor(title: 'Popup Width', value: 300);
@@ -492,7 +492,7 @@ class ComboProperties {
   final usePopupDecorator =
       BoolEditor(title: 'Use Custom Popup Decorator', value: false);
 
-  List<Editor> get _editors => [
+  List<EditorsBuilder> get _editors => [
         comboWidth,
         popupWidth,
         itemsCount,
@@ -511,7 +511,7 @@ class ComboProperties {
         useChildDecorator,
         usePopupDecorator,
       ];
-  List<Editor> get editors =>
+  List<EditorsBuilder> get editors =>
       _editors.where((e) => !_excludes.contains(e)).toList();
 }
 
@@ -526,7 +526,7 @@ class AwaitComboProperties extends ComboProperties {
       value: ProgressPosition.popup);
 
   @override
-  List<Editor> get editors =>
+  List<EditorsBuilder> get editors =>
       [refreshOnOpened, progressPosition, ...super.editors];
 }
 
@@ -545,7 +545,7 @@ class SelectorProperties extends ListProperties {
   EnumEditor<String> get selected => _selected;
 
   @override
-  List<Editor> get editors => [selected, ...super.editors];
+  List<EditorsBuilder> get editors => [selected, ...super.editors];
 }
 
 class TypeaheadProperties extends SelectorProperties {
@@ -561,7 +561,7 @@ class TypeaheadProperties extends SelectorProperties {
       BoolEditor(title: 'Clean After Selection', value: false);
 
   @override
-  List<Editor> get editors => [
+  List<EditorsBuilder> get editors => [
         minTextLength,
         inputThrottleMs,
         cleanAfterSelection,
@@ -579,7 +579,7 @@ class MenuProperties extends ListProperties {
       getList: () => ProgressPosition.values,
       value: ProgressPosition.child);
   @override
-  List<Editor> get editors => [
+  List<EditorsBuilder> get editors => [
         showArrows,
         canTapOnFolder,
         menuRefreshOnOpened,
