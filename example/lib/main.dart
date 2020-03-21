@@ -9,9 +9,9 @@ import 'package:flutter/scheduler.dart';
 
 const _customAnimationDurationMs = 150;
 
-void main() => runApp(MyApp());
+void main() => runApp(_App());
 
-class MyApp extends StatelessWidget {
+class _App extends StatelessWidget {
   @override
   Widget build(BuildContext context) => MaterialApp(
         theme: ThemeData(
@@ -25,23 +25,23 @@ class MyApp extends StatelessWidget {
         //   ),
         // ),
         title: 'Combo Samples',
-        home: HomePage(),
+        home: CombosExamplePage(),
       );
 }
 
-class HomePage extends StatefulWidget {
+class CombosExamplePage extends StatefulWidget {
   @override
-  _HomePageState createState() => _HomePageState();
+  _CombosExamplePageState createState() => _CombosExamplePageState();
 }
 
-class _HomePageState extends State<HomePage> {
+class _CombosExamplePageState extends State<CombosExamplePage> {
   final _comboKey = GlobalKey<ComboState>();
   final _awaitComboKey = GlobalKey<ComboState>();
   GlobalKey<_TestPopupState> _popupKey2;
   GlobalKey<_TestPopupState> _awaitPopupKey2;
 
-  final _comboProperties = ComboProperties();
-  final _awaitComboProperties = AwaitComboProperties();
+  final _comboProperties = ComboProperties(showCustomAnimation: true);
+  final _awaitComboProperties = AwaitComboProperties(showCustomAnimation: true);
   final _listComboProperties = ListProperties();
   final _selectorProperties = SelectorProperties();
   final _typeaheadProperties = TypeaheadProperties();
@@ -57,7 +57,7 @@ class _HomePageState extends State<HomePage> {
           children: [
             Column(crossAxisAlignment: CrossAxisAlignment.center, children: [
               // combo
-              DemoItem<ComboProperties>(
+              _CombosDemoItem<ComboProperties>(
                 properties: _comboProperties,
                 childBuilder: (properties) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
@@ -66,7 +66,7 @@ class _HomePageState extends State<HomePage> {
                     child: ListTile(
                         enabled: properties.enabled.value,
                         title: Text('Combo')),
-                    popupBuilder: (context, mirrored) => TestPopup(
+                    popupBuilder: (context, mirrored) => _TestPopup(
                       key: _popupKey2 = GlobalKey<_TestPopupState>(),
                       mirrored: mirrored,
                       animated:
@@ -88,7 +88,7 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 16),
 
               // await combo
-              DemoItem<AwaitComboProperties>(
+              _CombosDemoItem<AwaitComboProperties>(
                 properties: _awaitComboProperties,
                 childBuilder: (properties) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
@@ -99,7 +99,7 @@ class _HomePageState extends State<HomePage> {
                         title: Text('Await Combo')),
                     popupBuilder: (context) async {
                       await Future.delayed(const Duration(milliseconds: 500));
-                      return TestPopup(
+                      return _TestPopup(
                         key: _awaitPopupKey2 = GlobalKey<_TestPopupState>(),
                         mirrored: false,
                         animated:
@@ -122,7 +122,7 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 16),
 
               // list
-              DemoItem<ListProperties>(
+              _CombosDemoItem<ListProperties>(
                 properties: _listComboProperties,
                 childBuilder: (properties) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
@@ -154,7 +154,7 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 16),
 
               // selector
-              DemoItem<SelectorProperties>(
+              _CombosDemoItem<SelectorProperties>(
                 properties: _selectorProperties,
                 childBuilder: (properties) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
@@ -188,7 +188,7 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 16),
 
               // typeahead
-              DemoItem<TypeaheadProperties>(
+              _CombosDemoItem<TypeaheadProperties>(
                 properties: _typeaheadProperties,
                 childBuilder: (properties) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
@@ -228,7 +228,7 @@ class _HomePageState extends State<HomePage> {
               const SizedBox(height: 12),
 
               // menu
-              DemoItem<MenuProperties>(
+              _CombosDemoItem<MenuProperties>(
                 properties: _menuProperties,
                 childBuilder: (properties) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
@@ -290,8 +290,8 @@ class _HomePageState extends State<HomePage> {
       );
 }
 
-class TestPopup extends StatefulWidget {
-  const TestPopup({
+class _TestPopup extends StatefulWidget {
+  const _TestPopup({
     Key key,
     @required this.mirrored,
     @required this.width,
@@ -312,7 +312,7 @@ class TestPopup extends StatefulWidget {
   _TestPopupState createState() => _TestPopupState(width, itemsCount);
 }
 
-class _TestPopupState extends State<TestPopup>
+class _TestPopupState extends State<_TestPopup>
     with SingleTickerProviderStateMixin {
   _TestPopupState(this._width, this._itemsCount);
 
@@ -405,109 +405,22 @@ class _TestPopupState extends State<TestPopup>
   }
 }
 
-class DemoItem<TProperties extends ComboProperties>
+class _CombosDemoItem<TProperties extends ComboProperties>
     extends DemoItemBase<TProperties> {
-  const DemoItem({
+  const _CombosDemoItem({
     Key key,
     @required TProperties properties,
     @required ChildBuilder<TProperties> childBuilder,
   }) : super(key: key, properties: properties, childBuilder: childBuilder);
   @override
-  _DemoItemState<TProperties> createState() => _DemoItemState<TProperties>();
+  _CombosDemoItemState<TProperties> createState() =>
+      _CombosDemoItemState<TProperties>();
 }
 
-class _DemoItemState<TProperties extends ComboProperties>
+class _CombosDemoItemState<TProperties extends ComboProperties>
     extends DemoItemStateBase<TProperties> {
-  Widget _buildChildDecoration(BuildContext context, ComboParameters parameters,
-          bool opened, Widget child) =>
-      Container(
-        child: Material(
-          color: Colors.transparent,
-          borderRadius: BorderRadius.circular(16),
-          clipBehavior: Clip.antiAlias,
-          child: child,
-        ),
-        clipBehavior: Clip.antiAlias,
-        decoration: BoxDecoration(
-          border: Border.all(color: Colors.blueAccent),
-          borderRadius: BorderRadius.circular(16),
-        ),
-      );
-  Widget _buildPopupDecoration(
-          BuildContext context, ComboParameters parameters, Widget child) =>
-      Material(
-        elevation: 4,
-        borderRadius: BorderRadius.circular(16),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: Colors.blueAccent),
-            gradient: LinearGradient(colors: [
-              Colors.blueAccent.withOpacity(0.1),
-              Colors.blueAccent.withOpacity(0.0),
-              Colors.blueAccent.withOpacity(0.1),
-            ]),
-          ),
-          child: Material(
-              color: Colors.transparent,
-              borderRadius: BorderRadius.circular(16),
-              clipBehavior: Clip.antiAlias,
-              child: Theme(
-                  data: ThemeData(
-                    highlightColor: Colors.blueAccent.withOpacity(0.1),
-                    splashColor: Colors.blueAccent.withOpacity(0.3),
-                  ),
-                  child: child)),
-        ),
-      );
-
   @override
-  Widget buildChild() {
-    final properties = widget.properties;
-    final AwaitComboProperties awaitProperties =
-        properties is AwaitComboProperties ? properties : null;
-    final MenuProperties menuProperties =
-        properties is MenuProperties ? properties : null;
-    return ComboContext(
-        parameters: ComboParameters(
-          position: properties.position.value,
-          offset: Offset(
-            properties.offsetX.value?.toDouble(),
-            properties.offsetY.value?.toDouble(),
-          ),
-          autoMirror: properties.autoMirror.value,
-          screenPadding: EdgeInsets.symmetric(
-            horizontal: properties.screenPaddingHorizontal.value.toDouble(),
-            vertical: properties.screenPaddingVertical.value.toDouble(),
-          ),
-          autoOpen: properties.autoOpen.value,
-          autoClose: properties.autoClose.value,
-          enabled: properties.enabled.value,
-          animation: properties.animation.value,
-          animationDuration:
-              Duration(milliseconds: properties.animationDurationMs.value),
-          childContentDecoratorBuilder:
-              properties.useChildDecorator.value ? _buildChildDecoration : null,
-          childDecoratorBuilder: properties.useChildDecorator.value
-              ? (context, parameters, opened, child) => Material(
-                  borderRadius: BorderRadius.circular(16),
-                  clipBehavior: Clip.antiAlias,
-                  child: child)
-              : null,
-          popupDecoratorBuilder:
-              properties.usePopupDecorator.value ? _buildPopupDecoration : null,
-          refreshOnOpened: awaitProperties?.refreshOnOpened?.value ?? false,
-          progressPosition: awaitProperties?.progressPosition?.value ??
-              ProgressPosition.popup,
-          menuPopupDecoratorBuilder:
-              properties.usePopupDecorator.value ? _buildPopupDecoration : null,
-          menuShowArrows: menuProperties?.showArrows?.value,
-          menuCanTapOnFolder: menuProperties?.canTapOnFolder?.value,
-          menuRefreshOnOpened: menuProperties?.menuRefreshOnOpened?.value,
-          menuProgressPosition: menuProperties?.menuProgressPosition?.value,
-        ),
-        child: super.buildChild());
-  }
+  Widget buildChild() => widget.properties.apply(child: super.buildChild());
 
   @override
   Widget buildProperties() {
@@ -529,6 +442,14 @@ class _DemoItemState<TProperties extends ComboProperties>
 }
 
 class ComboProperties {
+  ComboProperties({bool showCustomAnimation = false})
+      : animation = EnumEditor<PopupAnimation>(
+            title: 'Animation',
+            value: PopupAnimation.fade,
+            getList: () => PopupAnimation.values
+                .where((e) => showCustomAnimation || e != PopupAnimation.custom)
+                .toList());
+
   final comboWidth = IntEditor(title: 'Combo Width', value: 200);
   final popupWidth = IntEditor(title: 'Popup Width', value: 300);
   final itemsCount = IntEditor(title: 'Items Count', value: 3);
@@ -557,10 +478,7 @@ class ComboProperties {
       value: ComboAutoClose.tapOutsideWithChildIgnorePointer,
       getList: () => ComboAutoClose.values);
   final enabled = BoolEditor(title: 'Enabled', value: true);
-  final animation = EnumEditor<PopupAnimation>(
-      title: 'Animation',
-      value: PopupAnimation.fade,
-      getList: () => PopupAnimation.values);
+  final EnumEditor<PopupAnimation> animation;
   final animationDurationMs = IntEditor(
       title: 'Animation Duration',
       value: ComboParameters.defaultAnimationDuration.inMilliseconds);
@@ -591,6 +509,9 @@ class ComboProperties {
 }
 
 class AwaitComboProperties extends ComboProperties {
+  AwaitComboProperties({bool showCustomAnimation = false})
+      : super(showCustomAnimation: showCustomAnimation);
+
   final refreshOnOpened = BoolEditor(title: 'Refresh On Opened', value: false);
   final progressPosition = EnumEditor<ProgressPosition>(
       title: 'Progress Position',
@@ -659,4 +580,93 @@ class MenuProperties extends ListProperties {
         menuProgressPosition,
         ...super.editors.where((e) => e != useChildDecorator)
       ];
+}
+
+extension ComboPropertiesExtension on ComboProperties {
+  static Widget _buildChildDecoration(BuildContext context,
+          ComboParameters parameters, bool opened, Widget child) =>
+      Container(
+        child: Material(
+          color: Colors.transparent,
+          borderRadius: BorderRadius.circular(16),
+          clipBehavior: Clip.antiAlias,
+          child: child,
+        ),
+        clipBehavior: Clip.antiAlias,
+        decoration: BoxDecoration(
+          border: Border.all(color: Colors.blueAccent),
+          borderRadius: BorderRadius.circular(16),
+        ),
+      );
+  static Widget _buildPopupDecoration(
+          BuildContext context, ComboParameters parameters, Widget child) =>
+      Material(
+        elevation: 4,
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.blueAccent),
+            gradient: LinearGradient(colors: [
+              Colors.blueAccent.withOpacity(0.1),
+              Colors.blueAccent.withOpacity(0.0),
+              Colors.blueAccent.withOpacity(0.1),
+            ]),
+          ),
+          child: Material(
+              color: Colors.transparent,
+              borderRadius: BorderRadius.circular(16),
+              clipBehavior: Clip.antiAlias,
+              child: Theme(
+                  data: ThemeData(
+                    highlightColor: Colors.blueAccent.withOpacity(0.1),
+                    splashColor: Colors.blueAccent.withOpacity(0.3),
+                  ),
+                  child: child)),
+        ),
+      );
+
+  Widget apply({@required Widget child}) {
+    final AwaitComboProperties awaitProperties =
+        this is AwaitComboProperties ? this : null;
+    final MenuProperties menuProperties = this is MenuProperties ? this : null;
+    return ComboContext(
+        parameters: ComboParameters(
+          position: position.value,
+          offset: Offset(
+            offsetX.value?.toDouble(),
+            offsetY.value?.toDouble(),
+          ),
+          autoMirror: autoMirror.value,
+          screenPadding: EdgeInsets.symmetric(
+            horizontal: screenPaddingHorizontal.value.toDouble(),
+            vertical: screenPaddingVertical.value.toDouble(),
+          ),
+          autoOpen: autoOpen.value,
+          autoClose: autoClose.value,
+          enabled: enabled.value,
+          animation: animation.value,
+          animationDuration: Duration(milliseconds: animationDurationMs.value),
+          childContentDecoratorBuilder:
+              useChildDecorator.value ? _buildChildDecoration : null,
+          childDecoratorBuilder: useChildDecorator.value
+              ? (context, parameters, opened, child) => Material(
+                  borderRadius: BorderRadius.circular(16),
+                  clipBehavior: Clip.antiAlias,
+                  child: child)
+              : null,
+          popupDecoratorBuilder:
+              usePopupDecorator.value ? _buildPopupDecoration : null,
+          refreshOnOpened: awaitProperties?.refreshOnOpened?.value ?? false,
+          progressPosition: awaitProperties?.progressPosition?.value ??
+              ProgressPosition.popup,
+          menuPopupDecoratorBuilder:
+              usePopupDecorator.value ? _buildPopupDecoration : null,
+          menuShowArrows: menuProperties?.showArrows?.value,
+          menuCanTapOnFolder: menuProperties?.canTapOnFolder?.value,
+          menuRefreshOnOpened: menuProperties?.menuRefreshOnOpened?.value,
+          menuProgressPosition: menuProperties?.menuProgressPosition?.value,
+        ),
+        child: child);
+  }
 }
