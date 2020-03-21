@@ -492,7 +492,7 @@ class ComboProperties {
   final usePopupDecorator =
       BoolEditor(title: 'Use Custom Popup Decorator', value: false);
 
-  List<Editor> get editors => [
+  List<Editor> get _editors => [
         comboWidth,
         popupWidth,
         itemsCount,
@@ -511,6 +511,8 @@ class ComboProperties {
         useChildDecorator,
         usePopupDecorator,
       ];
+  List<Editor> get editors =>
+      _editors.where((e) => !_excludes.contains(e)).toList();
 }
 
 class AwaitComboProperties extends ComboProperties {
@@ -563,7 +565,7 @@ class TypeaheadProperties extends SelectorProperties {
         minTextLength,
         inputThrottleMs,
         cleanAfterSelection,
-        ...super.editors.where((e) => !_excludes.contains(e))
+        ...super.editors,
       ];
 }
 
