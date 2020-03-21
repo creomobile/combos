@@ -40,7 +40,7 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
   GlobalKey<_TestPopupState> _popupKey2;
   GlobalKey<_TestPopupState> _awaitPopupKey2;
 
-  final _comboProperties = ComboProperties(showCustomAnimation: true);
+  final _comboProperties = ComboProperties(withCustomAnimation: true);
   final _awaitComboProperties = AwaitComboProperties(showCustomAnimation: true);
   final _listComboProperties = ListProperties();
   final _selectorProperties = SelectorProperties();
@@ -442,13 +442,18 @@ class _CombosDemoItemState<TProperties extends ComboProperties>
 }
 
 class ComboProperties {
-  ComboProperties({bool showCustomAnimation = false})
+  ComboProperties(
+      {bool withCustomAnimation = false, bool withChildDecorator = true})
       : animation = EnumEditor<PopupAnimation>(
             title: 'Animation',
             value: PopupAnimation.fade,
             getList: () => PopupAnimation.values
-                .where((e) => showCustomAnimation || e != PopupAnimation.custom)
-                .toList());
+                .where((e) => withCustomAnimation || e != PopupAnimation.custom)
+                .toList()) {
+    if (!withChildDecorator) _excludes.add(useChildDecorator);
+  }
+
+  final _excludes = <Editor>{};
 
   final comboWidth = IntEditor(title: 'Combo Width', value: 200);
   final popupWidth = IntEditor(title: 'Popup Width', value: 300);
@@ -510,7 +515,7 @@ class ComboProperties {
 
 class AwaitComboProperties extends ComboProperties {
   AwaitComboProperties({bool showCustomAnimation = false})
-      : super(showCustomAnimation: showCustomAnimation);
+      : super(withCustomAnimation: showCustomAnimation);
 
   final refreshOnOpened = BoolEditor(title: 'Refresh On Opened', value: false);
   final progressPosition = EnumEditor<ProgressPosition>(
@@ -543,9 +548,8 @@ class SelectorProperties extends ListProperties {
 
 class TypeaheadProperties extends SelectorProperties {
   TypeaheadProperties() {
-    _excludes = {autoOpen, autoClose, refreshOnOpened, useChildDecorator};
+    _excludes.addAll([autoOpen, autoClose, refreshOnOpened, useChildDecorator]);
   }
-  Set<Editor> _excludes;
 
   final minTextLength =
       IntEditor(title: 'Min Text Length', minValue: 0, value: 1);
