@@ -891,9 +891,22 @@ class Combo extends StatefulWidget {
   ComboState createState() => ComboState();
 }
 
+/// Allows to [open] and to [close] the combo popup,
+/// and determines if the popup is [opened].
+abstract class ComboController {
+  /// determines if popup is opened
+  bool get opened;
+
+  /// Opens the popup.
+  void open();
+
+  /// Closes the popup.
+  void close();
+}
+
 /// State for a [Combo].
-/// Can [open] and [close] popups.
-class ComboState<T extends Combo> extends State<T> {
+/// Implements [ComboController].
+class ComboState<T extends Combo> extends State<T> implements ComboController {
   // ignore: close_sinks
   static final _closes = StreamController.broadcast();
   final _scrolls = StreamController.broadcast();
@@ -938,6 +951,7 @@ class ComboState<T extends Combo> extends State<T> {
   }
 
   ComboParameters _parameters;
+  @protected
   ComboParameters get parameters => _parameters;
   ThemeData _theme;
 
@@ -956,10 +970,13 @@ class ComboState<T extends Combo> extends State<T> {
     });
   }
 
+  @override
   bool get opened => _overlay != null;
+
+  @protected
   bool get hasPopup => widget.popupBuilder != null;
 
-  /// Opens the popup.
+  @override
   void open() {
     if (_overlay != null) return;
     if (widget.openedChanged != null) widget.openedChanged(true);
@@ -970,7 +987,7 @@ class ComboState<T extends Combo> extends State<T> {
     setState(() {});
   }
 
-  /// Closes the popup.
+  @override
   void close() async {
     if (_overlay == null) return;
     final overlay = _overlay;

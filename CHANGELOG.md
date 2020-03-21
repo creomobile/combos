@@ -1,3 +1,7 @@
+## [1.1.7+2] - 3/22/2020
+
+* implement ComboController
+
 ## [1.1.7+1] - 3/21/2020
 * minor refactoring of 'popupContraints'
 
