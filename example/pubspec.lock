@@ -27,7 +27,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "7c807033ca31cb6af283cc613cd0d46e6993d9ef"
+      resolved-ref: "81a8230155f2a280d930ac35b1bfabfc112678cc"
       url: "https://github.com/creomobile/demo_items"
     source: git
     version: "0.0.1"

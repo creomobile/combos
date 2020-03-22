@@ -59,7 +59,7 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
               // combo
               _CombosDemoItem<ComboProperties>(
                 properties: _comboProperties,
-                childBuilder: (properties) => SizedBox(
+                childBuilder: (properties, modifiedEditor) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
                   child: Combo(
                     key: _comboKey,
@@ -90,7 +90,7 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
               // await combo
               _CombosDemoItem<AwaitComboProperties>(
                 properties: _awaitComboProperties,
-                childBuilder: (properties) => SizedBox(
+                childBuilder: (properties, modifiedEditor) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
                   child: AwaitCombo(
                     key: _awaitComboKey,
@@ -124,7 +124,7 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
               // list
               _CombosDemoItem<ListProperties>(
                 properties: _listComboProperties,
-                childBuilder: (properties) => SizedBox(
+                childBuilder: (properties, modifiedEditor) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
                   child: ComboContext(
                     parameters: ComboParameters(
@@ -156,7 +156,7 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
               // selector
               _CombosDemoItem<SelectorProperties>(
                 properties: _selectorProperties,
-                childBuilder: (properties) => SizedBox(
+                childBuilder: (properties, modifiedEditor) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
                   child: ComboContext(
                     parameters: ComboParameters(
@@ -190,7 +190,7 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
               // typeahead
               _CombosDemoItem<TypeaheadProperties>(
                 properties: _typeaheadProperties,
-                childBuilder: (properties) => SizedBox(
+                childBuilder: (properties, modifiedEditor) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
                   child: ComboContext(
                     parameters: ComboParameters(
@@ -230,7 +230,7 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
               // menu
               _CombosDemoItem<MenuProperties>(
                 properties: _menuProperties,
-                childBuilder: (properties) => SizedBox(
+                childBuilder: (properties, modifiedEditor) => SizedBox(
                   width: properties.comboWidth.value?.toDouble(),
                   child: MenuItemCombo<String>(
                     itemBuilder: (context, parameters, item) => Padding(
