@@ -1,7 +1,7 @@
 name: combos_example
 description: Example App for 'combos' package
 
-version: 1.0.0+1
+version: 1.0.0
 
 environment:
   sdk: ">=2.6.0 <3.0.0"
@@ -11,10 +11,10 @@ dependencies:
     sdk: flutter
   cupertino_icons: ^0.1.2
   combos: any
-  editors: ^0.0.5
-  demo_items:
-    git:
-      url: https://github.com/creomobile/demo_items
+  # editors: ^0.0.5
+  # demo_items:
+  #   git:
+  #     url: https://github.com/creomobile/demo_items
 
 dependency_overrides:
   combos:

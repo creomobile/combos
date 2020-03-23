@@ -1650,7 +1650,7 @@ abstract class AwaitComboStateBase<W extends AwaitCombo, C>
 /// Signature to get the popup items.
 typedef PopupGetList<T> = FutureOr<List<T>> Function();
 
-/// Signature to build the popup item widget.
+/// Signature to build the list popup item widget.
 typedef PopupListItemBuilder<T> = Widget Function(
     BuildContext context, ComboParameters parameters, T item);
 
@@ -1687,8 +1687,7 @@ class ListCombo<T> extends AwaitCombo {
     ValueChanged<bool> hoveredChanged,
     GestureTapCallback onTap,
     bool ignoreChildDecorator = false,
-  })  : assert(itemBuilder != null),
-        super(
+  }) : super(
           key: key,
           waitChanged: waitChanged,
           child: child,
@@ -1726,14 +1725,17 @@ class ListComboState<W extends ListCombo<T>, T>
         : parameters;
   }
 
+  @protected
+  Widget buildItem(BuildContext context, ComboParameters parameters, T item) =>
+      widget.itemBuilder(context, parameters, item);
+
   @override
   Widget buildContent(List<T> list, bool mirrored) =>
       parameters.listPopupBuilder(
           context,
           parameters,
           list,
-          (context, parameters, item) =>
-              widget.itemBuilder(context, parameters, item),
+          (context, parameters, item) => buildItem(context, parameters, item),
           widget.getIsSelectable,
           itemTapped,
           mirrored);
@@ -1753,6 +1755,10 @@ class ListComboState<W extends ListCombo<T>, T>
   }
 }
 
+/// Signature to build the selector popup item widget.
+typedef PopupSelectorItemBuilder<T> = Widget Function(
+    BuildContext context, ComboParameters parameters, T item, bool selected);
+
 /// Combo widget for displaying the items list and selected item
 /// Combo widget with the delayed getting of the popup content and progress indication
 /// See also:
@@ -1768,10 +1774,10 @@ class SelectorCombo<T> extends ListCombo<T> {
     Key key,
     this.selected,
     this.childBuilder,
+    @required PopupSelectorItemBuilder<T> itemBuilder,
 
     // inherited
     @required PopupGetList<T> getList,
-    @required PopupListItemBuilder<T> itemBuilder,
     @required ValueSetter<T> onItemTapped,
     GetIsSelectable<T> getIsSelectable,
     ValueChanged<bool> waitChanged,
@@ -1779,10 +1785,11 @@ class SelectorCombo<T> extends ListCombo<T> {
     ValueChanged<bool> hoveredChanged,
     GestureTapCallback onTap,
     bool ignoreChildDecorator = false,
-  }) : super(
+  })  : selectorItemBuilder = itemBuilder,
+        // ignore: missing_required_param
+        super(
           key: key,
           getList: getList,
-          itemBuilder: itemBuilder,
           onItemTapped: onItemTapped,
           getIsSelectable: getIsSelectable,
           waitChanged: waitChanged,
@@ -1799,6 +1806,9 @@ class SelectorCombo<T> extends ListCombo<T> {
   /// If null uses [ListCombo.itemBuilder]
   final PopupListItemBuilder<T> childBuilder;
 
+  /// Popup item widget builder.
+  final PopupSelectorItemBuilder<T> selectorItemBuilder;
+
   @override
   SelectorComboState<SelectorCombo<T>, T> createState() =>
       SelectorComboState<SelectorCombo<T>, T>(selected);
@@ -1810,6 +1820,10 @@ class SelectorComboState<W extends SelectorCombo<T>, T>
   SelectorComboState(this._selected);
   T _selected;
   T get selected => _selected;
+
+  @override
+  Widget buildItem(BuildContext context, ComboParameters parameters, T item) =>
+      widget.selectorItemBuilder(context, parameters, item, item == _selected);
 
   @protected
   void clearSelected() => _selected = null;
@@ -1857,7 +1871,7 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
 
     // inherited
     T selected,
-    @required PopupListItemBuilder<T> itemBuilder,
+    @required PopupSelectorItemBuilder<T> itemBuilder,
     @required ValueSetter<T> onItemTapped,
     GetIsSelectable<T> getIsSelectable,
     ValueChanged<bool> waitChanged,

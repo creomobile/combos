@@ -2,10 +2,11 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:combos/combos.dart';
-import 'package:demo_items/demo_items.dart';
-import 'package:editors/editors.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+
+import 'demo_items.dart';
+import 'editors.dart';
 
 const _customAnimationDurationMs = 150;
 
@@ -173,8 +174,8 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
                             .toList();
                       },
                       selected: properties.selected.value,
-                      itemBuilder: (context, parameters, item) =>
-                          ListTile(title: Text(item ?? '')),
+                      itemBuilder: (context, parameters, item, selected) =>
+                          ListTile(selected: selected, title: Text(item ?? '')),
                       childBuilder: (context, parameters, item) => ListTile(
                           enabled: properties.enabled.value,
                           title: Text(item ?? 'Selector Combo')),
@@ -215,8 +216,8 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
                         border: OutlineInputBorder(),
                       ),
                       selected: properties.selected.value,
-                      itemBuilder: (context, parameters, item) =>
-                          ListTile(title: Text(item ?? '')),
+                      itemBuilder: (context, parameters, item, selected) =>
+                          ListTile(selected: selected, title: Text(item ?? '')),
                       getItemText: (item) => item,
                       onItemTapped: (value) =>
                           setState(() => properties.selected.value = value),
