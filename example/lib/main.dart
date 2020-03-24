@@ -37,7 +37,7 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
   GlobalKey<_TestPopupState> _awaitPopupKey2;
 
   final _comboProperties = ComboProperties(withCustomAnimation: true);
-  final _awaitComboProperties = AwaitComboProperties(showCustomAnimation: true);
+  final _awaitComboProperties = AwaitComboProperties(withCustomAnimation: true);
   final _listComboProperties = ListProperties();
   final _selectorProperties = SelectorProperties();
   final _typeaheadProperties = TypeaheadProperties();
@@ -469,14 +469,20 @@ class _CombosDemoItemState<TProperties extends ComboProperties>
 }
 
 class ComboProperties {
-  ComboProperties(
-      {bool withCustomAnimation = false, bool withChildDecorator = true})
-      : animation = EnumEditor<PopupAnimation>(
+  ComboProperties({
+    bool withCustomAnimation = false,
+    bool withChildDecorator = true,
+    PopupPosition defaultPosition = PopupPosition.bottomMinMatch,
+  })  : animation = EnumEditor<PopupAnimation>(
             title: 'Animation',
             value: PopupAnimation.fade,
             getList: () => PopupAnimation.values
                 .where((e) => withCustomAnimation || e != PopupAnimation.custom)
-                .toList()) {
+                .toList()),
+        position = EnumEditor<PopupPosition>(
+            title: 'Position',
+            value: defaultPosition,
+            getList: () => PopupPosition.values) {
     if (!withChildDecorator) _excludes.add(useChildDecorator);
   }
 
@@ -485,10 +491,7 @@ class ComboProperties {
   final comboWidth = IntEditor(title: 'Combo Width', value: 200);
   final popupWidth = IntEditor(title: 'Popup Width', value: 300);
   final itemsCount = IntEditor(title: 'Items Count', value: 3);
-  final position = EnumEditor<PopupPosition>(
-      title: 'Position',
-      value: PopupPosition.bottomMinMatch,
-      getList: () => PopupPosition.values);
+  final EnumEditor<PopupPosition> position;
 
   bool get hasSize =>
       position.value == PopupPosition.bottomMatch ||
@@ -543,8 +546,13 @@ class ComboProperties {
 }
 
 class AwaitComboProperties extends ComboProperties {
-  AwaitComboProperties({bool showCustomAnimation = false})
-      : super(withCustomAnimation: showCustomAnimation);
+  AwaitComboProperties({
+    bool withCustomAnimation = false,
+    PopupPosition defaultPosition = PopupPosition.bottomMinMatch,
+  }) : super(
+          withCustomAnimation: withCustomAnimation,
+          defaultPosition: defaultPosition,
+        );
 
   final refreshOnOpened = BoolEditor(title: 'Refresh On Opened', value: false);
   final progressPosition = EnumEditor<ProgressPosition>(
@@ -557,7 +565,10 @@ class AwaitComboProperties extends ComboProperties {
       [refreshOnOpened, progressPosition, ...super.editors];
 }
 
-class ListProperties extends AwaitComboProperties {}
+class ListProperties extends AwaitComboProperties {
+  ListProperties({PopupPosition defaultPosition = PopupPosition.bottomMinMatch})
+      : super(defaultPosition: defaultPosition);
+}
 
 class SelectorProperties extends ListProperties {
   SelectorProperties() {
@@ -597,6 +608,7 @@ class TypeaheadProperties extends SelectorProperties {
 }
 
 class MenuProperties extends ListProperties {
+  MenuProperties() : super(defaultPosition: PopupPosition.bottomMatch);
   final showArrows = BoolEditor(title: 'Show Arrows', value: true);
   final canTapOnFolder = BoolEditor(title: 'Can Tap On Folder', value: false);
   final menuRefreshOnOpened =

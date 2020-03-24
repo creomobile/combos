@@ -226,8 +226,7 @@ class _ListPopupState extends State<ListPopup> {
         });
 
     return ConstrainedBox(
-        constraints: BoxConstraints(
-            maxHeight: parameters.listMaxHeight ?? double.infinity),
+        constraints: BoxConstraints(maxHeight: parameters.listMaxHeight),
         child: child);
   }
 
@@ -269,18 +268,20 @@ class MenuListPopup extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final parameters = this.parameters;
-    return IntrinsicWidth(
-      child: Column(
+    return LayoutBuilder(builder: (context, constraints) {
+      final hasSize = constraints.maxWidth != double.infinity;
+      final menu = Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           if (list?.isEmpty == true)
             parameters.emptyListIndicator ?? const SizedBox()
           else if (list != null)
-            ...list?.map((item) => itemBuilder(context, parameters, item))
+            ...list.map((item) => itemBuilder(context, parameters, item))
         ],
-      ),
-    );
+      );
+      return hasSize ? menu : IntrinsicWidth(child: menu);
+    });
   }
 }
 
@@ -300,6 +301,84 @@ class MenuDivider extends StatelessWidget {
           color: Colors.black12,
         ),
       );
+}
+
+/// Default widget for progress indication for futured popups
+class ProgressDecorator extends StatefulWidget {
+  /// Creates the progress decorator
+  const ProgressDecorator({
+    Key key,
+    @required this.child,
+    this.waiting = false,
+    this.mirrored = false,
+    this.progressBackgroundColor,
+    this.progressValueColor,
+    this.progressHeight = 2.0,
+  })  : assert(child != null),
+        super(key: key);
+
+  /// The widget below this widget in the tree.
+  ///
+  /// {@macro flutter.widgets.child}
+  final Widget child;
+
+  /// Indicates that the popup getting is in progress
+  final bool waiting;
+
+  /// Indicates that the popup position was changed due to screen edges
+  final bool mirrored;
+
+  /// The progress indicator's background color.
+  final Color progressBackgroundColor;
+
+  /// The progress indicator's color as an animated value.
+  final Animation<Color> progressValueColor;
+
+  /// Height of the progress indicator.
+  /// If null, indicator stretches by the popup area
+  final double progressHeight;
+
+  @override
+  _ProgressDecoratorState createState() => _ProgressDecoratorState(waiting);
+}
+
+class _ProgressDecoratorState extends State<ProgressDecorator> {
+  _ProgressDecoratorState(this._waiting);
+  bool _waiting;
+
+  @override
+  void didUpdateWidget(ProgressDecorator oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.waiting != _waiting) {
+      setState(() => _waiting = widget.waiting);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final fill = widget.progressHeight == null;
+    final indicator = IgnorePointer(
+        child: LinearProgressIndicator(
+      backgroundColor: widget.progressBackgroundColor,
+      valueColor: widget.progressValueColor,
+    ));
+    return Stack(children: [
+      widget.child,
+      if (_waiting) ...[
+        SizedBox(height: widget.progressHeight),
+        Positioned.fill(
+            child: fill
+                ? indicator
+                : Align(
+                    alignment: widget.mirrored
+                        ? Alignment.bottomCenter
+                        : Alignment.topCenter,
+                    child: SizedBox(
+                        height: widget.progressHeight, child: indicator),
+                  )),
+      ]
+    ]);
+  }
 }
 
 /// Signature for building the [Combo.child] decorator.
@@ -1485,84 +1564,6 @@ class _DynamicRenderFollowerLayer extends RenderFollowerLayer {
 /// ('Mirrored' flag cannot be passed as there is no possibility to get popup size immediately)
 typedef AwaitPopupBuilder = FutureOr<Widget> Function(BuildContext context);
 
-/// Default widget for progress indication for futured popups
-class ProgressDecorator extends StatefulWidget {
-  /// Creates the progress decorator
-  const ProgressDecorator({
-    Key key,
-    @required this.child,
-    this.waiting = false,
-    this.mirrored = false,
-    this.progressBackgroundColor,
-    this.progressValueColor,
-    this.progressHeight = 2.0,
-  })  : assert(child != null),
-        super(key: key);
-
-  /// The widget below this widget in the tree.
-  ///
-  /// {@macro flutter.widgets.child}
-  final Widget child;
-
-  /// Indicates that the popup getting is in progress
-  final bool waiting;
-
-  /// Indicates that the popup position was changed due to screen edges
-  final bool mirrored;
-
-  /// The progress indicator's background color.
-  final Color progressBackgroundColor;
-
-  /// The progress indicator's color as an animated value.
-  final Animation<Color> progressValueColor;
-
-  /// Height of the progress indicator.
-  /// If null, indicator stretches by the popup area
-  final double progressHeight;
-
-  @override
-  _ProgressDecoratorState createState() => _ProgressDecoratorState(waiting);
-}
-
-class _ProgressDecoratorState extends State<ProgressDecorator> {
-  _ProgressDecoratorState(this._waiting);
-  bool _waiting;
-
-  @override
-  void didUpdateWidget(ProgressDecorator oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.waiting != _waiting) {
-      setState(() => _waiting = widget.waiting);
-    }
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final fill = widget.progressHeight == null;
-    final indicator = IgnorePointer(
-        child: LinearProgressIndicator(
-      backgroundColor: widget.progressBackgroundColor,
-      valueColor: widget.progressValueColor,
-    ));
-    return Stack(children: [
-      widget.child,
-      if (_waiting) ...[
-        SizedBox(height: widget.progressHeight),
-        Positioned.fill(
-            child: fill
-                ? indicator
-                : Align(
-                    alignment: widget.mirrored
-                        ? Alignment.bottomCenter
-                        : Alignment.topCenter,
-                    child: SizedBox(
-                        height: widget.progressHeight, child: indicator),
-                  )),
-      ]
-    ]);
-  }
-}
-
 /// Combo widget with the delayed getting of the popup content and progress indication
 /// See also:
 ///
@@ -1809,7 +1810,8 @@ class ListComboState<W extends ListCombo<T>, T>
   @override
   void updateContent(List<T> content) {
     if (content != this.content &&
-        !listEquals(content ?? [], this.content ?? [])) {
+        ((this.content == null && content != null) ||
+            !listEquals(content ?? [], this.content ?? []))) {
       super.updateContent(content);
     }
   }
