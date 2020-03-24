@@ -3,10 +3,12 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:combos/combos.dart';
-import 'package:demo_items/demo_items.dart';
-import 'package:editors/editors.dart';
+import 'package:english_words/english_words.dart' as words;
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+
+import 'demo_items.dart';
+import 'editors.dart';
 
 const _customAnimationDurationMs = 150;
 
@@ -211,8 +213,11 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
                     child: TypeaheadCombo<String>(
                       getList: (text) async {
                         await Future.delayed(const Duration(milliseconds: 500));
-                        return Iterable.generate(properties.itemsCount.value)
-                            .map((e) => 'Item ${e + 1}')
+                        return words.all
+                            .where((word) =>
+                                word.length > 4 &&
+                                word.contains((text ?? '').toLowerCase()))
+                            .take(20)
                             .toList();
                       },
                       minTextLength: properties.minTextLength.value,
@@ -222,11 +227,24 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
                         border: OutlineInputBorder(),
                       ),
                       selected: properties.selected.value,
-                      itemBuilder: (context, parameters, item, selected) =>
-                          PreferredSize(
-                              preferredSize: Size(0, _tileHeight),
-                              child: ListTile(
-                                  selected: selected, title: Text(item ?? ''))),
+                      itemBuilder:
+                          (context, parameters, item, selected, text) =>
+                              PreferredSize(
+                        preferredSize: Size(0, _tileHeight),
+                        child: ListTile(
+                          selected: selected,
+                          title: SizedBox(
+                            width: 200,
+                            child: TypeaheadCombo.markText(
+                              item,
+                              text,
+                              const TextStyle(
+                                  decoration: TextDecoration.underline,
+                                  decorationColor: Colors.grey),
+                            ),
+                          ),
+                        ),
+                      ),
                       getItemText: (item) => item,
                       onItemTapped: (value) =>
                           setState(() => properties.selected.value = value),

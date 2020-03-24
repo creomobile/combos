@@ -1925,6 +1925,9 @@ typedef TypeaheadGetList<T> = FutureOr<List<T>> Function(String text);
 /// Signature to get the text that corresponds to popup item
 typedef PopupGetItemText<T> = String Function(T item);
 
+typedef PopupTypeaheadItemBuilder<T> = Widget Function(BuildContext context,
+    ComboParameters parameters, T item, bool selected, String text);
+
 /// Combo widget for displaying the items list and selected item
 /// Combo widget with the delayed getting of the popup content and progress indication
 /// See also:
@@ -1940,6 +1943,7 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
   const TypeaheadCombo({
     Key key,
     @required TypeaheadGetList<T> getList,
+    @required PopupTypeaheadItemBuilder<T> itemBuilder,
     this.decoration,
     this.autofocus = false,
     @required this.getItemText,
@@ -1949,14 +1953,14 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
 
     // inherited
     T selected,
-    @required PopupSelectorItemBuilder<T> itemBuilder,
     @required ValueSetter<T> onItemTapped,
     GetIsSelectable<T> getIsSelectable,
     ValueChanged<bool> waitChanged,
     ValueChanged<bool> openedChanged,
     ValueChanged<bool> hoveredChanged,
     GestureTapCallback onTap,
-  })  : typeaheadGetList = getList,
+  })  : typeaheadItemBuilder = itemBuilder,
+        typeaheadGetList = getList,
         assert(getList != null),
         assert(autofocus != null),
         assert(getItemText != null),
@@ -1966,7 +1970,6 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
         super(
           key: key,
           selected: selected,
-          itemBuilder: itemBuilder,
           onItemTapped: onItemTapped,
           getIsSelectable: getIsSelectable,
           waitChanged: waitChanged,
@@ -1978,6 +1981,9 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
 
   /// Popup items getter using user's text.
   final TypeaheadGetList<T> typeaheadGetList;
+
+  /// Popup item widget builder.
+  final PopupTypeaheadItemBuilder<T> typeaheadItemBuilder;
 
   /// The decoration to show around the text field.
   final InputDecoration decoration;
@@ -2004,6 +2010,34 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
           selected,
           selected == null ? '' : getItemText(selected),
           focusNode ?? FocusNode());
+
+  static Text markText(String item, String text, TextStyle markedStyle) {
+    if (item?.isNotEmpty != true || text?.isNotEmpty != true) {
+      return Text(item ?? '', overflow: TextOverflow.ellipsis);
+    }
+    text = text.trim().toLowerCase();
+    final lower = item.toLowerCase();
+    final textLength = text.length;
+    final itemLength = item.length;
+    final spans = <TextSpan>[];
+    var count = 0;
+    int index;
+    while ((index = lower.indexOf(text, count)) >= 0 && index < itemLength) {
+      spans.addAll([
+        TextSpan(text: item.substring(count, index)),
+        TextSpan(
+            text: item.substring(index, index + textLength),
+            style: markedStyle),
+      ]);
+      count = index + textLength;
+    }
+    if (count == 0) return Text(item);
+    if (count < item.length) {
+      spans.add(TextSpan(text: item.substring(count)));
+    }
+    return Text.rich(TextSpan(children: spans),
+        overflow: TextOverflow.ellipsis);
+  }
 }
 
 /// State for [TypeaheadCombo]
@@ -2016,8 +2050,14 @@ class TypeaheadComboState<W extends TypeaheadCombo<T>, T>
 
   final TextEditingController _controller;
   final FocusNode _focusNode;
+  String _lastSearched;
   String _text;
   int get _textLength => _controller.text?.length ?? 0;
+
+  @override
+  Widget buildItem(BuildContext context, ComboParameters parameters, T item) =>
+      widget.typeaheadItemBuilder(
+          context, parameters, item, item == _selected, _lastSearched);
 
   @override
   ComboParameters getParameters(ComboParameters contextParameters) =>
@@ -2071,7 +2111,7 @@ class TypeaheadComboState<W extends TypeaheadCombo<T>, T>
 
   @override
   FutureOr<List<T>> getContent(BuildContext context) =>
-      widget.typeaheadGetList(_text);
+      widget.typeaheadGetList(_lastSearched = _text);
 
   @override
   void itemTapped(T item) {
