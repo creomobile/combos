@@ -208,6 +208,7 @@ class _ListPopupState extends State<ListPopup> {
     List<Widget> widgets;
     if (_scrollController == null) widgets = _initController(context);
     final child = ListView.builder(
+        padding: EdgeInsets.zero,
         controller: _scrollController,
         shrinkWrap: true,
         physics: ClampingScrollPhysics(),
@@ -1195,10 +1196,15 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
         _sizeCompleter = Completer<Offset>();
         final parameters = this.parameters;
         final position = parameters.position;
-        final screenPadding = parameters.screenPadding;
+        final mediaQuery = MediaQuery.of(context);
+        final screenPadding = parameters.screenPadding.copyWith(
+            top:
+                math.max(parameters.screenPadding.top, mediaQuery.padding.top));
         final RenderBox renderBox = this.context.findRenderObject();
         final size = renderBox.size;
-        final screenSize = MediaQuery.of(context).size;
+        final mediaQuerySize = mediaQuery.size;
+        final screenSize = Size(mediaQuerySize.width,
+            mediaQuerySize.height - mediaQuery.viewInsets.bottom);
         final requiredSpace = parameters.requiredSpace ??
             (position == PopupPosition.left || position == PopupPosition.right
                 ? screenSize.width / 3
