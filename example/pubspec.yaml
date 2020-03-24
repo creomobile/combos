@@ -12,10 +12,10 @@ dependencies:
   cupertino_icons: ^0.1.2
   english_words: ^3.1.5
   combos: any
-  # editors: ^0.0.7
-  # demo_items:
-  #   git:
-  #     url: https://github.com/creomobile/demo_items
+  editors: ^0.0.8
+  demo_items:
+    git:
+      url: https://github.com/creomobile/demo_items
 
 dependency_overrides:
   combos:
