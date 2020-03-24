@@ -1,7 +1,8 @@
 # Future plans
 
 * +Implement selected item indication in selectors
-* Scroll to selected
+* +Scroll to selected
+* Select text on typeahead items
 * Implement MultiSelector
 * Investigate position tracking (remove scroll listener)
 * Remove backgroundColor, borderRadius, elevation params from MenuListPopup

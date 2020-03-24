@@ -114,18 +114,20 @@ typedef ListPopupBuilder = Widget Function(
     PopupListItemBuilder itemBuilder,
     GetIsSelectable getIsSelectable,
     void Function(dynamic value) onItemTapped,
+    dynamic scrollToItem,
     bool mirrored);
 
 /// Default widget for displaying list of popup items
-class ListPopup extends StatelessWidget {
+class ListPopup extends StatefulWidget {
   /// Creates default widget for displaying popup items
   const ListPopup({
     Key key,
     @required this.parameters,
     @required this.list,
     @required this.itemBuilder,
-    this.getIsSelectable,
+    @required this.getIsSelectable,
     @required this.onItemTapped,
+    @required this.scrollToItem,
   }) : super(key: key);
 
   /// Common parameters for combo widgets
@@ -143,37 +145,96 @@ class ListPopup extends StatelessWidget {
   /// Calls when user taps on the item
   final ValueSetter onItemTapped;
 
+  /// Determines the list item to which you want to move the scroll position
+  final dynamic scrollToItem;
+
+  @override
+  _ListPopupState createState() => _ListPopupState();
+}
+
+class _ListPopupState extends State<ListPopup> {
+  ScrollController _scrollController;
+
+  @override
+  void didUpdateWidget(ListPopup oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.list != oldWidget.list) setState(() {});
+  }
+
+  List<Widget> _initController(BuildContext context) {
+    var initialScrollOffset = 0.0;
+    List<Widget> widgets;
+    final scrollToItem = widget.scrollToItem;
+    if (scrollToItem != null) {
+      final parameters = widget.parameters;
+      final itemBuilder = widget.itemBuilder;
+      var totalHeight = 0.0;
+      widgets = widget.list.map((item) {
+        final widget = itemBuilder(context, parameters, item);
+        if (totalHeight != null) {
+          if (widget is PreferredSizeWidget) {
+            if (item == scrollToItem) initialScrollOffset = totalHeight;
+            totalHeight += widget.preferredSize.height;
+          } else {
+            totalHeight = null;
+          }
+        }
+        return widget;
+      }).toList();
+      if (totalHeight != null) {
+        final listMaxHeight = parameters.listMaxHeight;
+        if (totalHeight <= listMaxHeight) {
+          initialScrollOffset = 0;
+        } else {
+          if (totalHeight - initialScrollOffset < listMaxHeight) {
+            initialScrollOffset = totalHeight - listMaxHeight;
+          }
+        }
+      }
+    }
+    _scrollController =
+        ScrollController(initialScrollOffset: initialScrollOffset);
+    return widgets;
+  }
+
   @override
   Widget build(BuildContext context) {
-    final parameters = this.parameters;
-    final emptyIndicator = parameters.emptyListIndicator;
-    final child = list?.isEmpty == true
-        ? emptyIndicator == null
-            ? null
-            : Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [emptyIndicator],
-              )
-        : ListView.builder(
-            shrinkWrap: true,
-            physics: ClampingScrollPhysics(),
-            itemCount: list?.length ?? 0,
-            itemBuilder: (context, index) {
-              final item = list[index];
-              final itemWidget = itemBuilder(context, parameters, item);
-              return getIsSelectable == null || getIsSelectable(item)
-                  ? InkWell(
-                      child: itemWidget,
-                      onTap: () => onItemTapped(item),
-                    )
-                  : itemWidget;
-            });
+    final parameters = widget.parameters;
+    final itemBuilder = widget.itemBuilder;
+    final getIsSelectable = widget.getIsSelectable;
+    final list = widget.list;
+    if (list == null) return const SizedBox();
+    if (list.isEmpty) return parameters.emptyListIndicator;
+    List<Widget> widgets;
+    if (_scrollController == null) widgets = _initController(context);
+    final child = ListView.builder(
+        controller: _scrollController,
+        shrinkWrap: true,
+        physics: ClampingScrollPhysics(),
+        itemCount: widget.list?.length ?? 0,
+        itemBuilder: (context, index) {
+          final item = list[index];
+          final itemWidget = widgets == null
+              ? itemBuilder(context, parameters, item)
+              : widgets[index];
+          return getIsSelectable == null || getIsSelectable(item)
+              ? InkWell(
+                  child: itemWidget,
+                  onTap: () => widget.onItemTapped(item),
+                )
+              : itemWidget;
+        });
 
     return ConstrainedBox(
         constraints: BoxConstraints(
             maxHeight: parameters.listMaxHeight ?? double.infinity),
         child: child);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
   }
 }
 
@@ -622,13 +683,15 @@ class ComboParameters {
           PopupListItemBuilder itemBuilder,
           GetIsSelectable getIsSelectable,
           void Function(dynamic value) onItemTapped,
+          dynamic scrollToItem,
           bool mirrored) =>
       ListPopup(
           parameters: parameters,
           list: list,
           itemBuilder: itemBuilder,
           getIsSelectable: getIsSelectable,
-          onItemTapped: onItemTapped);
+          onItemTapped: onItemTapped,
+          scrollToItem: scrollToItem);
 
   /// Builds default widget for displaying list of the menu items
   static Widget buildDefaultMenuPopup(
@@ -638,6 +701,7 @@ class ComboParameters {
           PopupListItemBuilder itemBuilder,
           GetIsSelectable getIsSelectable,
           void Function(dynamic value) onItemTapped,
+          dynamic scrollToItem,
           bool mirrored) =>
       MenuListPopup(
           parameters: parameters,
@@ -1480,22 +1544,22 @@ class _ProgressDecoratorState extends State<ProgressDecorator> {
       backgroundColor: widget.progressBackgroundColor,
       valueColor: widget.progressValueColor,
     ));
-    return _waiting
-        ? Stack(children: [
-            widget.child,
-            SizedBox(height: widget.progressHeight),
-            Positioned.fill(
-                child: fill
-                    ? indicator
-                    : Align(
-                        alignment: widget.mirrored
-                            ? Alignment.bottomCenter
-                            : Alignment.topCenter,
-                        child: SizedBox(
-                            height: widget.progressHeight, child: indicator),
-                      )),
-          ])
-        : widget.child;
+    return Stack(children: [
+      widget.child,
+      if (_waiting) ...[
+        SizedBox(height: widget.progressHeight),
+        Positioned.fill(
+            child: fill
+                ? indicator
+                : Align(
+                    alignment: widget.mirrored
+                        ? Alignment.bottomCenter
+                        : Alignment.topCenter,
+                    child: SizedBox(
+                        height: widget.progressHeight, child: indicator),
+                  )),
+      ]
+    ]);
   }
 }
 
@@ -1571,6 +1635,8 @@ abstract class AwaitComboStateBase<W extends AwaitCombo, C>
   Widget buildContent(C content, bool mirrored);
   @protected
   void clearContent() => _content = null;
+  @protected
+  void updateContent(C content) => _contentController.add(_content = content);
 
   @override
   Widget getChild() {
@@ -1612,7 +1678,6 @@ abstract class AwaitComboStateBase<W extends AwaitCombo, C>
     final future = getContent(context);
     if (future == null) return;
     var content = future is C ? future : null;
-    void update() => _contentController.add(_content = content);
     if (content == null) {
       final timestamp = _timestamp = DateTime.now();
       try {
@@ -1622,7 +1687,7 @@ abstract class AwaitComboStateBase<W extends AwaitCombo, C>
         }
         super.open();
         content = await future;
-        if (content != null && _timestamp == timestamp) update();
+        if (content != null && _timestamp == timestamp) updateContent(content);
       } finally {
         _waitController.add(--_waitCount);
         if (_waitCount == 0 && widget.waitChanged != null) {
@@ -1630,7 +1695,7 @@ abstract class AwaitComboStateBase<W extends AwaitCombo, C>
         }
       }
     } else {
-      update();
+      updateContent(content);
       super.open();
     }
   }
@@ -1730,7 +1795,7 @@ class ListComboState<W extends ListCombo<T>, T>
       widget.itemBuilder(context, parameters, item);
 
   @override
-  Widget buildContent(List<T> list, bool mirrored) =>
+  Widget buildContent(List<T> list, bool mirrored, [scrollToItem]) =>
       parameters.listPopupBuilder(
           context,
           parameters,
@@ -1738,7 +1803,16 @@ class ListComboState<W extends ListCombo<T>, T>
           (context, parameters, item) => buildItem(context, parameters, item),
           widget.getIsSelectable,
           itemTapped,
+          scrollToItem,
           mirrored);
+
+  @override
+  void updateContent(List<T> content) {
+    if (content != this.content &&
+        !listEquals(content ?? [], this.content ?? [])) {
+      super.updateContent(content);
+    }
+  }
 
   @override
   bool get hasPopup => widget.getList != null;
@@ -1824,6 +1898,10 @@ class SelectorComboState<W extends SelectorCombo<T>, T>
   @override
   Widget buildItem(BuildContext context, ComboParameters parameters, T item) =>
       widget.selectorItemBuilder(context, parameters, item, item == _selected);
+
+  @override
+  Widget buildContent(List<T> list, bool mirrored, [scrollToItem]) =>
+      super.buildContent(list, mirrored, _selected);
 
   @protected
   void clearSelected() => _selected = null;
@@ -2054,6 +2132,7 @@ class _ArrowedItem extends StatelessWidget {
         Icon(
           Icons.arrow_right,
           // move back from bodyText1 to update rating on pub.dev !!!
+          // ignore: deprecated_member_use
           color: Theme.of(context)?.textTheme?.body1?.color?.withOpacity(0.5),
         )
       ]);
@@ -2137,11 +2216,11 @@ class MenuItemCombo<T> extends StatelessWidget {
       refreshOnOpened: parameters.menuRefreshOnOpened,
       progressPosition: parameters.menuProgressPosition,
       listPopupBuilder: (context, parameters, list, itemBuilder,
-              getIsSelectable, onItemTapped, mirrored) =>
+              getIsSelectable, onItemTapped, scrollToItem, mirrored) =>
           ComboContext(
         parameters: menuParameters,
         child: parameters.menuPopupBuilder(context, parameters, list,
-            itemBuilder, getIsSelectable, onItemTapped, mirrored),
+            itemBuilder, getIsSelectable, onItemTapped, scrollToItem, mirrored),
       ),
       popupDecoratorBuilder: parameters.menuPopupDecoratorBuilder,
     );
@@ -2174,7 +2253,7 @@ class MenuItemCombo<T> extends StatelessWidget {
                   openedChanged: openedChanged,
                   onTap: canTapOnFolder || item.getChildren == null
                       ? () {
-                          Combo.closeAll(); // TODO: refactoring needed
+                          Combo.closeAll();
                           onItemTapped(item);
                         }
                       : null,

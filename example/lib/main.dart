@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -18,12 +19,6 @@ class _App extends StatelessWidget {
           highlightColor: Colors.blueAccent.withOpacity(0.1),
           splashColor: Colors.blueAccent.withOpacity(0.3),
         ),
-        // theme: ThemeData(
-        //   inputDecorationTheme: InputDecorationTheme(
-        //     enabledBorder:
-        //         OutlineInputBorder(borderRadius: BorderRadius.circular(200)),
-        //   ),
-        // ),
         title: 'Combo Samples',
         home: CombosExamplePage(),
       );
@@ -46,6 +41,15 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
   final _selectorProperties = SelectorProperties();
   final _typeaheadProperties = TypeaheadProperties();
   final _menuProperties = MenuProperties();
+
+  double _tileHeight;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    _WidgetsHelper.getWidgetSize(context, const ListTile())
+        .then((size) => _tileHeight = size.height);
+  }
 
   @override
   Widget build(BuildContext context) => Scaffold(
@@ -174,7 +178,10 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
                       },
                       selected: properties.selected.value,
                       itemBuilder: (context, parameters, item, selected) =>
-                          ListTile(selected: selected, title: Text(item ?? '')),
+                          PreferredSize(
+                              preferredSize: Size(0, _tileHeight),
+                              child: ListTile(
+                                  selected: selected, title: Text(item ?? ''))),
                       childBuilder: (context, parameters, item) => ListTile(
                           enabled: properties.enabled.value,
                           title: Text(item ?? 'Selector Combo')),
@@ -216,7 +223,10 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
                       ),
                       selected: properties.selected.value,
                       itemBuilder: (context, parameters, item, selected) =>
-                          ListTile(selected: selected, title: Text(item ?? '')),
+                          PreferredSize(
+                              preferredSize: Size(0, _tileHeight),
+                              child: ListTile(
+                                  selected: selected, title: Text(item ?? ''))),
                       getItemText: (item) => item,
                       onItemTapped: (value) =>
                           setState(() => properties.selected.value = value),
@@ -677,5 +687,26 @@ extension ComboPropertiesExtension on ComboProperties {
           menuProgressPosition: menuProperties?.menuProgressPosition?.value,
         ),
         child: child);
+  }
+}
+
+class _WidgetsHelper {
+  static Future<Size> getWidgetSize(BuildContext context, Widget widget) {
+    final completer = Completer<Size>();
+    SchedulerBinding.instance.addPostFrameCallback((_) {
+      OverlayEntry entry;
+      entry = OverlayEntry(
+          builder: (context) => Center(
+                child: Builder(builder: (context) {
+                  SchedulerBinding.instance.addPostFrameCallback((_) {
+                    completer.complete(context.size);
+                    entry.remove();
+                  });
+                  return Opacity(opacity: 0.0, child: Material(child: widget));
+                }),
+              ));
+      Overlay.of(context).insert(entry);
+    });
+    return completer.future;
   }
 }
