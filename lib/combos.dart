@@ -1623,39 +1623,28 @@ class AwaitCombo extends Combo {
   AwaitComboStateBase createState() => AwaitComboState();
 }
 
-/// State for a [AwaitCombo].
-class AwaitComboState extends AwaitComboStateBase<AwaitCombo, Widget> {
-  @override
-  FutureOr<Widget> getContent(BuildContext context) =>
-      widget.awaitPopupBuilder == null
-          ? null
-          : widget.awaitPopupBuilder(context);
-
-  @override
-  Widget buildContent(Widget content, bool mirrored) => content;
-}
-
 /// Base state for the combo widgets with the futured popup content builder.
-abstract class AwaitComboStateBase<W extends AwaitCombo, C>
-    extends ComboState<W> {
+abstract class AwaitComboStateBase<TWidget extends AwaitCombo, TContent>
+    extends ComboState<TWidget> {
   var _waitCount = 0;
   final _waitController = StreamController<int>.broadcast();
-  C _content;
-  C get content => _content;
-  final _contentController = StreamController<C>.broadcast();
+  TContent _content;
+  TContent get content => _content;
+  final _contentController = StreamController<TContent>.broadcast();
   DateTime _timestamp;
 
   @override
   bool get hasPopup => widget.popupBuilder != null;
 
   @protected
-  FutureOr<C> getContent(BuildContext context);
+  FutureOr<TContent> getContent(BuildContext context);
   @protected
-  Widget buildContent(C content, bool mirrored);
+  Widget buildContent(TContent content, bool mirrored);
   @protected
   void clearContent() => _content = null;
   @protected
-  void updateContent(C content) => _contentController.add(_content = content);
+  void updateContent(TContent content) =>
+      _contentController.add(_content = content);
 
   @override
   Widget getChild() {
@@ -1677,7 +1666,7 @@ abstract class AwaitComboStateBase<W extends AwaitCombo, C>
       initialData: _waitCount,
       stream: _waitController.stream,
       builder: (context, snapshot) {
-        final content = StreamBuilder<C>(
+        final content = StreamBuilder<TContent>(
           initialData: _content,
           stream: _contentController.stream,
           builder: (context, snapshot) =>
@@ -1696,7 +1685,7 @@ abstract class AwaitComboStateBase<W extends AwaitCombo, C>
   Future fill() async {
     final future = getContent(context);
     if (future == null) return;
-    var content = future is C ? future : null;
+    var content = future is TContent ? future : null;
     if (content == null) {
       final timestamp = _timestamp = DateTime.now();
       try {
@@ -1731,6 +1720,18 @@ abstract class AwaitComboStateBase<W extends AwaitCombo, C>
   }
 }
 
+/// State for a [AwaitCombo].
+class AwaitComboState extends AwaitComboStateBase<AwaitCombo, Widget> {
+  @override
+  FutureOr<Widget> getContent(BuildContext context) =>
+      widget.awaitPopupBuilder == null
+          ? null
+          : widget.awaitPopupBuilder(context);
+
+  @override
+  Widget buildContent(Widget content, bool mirrored) => content;
+}
+
 // * list
 
 /// Signature to get the popup items.
@@ -1757,7 +1758,7 @@ typedef GetIsSelectable<T> = bool Function(T item);
 ///  * [SelectorCombo]
 ///  * [TypeaheadCombo]
 ///  * [MenuItemCombo]
-class ListCombo<T> extends AwaitCombo {
+class ListCombo<TItem> extends AwaitCombo {
   /// Creates combo widget for displaying the items list
   const ListCombo({
     Key key,
@@ -1784,25 +1785,25 @@ class ListCombo<T> extends AwaitCombo {
         );
 
   /// Popup items getter.
-  final PopupGetList<T> getList;
+  final PopupGetList<TItem> getList;
 
   /// Popup item widget builder.
-  final PopupListItemBuilder<T> itemBuilder;
+  final PopupListItemBuilder<TItem> itemBuilder;
 
   /// Calls when the user taps on the item.
-  final ValueSetter<T> onItemTapped;
+  final ValueSetter<TItem> onItemTapped;
 
   /// Determines if the popup item is active for tapping
-  final GetIsSelectable<T> getIsSelectable;
+  final GetIsSelectable<TItem> getIsSelectable;
 
   @override
-  ListComboState<ListCombo<T>, T> createState() =>
-      ListComboState<ListCombo<T>, T>();
+  ListComboState<ListCombo<TItem>, TItem> createState() =>
+      ListComboState<ListCombo<TItem>, TItem>();
 }
 
 /// State for a [ListCombo].
-class ListComboState<W extends ListCombo<T>, T>
-    extends AwaitComboStateBase<W, List<T>> {
+class ListComboState<TWidget extends ListCombo<TItem>, TItem>
+    extends AwaitComboStateBase<TWidget, List<TItem>> {
   @override
   ComboParameters getParameters(ComboParameters contextParameters) {
     final parameters = contextParameters ?? ComboParameters.defaultParameters;
@@ -1812,11 +1813,12 @@ class ListComboState<W extends ListCombo<T>, T>
   }
 
   @protected
-  Widget buildItem(BuildContext context, ComboParameters parameters, T item) =>
+  Widget buildItem(
+          BuildContext context, ComboParameters parameters, TItem item) =>
       widget.itemBuilder(context, parameters, item);
 
   @override
-  Widget buildContent(List<T> list, bool mirrored, [scrollToItem]) =>
+  Widget buildContent(List<TItem> list, bool mirrored, [scrollToItem]) =>
       parameters.listPopupBuilder(
           context,
           parameters,
@@ -1828,7 +1830,7 @@ class ListComboState<W extends ListCombo<T>, T>
           mirrored);
 
   @override
-  void updateContent(List<T> content) {
+  void updateContent(List<TItem> content) {
     if (content != this.content &&
         ((this.content == null && content != null) ||
             !listEquals(content ?? [], this.content ?? []))) {
@@ -1840,10 +1842,10 @@ class ListComboState<W extends ListCombo<T>, T>
   bool get hasPopup => widget.getList != null;
 
   @override
-  FutureOr<List<T>> getContent(BuildContext context) => widget.getList();
+  FutureOr<List<TItem>> getContent(BuildContext context) => widget.getList();
 
   @protected
-  void itemTapped(T item) {
+  void itemTapped(TItem item) {
     if (widget.onItemTapped != null) {
       widget.onItemTapped(item);
     }
@@ -1866,18 +1868,18 @@ typedef PopupSelectorItemBuilder<T> = Widget Function(
 ///  * [ListCombo]
 ///  * [TypeaheadCombo]
 ///  * [MenuItemCombo]
-class SelectorCombo<T> extends ListCombo<T> {
+class SelectorCombo<TItem> extends ListCombo<TItem> {
   /// Creates combo widget for displaying the items list and selected item
   const SelectorCombo({
     Key key,
     this.selected,
     this.childBuilder,
-    @required PopupSelectorItemBuilder<T> itemBuilder,
+    @required PopupSelectorItemBuilder<TItem> itemBuilder,
 
     // inherited
-    @required PopupGetList<T> getList,
-    @required ValueSetter<T> onItemTapped,
-    GetIsSelectable<T> getIsSelectable,
+    @required PopupGetList<TItem> getList,
+    @required ValueSetter<TItem> onItemTapped,
+    GetIsSelectable<TItem> getIsSelectable,
     ValueChanged<bool> waitChanged,
     ValueChanged<bool> openedChanged,
     ValueChanged<bool> hoveredChanged,
@@ -1898,40 +1900,41 @@ class SelectorCombo<T> extends ListCombo<T> {
         );
 
   /// The 'selected' item to display in [Combo.child] area
-  final T selected;
+  final TItem selected;
 
   /// Builds the thid widget for [selected] item
   /// If null uses [ListCombo.itemBuilder]
-  final PopupListItemBuilder<T> childBuilder;
+  final PopupListItemBuilder<TItem> childBuilder;
 
   /// Popup item widget builder.
-  final PopupSelectorItemBuilder<T> selectorItemBuilder;
+  final PopupSelectorItemBuilder<TItem> selectorItemBuilder;
 
   @override
-  SelectorComboState<SelectorCombo<T>, T> createState() =>
-      SelectorComboState<SelectorCombo<T>, T>(selected);
+  SelectorComboState<SelectorCombo<TItem>, TItem> createState() =>
+      SelectorComboState<SelectorCombo<TItem>, TItem>(selected);
 }
 
 /// State for a [SelectorCombo].
-class SelectorComboState<W extends SelectorCombo<T>, T>
-    extends ListComboState<W, T> {
+class SelectorComboState<TWidget extends SelectorCombo<TItem>, TItem>
+    extends ListComboState<TWidget, TItem> {
   SelectorComboState(this._selected);
-  T _selected;
-  T get selected => _selected;
+  TItem _selected;
+  TItem get selected => _selected;
 
   @override
-  Widget buildItem(BuildContext context, ComboParameters parameters, T item) =>
+  Widget buildItem(
+          BuildContext context, ComboParameters parameters, TItem item) =>
       widget.selectorItemBuilder(context, parameters, item, item == _selected);
 
   @override
-  Widget buildContent(List<T> list, bool mirrored, [scrollToItem]) =>
+  Widget buildContent(List<TItem> list, bool mirrored, [scrollToItem]) =>
       super.buildContent(list, mirrored, _selected);
 
   @protected
   void clearSelected() => _selected = null;
 
   @override
-  void didUpdateWidget(SelectorCombo<T> oldWidget) {
+  void didUpdateWidget(SelectorCombo<TItem> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.selected != _selected) {
       setState(() => _selected = widget.selected);
@@ -1964,12 +1967,12 @@ typedef PopupTypeaheadItemBuilder<T> = Widget Function(BuildContext context,
 ///  * [SelectorCombo]
 ///  * [MenuItemCombo]
 /// corresponds to the user's text
-class TypeaheadCombo<T> extends SelectorCombo<T> {
+class TypeaheadCombo<TItem> extends SelectorCombo<TItem> {
   /// Creates combo widget for displaying the items list and selected item
   const TypeaheadCombo({
     Key key,
-    @required TypeaheadGetList<T> getList,
-    @required PopupTypeaheadItemBuilder<T> itemBuilder,
+    @required TypeaheadGetList<TItem> getList,
+    @required PopupTypeaheadItemBuilder<TItem> itemBuilder,
     this.decoration,
     this.autofocus = false,
     @required this.getItemText,
@@ -1978,9 +1981,9 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
     this.cleanAfterSelection = false,
 
     // inherited
-    T selected,
-    @required ValueSetter<T> onItemTapped,
-    GetIsSelectable<T> getIsSelectable,
+    TItem selected,
+    @required ValueSetter<TItem> onItemTapped,
+    GetIsSelectable<TItem> getIsSelectable,
     ValueChanged<bool> waitChanged,
     ValueChanged<bool> openedChanged,
     ValueChanged<bool> hoveredChanged,
@@ -2006,10 +2009,10 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
         );
 
   /// Popup items getter using user's text.
-  final TypeaheadGetList<T> typeaheadGetList;
+  final TypeaheadGetList<TItem> typeaheadGetList;
 
   /// Popup item widget builder.
-  final PopupTypeaheadItemBuilder<T> typeaheadItemBuilder;
+  final PopupTypeaheadItemBuilder<TItem> typeaheadItemBuilder;
 
   /// The decoration to show around the text field.
   final InputDecoration decoration;
@@ -2018,7 +2021,7 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
   final bool autofocus;
 
   /// Gets the text that corresponds to popup item
-  final PopupGetItemText<T> getItemText;
+  final PopupGetItemText<TItem> getItemText;
 
   /// Minimum text length to start getting the list
   /// if [minTextLength] = 0, shows the popup immediatelly on focus
@@ -2031,8 +2034,8 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
   final bool cleanAfterSelection;
 
   @override
-  TypeaheadComboState<TypeaheadCombo<T>, T> createState() =>
-      TypeaheadComboState<TypeaheadCombo<T>, T>(
+  TypeaheadComboState<TypeaheadCombo<TItem>, TItem> createState() =>
+      TypeaheadComboState<TypeaheadCombo<TItem>, TItem>(
           selected,
           selected == null ? '' : getItemText(selected),
           focusNode ?? FocusNode());
@@ -2067,9 +2070,9 @@ class TypeaheadCombo<T> extends SelectorCombo<T> {
 }
 
 /// State for [TypeaheadCombo]
-class TypeaheadComboState<W extends TypeaheadCombo<T>, T>
-    extends SelectorComboState<W, T> {
-  TypeaheadComboState(T selected, String text, this._focusNode)
+class TypeaheadComboState<TWidget extends TypeaheadCombo<TItem>, TItem>
+    extends SelectorComboState<TWidget, TItem> {
+  TypeaheadComboState(TItem selected, String text, this._focusNode)
       : _controller = TextEditingController(text: text),
         _text = text,
         super(selected);
@@ -2081,7 +2084,8 @@ class TypeaheadComboState<W extends TypeaheadCombo<T>, T>
   int get _textLength => _controller.text?.length ?? 0;
 
   @override
-  Widget buildItem(BuildContext context, ComboParameters parameters, T item) =>
+  Widget buildItem(
+          BuildContext context, ComboParameters parameters, TItem item) =>
       widget.typeaheadItemBuilder(
           context, parameters, item, item == _selected, _lastSearched);
 
@@ -2125,7 +2129,7 @@ class TypeaheadComboState<W extends TypeaheadCombo<T>, T>
   }
 
   @override
-  void didUpdateWidget(TypeaheadCombo<T> oldWidget) {
+  void didUpdateWidget(TypeaheadCombo<TItem> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.selected != null) {
       final text = widget.getItemText(selected);
@@ -2136,11 +2140,11 @@ class TypeaheadComboState<W extends TypeaheadCombo<T>, T>
   }
 
   @override
-  FutureOr<List<T>> getContent(BuildContext context) =>
+  FutureOr<List<TItem>> getContent(BuildContext context) =>
       widget.typeaheadGetList(_lastSearched = _text);
 
   @override
-  void itemTapped(T item) {
+  void itemTapped(TItem item) {
     if (item == selected) return;
     if (widget.cleanAfterSelection) {
       _controller.text = _text = '';
