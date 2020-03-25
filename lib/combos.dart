@@ -1624,27 +1624,27 @@ class AwaitCombo extends Combo {
 }
 
 /// Base state for the combo widgets with the futured popup content builder.
-abstract class AwaitComboStateBase<TWidget extends AwaitCombo, TContent>
+abstract class AwaitComboStateBase<TWidget extends AwaitCombo, TPopupContent>
     extends ComboState<TWidget> {
   var _waitCount = 0;
   final _waitController = StreamController<int>.broadcast();
-  TContent _content;
-  TContent get content => _content;
-  final _contentController = StreamController<TContent>.broadcast();
+  TPopupContent _popupContent;
+  TPopupContent get popupContent => _popupContent;
+  final _contentController = StreamController<TPopupContent>.broadcast();
   DateTime _timestamp;
 
   @override
   bool get hasPopup => widget.popupBuilder != null;
 
   @protected
-  FutureOr<TContent> getContent(BuildContext context);
+  FutureOr<TPopupContent> getPopupContent(BuildContext context);
   @protected
-  Widget buildContent(TContent content, bool mirrored);
+  Widget buildPopupContent(TPopupContent content, bool mirrored);
   @protected
-  void clearContent() => _content = null;
+  void clearPopupContent() => _popupContent = null;
   @protected
-  void updateContent(TContent content) =>
-      _contentController.add(_content = content);
+  void updatePopupContent(TPopupContent content) =>
+      _contentController.add(_popupContent = content);
 
   @override
   Widget getChild() {
@@ -1666,11 +1666,11 @@ abstract class AwaitComboStateBase<TWidget extends AwaitCombo, TContent>
       initialData: _waitCount,
       stream: _waitController.stream,
       builder: (context, snapshot) {
-        final content = StreamBuilder<TContent>(
-          initialData: _content,
+        final content = StreamBuilder<TPopupContent>(
+          initialData: _popupContent,
           stream: _contentController.stream,
           builder: (context, snapshot) =>
-              buildContent(snapshot.data, mirrored) ?? const SizedBox(),
+              buildPopupContent(snapshot.data, mirrored) ?? const SizedBox(),
         );
         return parameters.progressDecoratorBuilder == null ||
                 parameters.progressPosition != ProgressPosition.popup
@@ -1683,9 +1683,9 @@ abstract class AwaitComboStateBase<TWidget extends AwaitCombo, TContent>
 
   @protected
   Future fill() async {
-    final future = getContent(context);
+    final future = getPopupContent(context);
     if (future == null) return;
-    var content = future is TContent ? future : null;
+    var content = future is TPopupContent ? future : null;
     if (content == null) {
       final timestamp = _timestamp = DateTime.now();
       try {
@@ -1695,7 +1695,8 @@ abstract class AwaitComboStateBase<TWidget extends AwaitCombo, TContent>
         }
         super.open();
         content = await future;
-        if (content != null && _timestamp == timestamp) updateContent(content);
+        if (content != null && _timestamp == timestamp)
+          updatePopupContent(content);
       } finally {
         _waitController.add(--_waitCount);
         if (_waitCount == 0 && widget.waitChanged != null) {
@@ -1703,14 +1704,15 @@ abstract class AwaitComboStateBase<TWidget extends AwaitCombo, TContent>
         }
       }
     } else {
-      updateContent(content);
+      updatePopupContent(content);
       super.open();
     }
   }
 
   @override
-  void open() =>
-      (parameters.refreshOnOpened || _content == null ? fill : super.open)();
+  void open() => (parameters.refreshOnOpened || _popupContent == null
+      ? fill
+      : super.open)();
 
   @override
   void dispose() {
@@ -1723,13 +1725,13 @@ abstract class AwaitComboStateBase<TWidget extends AwaitCombo, TContent>
 /// State for a [AwaitCombo].
 class AwaitComboState extends AwaitComboStateBase<AwaitCombo, Widget> {
   @override
-  FutureOr<Widget> getContent(BuildContext context) =>
+  FutureOr<Widget> getPopupContent(BuildContext context) =>
       widget.awaitPopupBuilder == null
           ? null
           : widget.awaitPopupBuilder(context);
 
   @override
-  Widget buildContent(Widget content, bool mirrored) => content;
+  Widget buildPopupContent(Widget content, bool mirrored) => content;
 }
 
 // * list
@@ -1818,7 +1820,7 @@ class ListComboState<TWidget extends ListCombo<TItem>, TItem>
       widget.itemBuilder(context, parameters, item);
 
   @override
-  Widget buildContent(List<TItem> list, bool mirrored, [scrollToItem]) =>
+  Widget buildPopupContent(List<TItem> list, bool mirrored, [scrollToItem]) =>
       parameters.listPopupBuilder(
           context,
           parameters,
@@ -1830,11 +1832,11 @@ class ListComboState<TWidget extends ListCombo<TItem>, TItem>
           mirrored);
 
   @override
-  void updateContent(List<TItem> content) {
-    if (content != this.content &&
-        ((this.content == null && content != null) ||
-            !listEquals(content ?? [], this.content ?? []))) {
-      super.updateContent(content);
+  void updatePopupContent(List<TItem> content) {
+    if (content != popupContent &&
+        ((popupContent == null && content != null) ||
+            !listEquals(content ?? [], popupContent ?? []))) {
+      super.updatePopupContent(content);
     }
   }
 
@@ -1842,7 +1844,8 @@ class ListComboState<TWidget extends ListCombo<TItem>, TItem>
   bool get hasPopup => widget.getList != null;
 
   @override
-  FutureOr<List<TItem>> getContent(BuildContext context) => widget.getList();
+  FutureOr<List<TItem>> getPopupContent(BuildContext context) =>
+      widget.getList();
 
   @protected
   void itemTapped(TItem item) {
@@ -1853,14 +1856,13 @@ class ListComboState<TWidget extends ListCombo<TItem>, TItem>
   }
 }
 
-// * selector
+// * selectors
 
 /// Signature to build the selector popup item widget.
 typedef PopupSelectorItemBuilder<T> = Widget Function(
     BuildContext context, ComboParameters parameters, T item, bool selected);
 
 /// Combo widget for displaying the items list and selected item
-/// Combo widget with the delayed getting of the popup content and progress indication
 /// See also:
 ///
 ///  * [Combo]
@@ -1914,7 +1916,7 @@ class SelectorCombo<TItem> extends ListCombo<TItem> {
       SelectorComboState<SelectorCombo<TItem>, TItem>(selected);
 }
 
-/// State for a [SelectorCombo].
+/// State for [SelectorCombo].
 class SelectorComboState<TWidget extends SelectorCombo<TItem>, TItem>
     extends ListComboState<TWidget, TItem> {
   SelectorComboState(this._selected);
@@ -1927,8 +1929,8 @@ class SelectorComboState<TWidget extends SelectorCombo<TItem>, TItem>
       widget.selectorItemBuilder(context, parameters, item, item == _selected);
 
   @override
-  Widget buildContent(List<TItem> list, bool mirrored, [scrollToItem]) =>
-      super.buildContent(list, mirrored, _selected);
+  Widget buildPopupContent(List<TItem> list, bool mirrored, [scrollToItem]) =>
+      super.buildPopupContent(list, mirrored, _selected);
 
   @protected
   void clearSelected() => _selected = null;
@@ -2123,7 +2125,7 @@ class TypeaheadComboState<TWidget extends TypeaheadCombo<TItem>, TItem>
       if (mounted &&
           _focusNode.hasFocus &&
           _textLength >= widget.minTextLength) {
-        (content == null ? fill : open)();
+        (popupContent == null ? fill : open)();
       }
     });
   }
@@ -2140,7 +2142,7 @@ class TypeaheadComboState<TWidget extends TypeaheadCombo<TItem>, TItem>
   }
 
   @override
-  FutureOr<List<TItem>> getContent(BuildContext context) =>
+  FutureOr<List<TItem>> getPopupContent(BuildContext context) =>
       widget.typeaheadGetList(_lastSearched = _text);
 
   @override
@@ -2148,7 +2150,7 @@ class TypeaheadComboState<TWidget extends TypeaheadCombo<TItem>, TItem>
     if (item == selected) return;
     if (widget.cleanAfterSelection) {
       _controller.text = _text = '';
-      clearContent();
+      clearPopupContent();
     }
     super.itemTapped(item);
   }
@@ -2162,7 +2164,7 @@ class TypeaheadComboState<TWidget extends TypeaheadCombo<TItem>, TItem>
         decoration: widget.decoration ?? const InputDecoration(),
         onTap: () {
           if (!opened &&
-              content != null &&
+              popupContent != null &&
               _textLength >= widget.minTextLength) {
             open();
           }
