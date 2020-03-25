@@ -1768,6 +1768,7 @@ class ListCombo<TItem> extends AwaitCombo {
     @required this.itemBuilder,
     @required this.onItemTapped,
     this.getIsSelectable,
+    this.closeAfterItemTapped = true,
 
     // inherited
     ValueChanged<bool> waitChanged,
@@ -1776,7 +1777,8 @@ class ListCombo<TItem> extends AwaitCombo {
     ValueChanged<bool> hoveredChanged,
     GestureTapCallback onTap,
     bool ignoreChildDecorator = false,
-  }) : super(
+  })  : assert(closeAfterItemTapped != null),
+        super(
           key: key,
           waitChanged: waitChanged,
           child: child,
@@ -1797,6 +1799,10 @@ class ListCombo<TItem> extends AwaitCombo {
 
   /// Determines if the popup item is active for tapping
   final GetIsSelectable<TItem> getIsSelectable;
+
+  /// Determines that [ListCombo] should close the popup
+  /// after user tapped on item
+  final bool closeAfterItemTapped;
 
   @override
   ListComboState<ListCombo<TItem>, TItem> createState() =>
@@ -1827,7 +1833,8 @@ class ListComboState<TWidget extends ListCombo<TItem>, TItem>
           list,
           (context, parameters, item) => buildItem(context, parameters, item),
           widget.getIsSelectable,
-          itemTapped,
+          (item) => itemTapped(item,
+              closeAfterItemTapped: widget.closeAfterItemTapped),
           scrollToItem,
           mirrored);
 
@@ -1848,11 +1855,9 @@ class ListComboState<TWidget extends ListCombo<TItem>, TItem>
       widget.getList();
 
   @protected
-  void itemTapped(TItem item) {
-    if (widget.onItemTapped != null) {
-      widget.onItemTapped(item);
-    }
-    super.close();
+  void itemTapped(TItem item, {@required bool closeAfterItemTapped}) {
+    if (widget.onItemTapped != null) widget.onItemTapped(item);
+    if (closeAfterItemTapped) super.close();
   }
 }
 
@@ -1882,6 +1887,7 @@ class SelectorCombo<TItem> extends ListCombo<TItem> {
     @required PopupGetList<TItem> getList,
     @required ValueSetter<TItem> onItemTapped,
     GetIsSelectable<TItem> getIsSelectable,
+    bool closeAfterItemTapped = true,
     ValueChanged<bool> waitChanged,
     ValueChanged<bool> openedChanged,
     ValueChanged<bool> hoveredChanged,
@@ -1894,6 +1900,7 @@ class SelectorCombo<TItem> extends ListCombo<TItem> {
           getList: getList,
           onItemTapped: onItemTapped,
           getIsSelectable: getIsSelectable,
+          closeAfterItemTapped: closeAfterItemTapped,
           waitChanged: waitChanged,
           openedChanged: openedChanged,
           hoveredChanged: hoveredChanged,
@@ -1986,6 +1993,7 @@ class TypeaheadCombo<TItem> extends SelectorCombo<TItem> {
     TItem selected,
     @required ValueSetter<TItem> onItemTapped,
     GetIsSelectable<TItem> getIsSelectable,
+    bool closeAfterItemTapped = true,
     ValueChanged<bool> waitChanged,
     ValueChanged<bool> openedChanged,
     ValueChanged<bool> hoveredChanged,
@@ -2003,6 +2011,7 @@ class TypeaheadCombo<TItem> extends SelectorCombo<TItem> {
           selected: selected,
           onItemTapped: onItemTapped,
           getIsSelectable: getIsSelectable,
+          closeAfterItemTapped: closeAfterItemTapped,
           waitChanged: waitChanged,
           openedChanged: openedChanged,
           hoveredChanged: hoveredChanged,
@@ -2146,13 +2155,13 @@ class TypeaheadComboState<TWidget extends TypeaheadCombo<TItem>, TItem>
       widget.typeaheadGetList(_lastSearched = _text);
 
   @override
-  void itemTapped(TItem item) {
+  void itemTapped(TItem item, {@required bool closeAfterItemTapped}) {
     if (item == selected) return;
     if (widget.cleanAfterSelection) {
       _controller.text = _text = '';
       clearPopupContent();
     }
-    super.itemTapped(item);
+    super.itemTapped(item, closeAfterItemTapped: closeAfterItemTapped);
   }
 
   @override
@@ -2232,6 +2241,7 @@ class MenuItemCombo<T> extends StatelessWidget {
     this.itemBuilder,
     this.onItemTapped,
     this.getIsSelectable,
+    this.closeAfterItemTapped = true,
     this.waitChanged,
     this.openedChanged,
     this.hoveredChanged,
@@ -2254,6 +2264,10 @@ class MenuItemCombo<T> extends StatelessWidget {
 
   /// Determines if the menu item is active for tapping
   final GetIsSelectable<MenuItem<T>> getIsSelectable;
+
+  /// Determines that [MenuItemCombo] should close the popup
+  /// after user tapped on item
+  final bool closeAfterItemTapped;
 
   /// Called when the menu items is getting or got
   final ValueChanged<bool> waitChanged;
@@ -2323,6 +2337,7 @@ class MenuItemCombo<T> extends StatelessWidget {
                       : itemBuilder,
                   onItemTapped: onItemTapped,
                   getIsSelectable: getIsSelectable,
+                  closeAfterItemTapped: closeAfterItemTapped,
                   waitChanged: waitChanged,
                   openedChanged: openedChanged,
                   onTap: canTapOnFolder || item.getChildren == null
@@ -2335,6 +2350,7 @@ class MenuItemCombo<T> extends StatelessWidget {
               ),
         onItemTapped: onItemTapped,
         getIsSelectable: getIsSelectable,
+        closeAfterItemTapped: closeAfterItemTapped,
         waitChanged: waitChanged,
         child: child ?? itemBuilder(context, parameters, item),
         openedChanged: openedChanged,
