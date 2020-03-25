@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui';
 
@@ -6,12 +7,18 @@ import 'package:combos/combos.dart';
 import 'package:demo_items/demo_items.dart';
 import 'package:editors/editors.dart';
 import 'package:english_words/english_words.dart' as words;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 
 const _customAnimationDurationMs = 150;
 
-void main() => runApp(_App());
+void main() {
+  if (_PlatformHelper.platform == _Platform.desktop) {
+    debugDefaultTargetPlatformOverride = TargetPlatform.fuchsia;
+  }
+  runApp(_App());
+}
 
 class _App extends StatelessWidget {
   @override
@@ -738,4 +745,15 @@ class _WidgetsHelper {
     });
     return completer.future;
   }
+}
+
+enum _Platform { mobile, web, desktop }
+
+class _PlatformHelper {
+  static _Platform _platform;
+  static _Platform get platform => _platform ??= kIsWeb
+      ? _Platform.web
+      : Platform.isAndroid || Platform.isIOS
+          ? _Platform.mobile
+          : _Platform.desktop;
 }

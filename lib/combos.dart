@@ -1,11 +1,14 @@
 library combos;
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+
+// * types
 
 /// Determines how the popup should be placed depent on [Combo.child] position
 enum PopupPosition {
@@ -393,6 +396,8 @@ typedef ChildDecoratorBuilder = Widget Function(BuildContext context,
 /// [ComboParameters.menuPopupDecoratorBuilder].
 typedef PopupDecoratorBuilder = Widget Function(
     BuildContext context, ComboParameters parameters, Widget child);
+
+// * context
 
 /// Common parameters for combo widgets.
 class ComboParameters {
@@ -919,6 +924,8 @@ class ComboContextData extends InheritedWidget {
       _widget.parameters != oldWidget._widget.parameters;
 }
 
+// * combo
+
 /// Simple combo box widget
 ///
 /// Use [Combo] to link a widget with a popup setting [child] ans [popupBuilder] properties.
@@ -1405,7 +1412,8 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
         }
 
         if (parameters.autoClose != ComboAutoClose.none &&
-            (parameters.autoClose != ComboAutoClose.notHovered || !kIsWeb)) {
+            (parameters.autoClose != ComboAutoClose.notHovered ||
+                !_PlatformHelper.canHover)) {
           overlay = Stack(children: [
             GestureDetector(onPanDown: (_) {
               if (parameters.autoClose !=
@@ -1447,9 +1455,10 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
       if (parameters.autoOpen != ComboAutoOpen.none) {
         final catchHover = _catchHover;
         final openOnHover = parameters.autoOpen == ComboAutoOpen.hovered;
+        final canHover = _PlatformHelper.canHover;
 
         if ((widget.onTap == null || !enabled) &&
-            (openOnHover && (kIsWeb || !hasPopup))) {
+            (openOnHover && (canHover || !hasPopup))) {
           child = MouseRegion(
             onEnter: (_) {
               if (enabled) _setHovered(true);
@@ -1464,16 +1473,17 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
             child: child,
             onTap: enabled
                 ? () {
-                    if (!openOnHover || (openOnHover && !kIsWeb && hasPopup)) {
+                    if (!openOnHover ||
+                        (openOnHover && !canHover && hasPopup)) {
                       open();
                     }
                     if (widget.onTap != null &&
-                        (kIsWeb || !openOnHover || !hasPopup)) {
+                        (canHover || !openOnHover || !hasPopup)) {
                       widget.onTap();
                     }
                   }
                 : null,
-            onLongPress: enabled && openOnHover && !kIsWeb && hasPopup
+            onLongPress: enabled && openOnHover && !canHover && hasPopup
                 ? widget.onTap
                 : null,
             onHover:
@@ -1565,6 +1575,8 @@ class _DynamicRenderFollowerLayer extends RenderFollowerLayer {
   @override
   Offset get offset => offsetBuilder(child.size);
 }
+
+// * await
 
 /// Signature for futured popup builder.
 /// ('Mirrored' flag cannot be passed as there is no possibility to get popup size immediately)
@@ -1719,6 +1731,8 @@ abstract class AwaitComboStateBase<W extends AwaitCombo, C>
   }
 }
 
+// * list
+
 /// Signature to get the popup items.
 typedef PopupGetList<T> = FutureOr<List<T>> Function();
 
@@ -1837,6 +1851,8 @@ class ListComboState<W extends ListCombo<T>, T>
   }
 }
 
+// * selector
+
 /// Signature to build the selector popup item widget.
 typedef PopupSelectorItemBuilder<T> = Widget Function(
     BuildContext context, ComboParameters parameters, T item, bool selected);
@@ -1926,6 +1942,8 @@ class SelectorComboState<W extends SelectorCombo<T>, T>
   Widget getChild() => (widget.childBuilder ?? widget.itemBuilder)(
       context, parameters, _selected);
 }
+
+// * typeahead
 
 /// Signature to get the popup items using the text from [TypeaheadCombo].
 typedef TypeaheadGetList<T> = FutureOr<List<T>> Function(String text);
@@ -2155,6 +2173,8 @@ class TypeaheadComboState<W extends TypeaheadCombo<T>, T>
   }
 }
 
+// * menu
+
 /// Menu items container
 class MenuItem<T> {
   /// Creates menu items container
@@ -2279,7 +2299,7 @@ class MenuItemCombo<T> extends StatelessWidget {
           popupDecoratorBuilder: parameters.menuPopupDecoratorBuilder),
       child: ListCombo<MenuItem<T>>(
         key: key,
-        getList: item.getChildren,
+        getList: item.getChildren ?? () => null,
         itemBuilder: (context, parameters, item) => item == MenuItem.separator
             ? divider
             : ComboContext(
@@ -2318,4 +2338,19 @@ class MenuItemCombo<T> extends StatelessWidget {
       ),
     );
   }
+}
+
+// * helpers
+
+enum _Platform { mobile, web, desktop }
+
+class _PlatformHelper {
+  static _Platform _platform;
+  static _Platform get platform => _platform ??= kIsWeb
+      ? _Platform.web
+      : Platform.isAndroid || Platform.isIOS
+          ? _Platform.mobile
+          : _Platform.desktop;
+  static bool _canHover;
+  static bool get canHover => _canHover ??= platform != _Platform.mobile;
 }
