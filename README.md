@@ -16,8 +16,6 @@ Includes:
 * **TypeaheadCombo** - Typeahead widget with the text input and custom 'search' method
 * **MenuItemCombo** - Menu item widget for displaying popup menus
 
-*The package is designed for Flutter Web, but can be used on mobile devices*
-
 ### Examples
 
 * Combo
