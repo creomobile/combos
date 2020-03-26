@@ -1695,8 +1695,9 @@ abstract class AwaitComboStateBase<TWidget extends AwaitCombo, TPopupContent>
         }
         super.open();
         content = await future;
-        if (content != null && _timestamp == timestamp)
+        if (content != null && _timestamp == timestamp) {
           updatePopupContent(content);
+        }
       } finally {
         _waitController.add(--_waitCount);
         if (_waitCount == 0 && widget.waitChanged != null) {
@@ -1867,17 +1868,17 @@ class ListComboState<TWidget extends ListCombo<TItem>, TItem>
 typedef PopupSelectorItemBuilder<T> = Widget Function(
     BuildContext context, ComboParameters parameters, T item, bool selected);
 
-/// Combo widget for displaying the items list and selected item
-/// See also:
+/// Base class to build list combo widgets with selection
 ///
 ///  * [Combo]
 ///  * [AwaitCombo]
 ///  * [ListCombo]
+///  * [SelectorCombo]
 ///  * [TypeaheadCombo]
 ///  * [MenuItemCombo]
-class SelectorCombo<TItem> extends ListCombo<TItem> {
-  /// Creates combo widget for displaying the items list and selected item
-  const SelectorCombo({
+abstract class SelectorComboBase<TItem, TSelection> extends ListCombo<TItem> {
+  /// Creates list combo with selection
+  const SelectorComboBase({
     Key key,
     this.selected,
     @required this.onSelectedChanged,
@@ -1910,16 +1911,96 @@ class SelectorCombo<TItem> extends ListCombo<TItem> {
         );
 
   /// The 'selected' item to display in [Combo.child] area
-  final TItem selected;
+  final TSelection selected;
 
-  final ValueChanged<TItem> onSelectedChanged;
+  /// Calls when the selection value is changed.
+  final ValueChanged<TSelection> onSelectedChanged;
 
   /// Builds the thid widget for [selected] item
-  /// If null uses [ListCombo.itemBuilder]
-  final PopupListItemBuilder<TItem> childBuilder;
+  final PopupListItemBuilder<TSelection> childBuilder;
 
   /// Popup item widget builder.
   final PopupSelectorItemBuilder<TItem> selectorItemBuilder;
+}
+
+abstract class SelectorController<TSelection> {
+  /// Gets current selection for the selector controller
+  TSelection get selected;
+  set selected(TSelection value);
+
+  /// Clears [selected] to null and updates widget state
+  void clearSelected();
+}
+
+abstract class SelectorComboController<TSelection>
+    implements ComboController, SelectorController<TSelection> {}
+
+/// Base state for [SelectorComboBase].
+abstract class SelectorComboStateBase<
+        TWidget extends SelectorComboBase<TItem, TSelection>,
+        TItem,
+        TSelection> extends ListComboState<TWidget, TItem>
+    implements SelectorComboController<TSelection> {
+  SelectorComboStateBase(this._selected);
+  TSelection _selected;
+
+  @override
+  TSelection get selected => _selected;
+  @override
+  set selected(TSelection value) {
+    if (value == _selected) return;
+    setState(() => _selected = value);
+    if (widget.onSelectedChanged != null) widget.onSelectedChanged(value);
+  }
+
+  @override
+  void clearSelected();
+}
+
+/// Combo widget for displaying the items list and selected item
+/// See also:
+///
+///  * [Combo]
+///  * [AwaitCombo]
+///  * [ListCombo]
+///  * [TypeaheadCombo]
+///  * [MenuItemCombo]
+class SelectorCombo<TItem> extends SelectorComboBase<TItem, TItem> {
+  /// Creates combo widget for displaying the items list and selected item
+  const SelectorCombo({
+    Key key,
+    TItem selected,
+    @required ValueChanged<TItem> onSelectedChanged,
+
+    /// Builds the thid widget for [selected] item
+    /// If null uses [ListCombo.itemBuilder]
+    PopupListItemBuilder<TItem> childBuilder,
+    @required PopupSelectorItemBuilder<TItem> itemBuilder,
+    @required PopupGetList<TItem> getList,
+    ValueSetter<TItem> onItemTapped,
+    GetIsSelectable<TItem> getIsSelectable,
+    bool closeAfterItemTapped = true,
+    ValueChanged<bool> waitChanged,
+    ValueChanged<bool> openedChanged,
+    ValueChanged<bool> hoveredChanged,
+    GestureTapCallback onTap,
+    bool ignoreChildDecorator = false,
+  }) : super(
+          key: key,
+          selected: selected,
+          onSelectedChanged: onSelectedChanged,
+          childBuilder: childBuilder,
+          itemBuilder: itemBuilder,
+          getList: getList,
+          onItemTapped: onItemTapped,
+          getIsSelectable: getIsSelectable,
+          closeAfterItemTapped: closeAfterItemTapped,
+          waitChanged: waitChanged,
+          openedChanged: openedChanged,
+          hoveredChanged: hoveredChanged,
+          onTap: onTap,
+          ignoreChildDecorator: ignoreChildDecorator,
+        );
 
   @override
   SelectorComboState<SelectorCombo<TItem>, TItem> createState() =>
@@ -1928,17 +2009,9 @@ class SelectorCombo<TItem> extends ListCombo<TItem> {
 
 /// State for [SelectorCombo].
 class SelectorComboState<TWidget extends SelectorCombo<TItem>, TItem>
-    extends ListComboState<TWidget, TItem> {
-  SelectorComboState(this._selected);
-  TItem _selected;
-  TItem get selected => _selected;
-  set selected(TItem value) {
-    if (value == _selected) return;
-    setState(() => _selected = value);
-    if (widget.onSelectedChanged != null) widget.onSelectedChanged(value);
-  }
-
-  @protected
+    extends SelectorComboStateBase<TWidget, TItem, TItem> {
+  SelectorComboState(TItem selected) : super(selected);
+  @override
   void clearSelected() => selected = null;
 
   @override
