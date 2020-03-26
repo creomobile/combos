@@ -4,9 +4,11 @@
 
 Combo widgets for Flutter.
 
-[Samples is available here](https://samples.creomobile.com/#/combos)
+[Install instructions](https://pub.dev/packages/combos#-installing-tab-)
+[Docs](https://pub.dev/documentation/combos/latest/combos/combos-library.html)
+[Online Samples](https://samples.creomobile.com/#/combos)
 
-![alt text](https://samples.creomobile.com/combos.png)
+![alt text](https://samples.creomobile.com/combos2.png)
 
 Includes:
 * **Combo** - Simple combo widget for custom child and popup content.
