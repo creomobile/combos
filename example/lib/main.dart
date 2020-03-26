@@ -4,13 +4,12 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:combos/combos.dart';
+import 'package:demo_items/demo_items.dart';
+import 'package:editors/editors.dart';
 import 'package:english_words/english_words.dart' as words;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
-
-import 'demo_items.dart';
-import 'editors.dart';
 
 const _customAnimationDurationMs = 150;
 
