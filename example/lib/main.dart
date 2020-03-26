@@ -4,12 +4,13 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:combos/combos.dart';
-import 'package:demo_items/demo_items.dart';
-import 'package:editors/editors.dart';
 import 'package:english_words/english_words.dart' as words;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
+
+import 'demo_items.dart';
+import 'editors.dart';
 
 const _customAnimationDurationMs = 150;
 
@@ -635,8 +636,11 @@ class MenuProperties extends ListProperties {
 }
 
 extension ComboPropertiesExtension on ComboProperties {
-  static Widget _buildChildDecoration(BuildContext context,
-          ComboParameters parameters, bool opened, Widget child) =>
+  static Widget _buildChildDecoration(
+          BuildContext context,
+          ComboParameters parameters,
+          ComboController controller,
+          Widget child) =>
       Container(
         child: Material(
           color: Colors.transparent,
@@ -651,7 +655,10 @@ extension ComboPropertiesExtension on ComboProperties {
         ),
       );
   static Widget _buildPopupDecoration(
-          BuildContext context, ComboParameters parameters, Widget child) =>
+          BuildContext context,
+          ComboParameters parameters,
+          ComboController controller,
+          Widget child) =>
       Material(
         elevation: 4,
         borderRadius: BorderRadius.circular(16),
@@ -680,7 +687,7 @@ extension ComboPropertiesExtension on ComboProperties {
 
   Widget apply({
     @required Widget child,
-    PopupDecoratorBuilder popupDecoratorBuilder = _buildPopupDecoration,
+    ComboDecoratorBuilder popupDecoratorBuilder = _buildPopupDecoration,
   }) {
     final AwaitComboProperties awaitProperties =
         this is AwaitComboProperties ? this : null;

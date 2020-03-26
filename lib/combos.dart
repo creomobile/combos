@@ -385,17 +385,13 @@ class _ProgressDecoratorState extends State<ProgressDecorator> {
   }
 }
 
-/// Signature for building the [Combo.child] decorator.
+/// Signature for building [Combo.child], [Combo.popup] decorators.
 /// Using for [ComboParameters.childDecoratorBuilder],
-/// [ComboParameters.childContentDecoratorBuilder].
-typedef ChildDecoratorBuilder = Widget Function(BuildContext context,
-    ComboParameters parameters, bool opened, Widget child);
-
-/// Signature for building [Combo.popup] decorator.
-/// Using for [ComboParameters.popupDecoratorBuilder],
+/// [ComboParameters.childContentDecoratorBuilder],
+/// [ComboParameters.popupDecoratorBuilder],
 /// [ComboParameters.menuPopupDecoratorBuilder].
-typedef PopupDecoratorBuilder = Widget Function(
-    BuildContext context, ComboParameters parameters, Widget child);
+typedef ComboDecoratorBuilder = Widget Function(BuildContext context,
+    ComboParameters parameters, ComboController controller, Widget child);
 
 // * context
 
@@ -516,14 +512,14 @@ class ComboParameters {
 
   /// Define decorator widget for all [Combo.child] widgets
   /// with [Combo.ignoreChildDecorator] = false in the context.
-  final ChildDecoratorBuilder childContentDecoratorBuilder;
+  final ComboDecoratorBuilder childContentDecoratorBuilder;
 
   /// Define decorator widget for all [Combo.child] with its [InkWell]
   /// with [Combo.ignoreChildDecorator] = false in the context.
-  final ChildDecoratorBuilder childDecoratorBuilder;
+  final ComboDecoratorBuilder childDecoratorBuilder;
 
   /// Define decorator widget for all [Combo] popup widgets in the context.
-  final PopupDecoratorBuilder popupDecoratorBuilder;
+  final ComboDecoratorBuilder popupDecoratorBuilder;
 
   /// Define constraints for the combo popup content.
   /// (May be useful for [ListCombo] with position different of
@@ -574,7 +570,7 @@ class ComboParameters {
   final ListPopupBuilder menuPopupBuilder;
 
   /// Define decorator widget for all [MenuCombo] popups in the context.
-  final PopupDecoratorBuilder menuPopupDecoratorBuilder;
+  final ComboDecoratorBuilder menuPopupDecoratorBuilder;
 
   /// Menu devider widget.
   /// Default is [MenuDivider].
@@ -616,9 +612,9 @@ class ComboParameters {
     bool enabled,
     PopupAnimation animation,
     Duration animationDuration,
-    ChildDecoratorBuilder childContentDecoratorBuilder,
-    ChildDecoratorBuilder childDecoratorBuilder,
-    PopupDecoratorBuilder popupDecoratorBuilder,
+    ComboDecoratorBuilder childContentDecoratorBuilder,
+    ComboDecoratorBuilder childDecoratorBuilder,
+    ComboDecoratorBuilder popupDecoratorBuilder,
     BoxConstraints popupContraints,
     Color focusColor,
     Color hoverColor,
@@ -632,7 +628,7 @@ class ComboParameters {
     Widget emptyListIndicator,
     Duration inputThrottle,
     ListPopupBuilder menuPopupBuilder,
-    PopupDecoratorBuilder menuPopupDecoratorBuilder,
+    ComboDecoratorBuilder menuPopupDecoratorBuilder,
     Widget menuDivider,
     bool menuShowArrows,
     bool menuCanTapOnFolder,
@@ -692,7 +688,7 @@ class ComboParameters {
   static Widget buildDefaultChildContentDecorator(
     BuildContext context,
     ComboParameters parameters,
-    bool opened,
+    ComboController controller,
     Widget child, {
     IconData icon = Icons.arrow_drop_down,
     EdgeInsets iconPadding = const EdgeInsets.symmetric(horizontal: 8.0),
@@ -708,7 +704,7 @@ class ComboParameters {
       ]);
 
   static Widget buildDefaultChildDecorator(BuildContext context,
-      ComboParameters parameters, bool opened, Widget child) {
+      ComboParameters parameters, ComboController controller, Widget child) {
     final theme = Theme.of(context);
     final decoration = InputDecoration(border: OutlineInputBorder())
         .applyDefaults(theme.inputDecorationTheme)
@@ -717,7 +713,7 @@ class ComboParameters {
       borderRadius: (decoration.border as OutlineInputBorder).borderRadius,
       child: InputDecorator(
           decoration: decoration,
-          isFocused: opened,
+          isFocused: controller.opened,
           isEmpty: true,
           expands: false,
           child: child),
@@ -725,8 +721,8 @@ class ComboParameters {
   }
 
   /// Default popup decorator builder
-  static Widget buildDefaultPopupDecorator(
-          BuildContext context, ComboParameters parameters, Widget child,
+  static Widget buildDefaultPopupDecorator(BuildContext context,
+          ComboParameters parameters, ComboController controller, Widget child,
           {double elevation = 4,
           BorderRadiusGeometry borderRadius =
               const BorderRadius.all(Radius.circular(4))}) =>
@@ -736,11 +732,11 @@ class ComboParameters {
         child: child,
       );
 
-  static Widget buildDefaultMenuPopupDecorator(
-          BuildContext context, ComboParameters parameters, Widget child,
+  static Widget buildDefaultMenuPopupDecorator(BuildContext context,
+          ComboParameters parameters, ComboController controller, Widget child,
           {double elevation = 4,
           BorderRadiusGeometry borderRadius = BorderRadius.zero}) =>
-      buildDefaultPopupDecorator(context, parameters, child,
+      buildDefaultPopupDecorator(context, parameters, controller, child,
           elevation: elevation, borderRadius: borderRadius);
 
   /// Builds defaut progress decorator
@@ -1265,7 +1261,8 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
             popup = ConstrainedBox(constraints: constraints, child: popup);
           }
 
-          popup = parameters.popupDecoratorBuilder(context, parameters, popup);
+          popup = parameters.popupDecoratorBuilder(
+              context, parameters, this, popup);
 
           if (_catchHover) {
             popup = MouseRegion(
@@ -1443,7 +1440,7 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
     void decorate() {
       if (!widget.ignoreChildDecorator) {
         child = parameters.childContentDecoratorBuilder(
-            context, parameters, opened, child);
+            context, parameters, this, child);
       }
     }
 
@@ -1492,7 +1489,7 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
         }
         if (!widget.ignoreChildDecorator) {
           child = parameters.childDecoratorBuilder(
-              context, parameters, opened, child);
+              context, parameters, this, child);
         }
       }
       if (parameters.autoClose ==
