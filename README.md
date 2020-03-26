@@ -5,7 +5,9 @@
 Combo widgets for Flutter.
 
 [Install instructions](https://pub.dev/packages/combos#-installing-tab-)
+
 [Docs](https://pub.dev/documentation/combos/latest/combos/combos-library.html)
+
 [Online Samples](https://samples.creomobile.com/#/combos)
 
 ![alt text](https://samples.creomobile.com/combos2.png)
