@@ -193,7 +193,7 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
                       childBuilder: (context, parameters, item) => ListTile(
                           enabled: properties.enabled.value,
                           title: Text(item ?? 'Selector Combo')),
-                      onItemTapped: (value) =>
+                      onSelectedChanged: (value) =>
                           setState(() => properties.selected.value = value),
                     ),
                   ),
@@ -252,7 +252,7 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
                         ),
                       ),
                       getItemText: (item) => item,
-                      onItemTapped: (value) =>
+                      onSelectedChanged: (value) =>
                           setState(() => properties.selected.value = value),
                     ),
                   ),

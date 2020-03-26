@@ -236,7 +236,7 @@ class _ListPopupState extends State<ListPopup> {
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _scrollController?.dispose();
     super.dispose();
   }
 }
@@ -1880,12 +1880,13 @@ class SelectorCombo<TItem> extends ListCombo<TItem> {
   const SelectorCombo({
     Key key,
     this.selected,
+    @required this.onSelectedChanged,
     this.childBuilder,
     @required PopupSelectorItemBuilder<TItem> itemBuilder,
 
     // inherited
     @required PopupGetList<TItem> getList,
-    @required ValueSetter<TItem> onItemTapped,
+    ValueSetter<TItem> onItemTapped,
     GetIsSelectable<TItem> getIsSelectable,
     bool closeAfterItemTapped = true,
     ValueChanged<bool> waitChanged,
@@ -1911,6 +1912,8 @@ class SelectorCombo<TItem> extends ListCombo<TItem> {
   /// The 'selected' item to display in [Combo.child] area
   final TItem selected;
 
+  final ValueChanged<TItem> onSelectedChanged;
+
   /// Builds the thid widget for [selected] item
   /// If null uses [ListCombo.itemBuilder]
   final PopupListItemBuilder<TItem> childBuilder;
@@ -1929,6 +1932,14 @@ class SelectorComboState<TWidget extends SelectorCombo<TItem>, TItem>
   SelectorComboState(this._selected);
   TItem _selected;
   TItem get selected => _selected;
+  set selected(TItem value) {
+    if (value == _selected) return;
+    setState(() => _selected = value);
+    if (widget.onSelectedChanged != null) widget.onSelectedChanged(value);
+  }
+
+  @protected
+  void clearSelected() => selected = null;
 
   @override
   Widget buildItem(
@@ -1939,20 +1950,24 @@ class SelectorComboState<TWidget extends SelectorCombo<TItem>, TItem>
   Widget buildPopupContent(List<TItem> list, bool mirrored, [scrollToItem]) =>
       super.buildPopupContent(list, mirrored, _selected);
 
-  @protected
-  void clearSelected() => _selected = null;
-
   @override
   void didUpdateWidget(SelectorCombo<TItem> oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (widget.selected != _selected) {
-      setState(() => _selected = widget.selected);
+    final selected = widget.selected;
+    if (selected != oldWidget.selected && selected != _selected) {
+      setState(() => _selected = selected);
     }
   }
 
   @override
   Widget getChild() => (widget.childBuilder ?? widget.itemBuilder)(
       context, parameters, _selected);
+
+  @override
+  void itemTapped(TItem item, {bool closeAfterItemTapped}) {
+    super.itemTapped(item, closeAfterItemTapped: closeAfterItemTapped);
+    selected = item;
+  }
 }
 
 // * typeahead
@@ -1991,7 +2006,8 @@ class TypeaheadCombo<TItem> extends SelectorCombo<TItem> {
 
     // inherited
     TItem selected,
-    @required ValueSetter<TItem> onItemTapped,
+    @required ValueChanged<TItem> onSelectedChanged,
+    ValueSetter<TItem> onItemTapped,
     GetIsSelectable<TItem> getIsSelectable,
     bool closeAfterItemTapped = true,
     ValueChanged<bool> waitChanged,
@@ -2010,6 +2026,7 @@ class TypeaheadCombo<TItem> extends SelectorCombo<TItem> {
           key: key,
           selected: selected,
           onItemTapped: onItemTapped,
+          onSelectedChanged: onSelectedChanged,
           getIsSelectable: getIsSelectable,
           closeAfterItemTapped: closeAfterItemTapped,
           waitChanged: waitChanged,
@@ -2095,6 +2112,17 @@ class TypeaheadComboState<TWidget extends TypeaheadCombo<TItem>, TItem>
   int get _textLength => _controller.text?.length ?? 0;
 
   @override
+  set selected(TItem value) {
+    if (value == selected) return;
+    if (widget.cleanAfterSelection) {
+      value = null;
+      _controller.text = _text = '';
+      clearPopupContent();
+    }
+    super.selected = value;
+  }
+
+  @override
   Widget buildItem(
           BuildContext context, ComboParameters parameters, TItem item) =>
       widget.typeaheadItemBuilder(
@@ -2153,16 +2181,6 @@ class TypeaheadComboState<TWidget extends TypeaheadCombo<TItem>, TItem>
   @override
   FutureOr<List<TItem>> getPopupContent(BuildContext context) =>
       widget.typeaheadGetList(_lastSearched = _text);
-
-  @override
-  void itemTapped(TItem item, {@required bool closeAfterItemTapped}) {
-    if (item == selected) return;
-    if (widget.cleanAfterSelection) {
-      _controller.text = _text = '';
-      clearPopupContent();
-    }
-    super.itemTapped(item, closeAfterItemTapped: closeAfterItemTapped);
-  }
 
   @override
   Widget getChild() => TextField(
