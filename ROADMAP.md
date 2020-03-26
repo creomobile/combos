@@ -1,6 +1,5 @@
 # Future plans
 
-* Implement MultiSelector
 * Investigate position tracking (remove scroll listener)
 * Remove backgroundColor, borderRadius, elevation params from MenuListPopup
   (use decorator instead)

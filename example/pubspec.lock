@@ -28,7 +28,7 @@ packages:
       path: ".."
       relative: true
     source: path
-    version: "1.1.7+6"
+    version: "1.2.0"
   cupertino_icons:
     dependency: "direct main"
     description:
@@ -41,7 +41,7 @@ packages:
     description:
       path: "."
       ref: HEAD
-      resolved-ref: "127856d1e8d7890c62639ba0c0163a0dd3a2efbe"
+      resolved-ref: "3ed573da36b238b843fc5e1ef79cd638ce2b1948"
       url: "https://github.com/creomobile/demo_items"
     source: git
     version: "0.0.1"

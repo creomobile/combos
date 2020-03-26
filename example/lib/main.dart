@@ -47,6 +47,7 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
   final _awaitComboProperties = AwaitComboProperties(withCustomAnimation: true);
   final _listComboProperties = ListProperties();
   final _selectorProperties = SelectorProperties();
+  final _multiSelectorProperties = MultiSelectorProperties();
   final _typeaheadProperties = TypeaheadProperties();
   final _menuProperties = MenuProperties();
 
@@ -202,6 +203,56 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
 
               const SizedBox(height: 16),
 
+              // multi selector
+              _CombosDemoItem<MultiSelectorProperties>(
+                properties: _multiSelectorProperties,
+                childBuilder: (properties, modifiedEditor) => SizedBox(
+                  width: properties.comboWidth.value?.toDouble(),
+                  child: ComboContext(
+                      parameters: ComboParameters(
+                        popupContraints: properties.hasSize
+                            ? null
+                            : BoxConstraints(
+                                maxWidth:
+                                    properties.popupWidth.value.toDouble()),
+                      ),
+                      child: MultiSelectorCombo<String>(
+                        getList: () async {
+                          await Future.delayed(
+                              const Duration(milliseconds: 500));
+                          return Iterable.generate(properties.itemsCount.value)
+                              .map((e) => 'Item ${e + 1}')
+                              .toList();
+                        },
+                        selected: properties.selectedValue,
+                        itemBuilder: (context, parameters, item, selected) =>
+                            PreferredSize(
+                                preferredSize: Size(0, _tileHeight),
+                                child: IgnorePointer(
+                                  child: CheckboxListTile(
+                                    value: selected,
+                                    title: Text(item ?? ''),
+                                    onChanged: (_) {},
+                                    controlAffinity:
+                                        ListTileControlAffinity.leading,
+                                  ),
+                                )),
+                        childBuilder: (context, parameters, item) => ListTile(
+                            enabled: properties.enabled.value,
+                            title: Text(
+                              item?.isNotEmpty == true
+                                  ? item.join(', ')
+                                  : 'Multi Selector Combo',
+                              overflow: TextOverflow.ellipsis,
+                            )),
+                        onSelectedChanged: (value) =>
+                            setState(() => properties.selectedValue = value),
+                      )),
+                ),
+              ),
+
+              const SizedBox(height: 16),
+
               // typeahead
               _CombosDemoItem<TypeaheadProperties>(
                 properties: _typeaheadProperties,
@@ -239,15 +290,12 @@ class _CombosExamplePageState extends State<CombosExamplePage> {
                         preferredSize: Size(0, _tileHeight),
                         child: ListTile(
                           selected: selected,
-                          title: SizedBox(
-                            width: 200,
-                            child: TypeaheadCombo.markText(
-                              item,
-                              text,
-                              const TextStyle(
-                                  decoration: TextDecoration.underline,
-                                  decorationColor: Colors.grey),
-                            ),
+                          title: TypeaheadCombo.markText(
+                            item,
+                            text,
+                            const TextStyle(
+                                decoration: TextDecoration.underline,
+                                decorationColor: Colors.grey),
                           ),
                         ),
                       ),
@@ -495,8 +543,8 @@ class ComboProperties {
 
   final _excludes = <EditorsBuilder>{};
 
-  final comboWidth = IntEditor(title: 'Combo Width', value: 200);
-  final popupWidth = IntEditor(title: 'Popup Width', value: 300);
+  final comboWidth = IntEditor(title: 'Combo Width', value: 250);
+  final popupWidth = IntEditor(title: 'Popup Width', value: 350);
   final itemsCount = IntEditor(title: 'Items Count', value: 3);
   final EnumEditor<PopupPosition> position;
 
@@ -591,6 +639,10 @@ class SelectorProperties extends ListProperties {
 
   @override
   List<EditorsBuilder> get editors => [selected, ...super.editors];
+}
+
+class MultiSelectorProperties extends ListProperties {
+  Set<String> selectedValue;
 }
 
 class TypeaheadProperties extends SelectorProperties {

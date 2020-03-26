@@ -1,3 +1,13 @@
+## [1.2.0] - 3/26/2020
+
+* Add combo controllers to decorator builders
+* Add seached text decoration to typeahead items
+* Implement scroll to selected in SelectorCombo
+* Add closeAfterItemTapped to ListCombo
+* Change selection behaviour in selectors
+* Adapt widgets to mobile and desktop platforms
+* Implement MultiSelector
+
 ## [1.1.7+2] - 3/22/2020
 
 * implement ComboController

@@ -958,6 +958,7 @@ class ComboContextData extends InheritedWidget {
 ///  * [AwaitCombo]
 ///  * [ListCombo]
 ///  * [SelectorCombo]
+///  * [MultiSelectorCombo]
 ///  * [TypeaheadCombo]
 ///  * [MenuItemCombo]
 class Combo extends StatefulWidget {
@@ -1585,6 +1586,7 @@ typedef AwaitPopupBuilder = FutureOr<Widget> Function(BuildContext context);
 ///  * [Combo]
 ///  * [ListCombo]
 ///  * [SelectorCombo]
+///  * [MultiSelectorCombo]
 ///  * [TypeaheadCombo]
 ///  * [MenuItemCombo]
 class AwaitCombo extends Combo {
@@ -1756,6 +1758,7 @@ typedef GetIsSelectable<T> = bool Function(T item);
 ///  * [Combo]
 ///  * [AwaitCombo]
 ///  * [SelectorCombo]
+///  * [MultiSelectorCombo]
 ///  * [TypeaheadCombo]
 ///  * [MenuItemCombo]
 class ListCombo<TItem> extends AwaitCombo {
@@ -1960,6 +1963,7 @@ abstract class SelectorComboStateBase<
 ///  * [Combo]
 ///  * [AwaitCombo]
 ///  * [ListCombo]
+///  * [MultiSelectorCombo]
 ///  * [TypeaheadCombo]
 ///  * [MenuItemCombo]
 class SelectorCombo<TItem> extends SelectorComboBase<TItem, TItem> {
@@ -1972,6 +1976,7 @@ class SelectorCombo<TItem> extends SelectorComboBase<TItem, TItem> {
     /// Builds the thid widget for [selected] item
     /// If null uses [ListCombo.itemBuilder]
     PopupListItemBuilder<TItem> childBuilder,
+    /// Return [PreferredSizeWidget] to enable auto scroll to selected
     @required PopupSelectorItemBuilder<TItem> itemBuilder,
     @required PopupGetList<TItem> getList,
     ValueSetter<TItem> onItemTapped,
@@ -2014,17 +2019,17 @@ class SelectorComboState<TWidget extends SelectorCombo<TItem>, TItem>
   @override
   Widget buildItem(
           BuildContext context, ComboParameters parameters, TItem item) =>
-      widget.selectorItemBuilder(context, parameters, item, item == _selected);
+      widget.selectorItemBuilder(context, parameters, item, item == selected);
 
   @override
   Widget buildPopupContent(List<TItem> list, bool mirrored, [scrollToItem]) =>
-      super.buildPopupContent(list, mirrored, _selected);
+      super.buildPopupContent(list, mirrored, selected);
 
   @override
   void didUpdateWidget(SelectorCombo<TItem> oldWidget) {
     super.didUpdateWidget(oldWidget);
     final selected = widget.selected;
-    if (selected != oldWidget.selected && selected != _selected) {
+    if (selected != oldWidget.selected && selected != this.selected) {
       setState(() => _selected = selected);
     }
   }
@@ -2037,6 +2042,117 @@ class SelectorComboState<TWidget extends SelectorCombo<TItem>, TItem>
   void itemTapped(TItem item, {bool closeAfterItemTapped}) {
     super.itemTapped(item, closeAfterItemTapped: closeAfterItemTapped);
     selected = item;
+  }
+}
+
+/// Combo widget for displaying the items list and selected item
+/// See also:
+///
+///  * [Combo]
+///  * [AwaitCombo]
+///  * [ListCombo]
+///  * [SelectorCombo]
+///  * [TypeaheadCombo]
+///  * [MenuItemCombo]
+class MultiSelectorCombo<TItem> extends SelectorComboBase<TItem, Set<TItem>> {
+  const MultiSelectorCombo({
+    Key key,
+    Set<TItem> selected,
+    @required ValueChanged<Set<TItem>> onSelectedChanged,
+    @required PopupListItemBuilder<Set<TItem>> childBuilder,
+    @required PopupSelectorItemBuilder<TItem> itemBuilder,
+    @required PopupGetList<TItem> getList,
+    ValueSetter<TItem> onItemTapped,
+    GetIsSelectable<TItem> getIsSelectable,
+    bool closeAfterItemTapped = false,
+    ValueChanged<bool> waitChanged,
+    ValueChanged<bool> openedChanged,
+    ValueChanged<bool> hoveredChanged,
+    GestureTapCallback onTap,
+    bool ignoreChildDecorator = false,
+  })  : assert(childBuilder != null),
+        super(
+          key: key,
+          selected: selected,
+          onSelectedChanged: onSelectedChanged,
+          childBuilder: childBuilder,
+          itemBuilder: itemBuilder,
+          getList: getList,
+          onItemTapped: onItemTapped,
+          getIsSelectable: getIsSelectable,
+          closeAfterItemTapped: closeAfterItemTapped,
+          waitChanged: waitChanged,
+          openedChanged: openedChanged,
+          hoveredChanged: hoveredChanged,
+          onTap: onTap,
+          ignoreChildDecorator: ignoreChildDecorator,
+        );
+
+  @override
+  MultiSelectorComboState<MultiSelectorCombo<TItem>, TItem> createState() =>
+      MultiSelectorComboState<MultiSelectorCombo<TItem>, TItem>(selected);
+}
+
+/// State for [MultiSelectorCombo].
+class MultiSelectorComboState<TWidget extends MultiSelectorCombo<TItem>, TItem>
+    extends SelectorComboStateBase<TWidget, TItem, Set<TItem>> {
+  MultiSelectorComboState(Set<TItem> selected) : super(selected);
+  final _changes = StreamController.broadcast();
+
+  @override
+  void clearSelected() => selected = <TItem>{};
+
+  @override
+  Widget buildItem(
+          BuildContext context, ComboParameters parameters, TItem item) =>
+      widget.selectorItemBuilder(
+          context, parameters, item, selected?.contains(item) == true);
+
+  @override
+  Widget buildPopupContent(List<TItem> list, bool mirrored, [scrollToItem]) =>
+      StatefulBuilder(builder: (context, setState) {
+        return parameters.listPopupBuilder(
+            context,
+            parameters,
+            list,
+            (context, parameters, item) => buildItem(context, parameters, item),
+            widget.getIsSelectable,
+            (item) => setState(() => itemTapped(item,
+                closeAfterItemTapped: widget.closeAfterItemTapped)),
+            null,
+            mirrored);
+      });
+
+  @override
+  void didUpdateWidget(MultiSelectorCombo<TItem> oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    final selected = widget.selected;
+    if (selected != oldWidget.selected && !setEquals(selected, this.selected)) {
+      setState(() => this.selected = selected);
+    }
+  }
+
+  @override
+  Widget getChild() => StreamBuilder(
+      stream: _changes.stream,
+      builder: (context, snapshot) =>
+          widget.childBuilder(context, parameters, _selected));
+
+  @override
+  void itemTapped(TItem item, {bool closeAfterItemTapped}) {
+    super.itemTapped(item, closeAfterItemTapped: closeAfterItemTapped);
+    var selected = this.selected;
+    (selected?.contains(item) == true
+        ? selected.remove
+        : (selected ??= <TItem>{}).add)(item);
+    this.selected = selected;
+    _changes.add(true);
+  }
+
+  @override
+  void dispose() {
+    _changes.close();
+    super.dispose();
   }
 }
 
@@ -2317,6 +2433,7 @@ class _ArrowedItem extends StatelessWidget {
 ///  * [AwaitCombo]
 ///  * [ListCombo]
 ///  * [SelectorCombo]
+///  * [MultiSelectorCombo]
 ///  * [TypeaheadCombo]
 class MenuItemCombo<T> extends StatelessWidget {
   /// Creates combo widget for displaying the menu
