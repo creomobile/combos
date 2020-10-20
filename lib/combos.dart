@@ -1,9 +1,9 @@
 library combos;
 
 import 'dart:async';
-import 'dart:io';
 import 'dart:math' as math;
 
+import 'package:cross_platform/cross_platform.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -1976,6 +1976,7 @@ class SelectorCombo<TItem> extends SelectorComboBase<TItem, TItem> {
     /// Builds the thid widget for [selected] item
     /// If null uses [ListCombo.itemBuilder]
     PopupListItemBuilder<TItem> childBuilder,
+
     /// Return [PreferredSizeWidget] to enable auto scroll to selected
     @required PopupSelectorItemBuilder<TItem> itemBuilder,
     @required PopupGetList<TItem> getList,
