@@ -92,14 +92,14 @@ enum PopupAnimation {
 
 /// Signature for popup builder.
 /// If [mirrored] is true, then popup position was changed due to screen edges
-typedef PopupBuilder = Widget Function(BuildContext context, bool mirrored);
+typedef PopupBuilder = Widget Function(BuildContext context, bool? mirrored);
 
 /// Signature to build the progress decorator.
 /// [waiting] indicates that the popup is getting by [AwaitPopupBuilder]
 /// [mirrored] indicates that the popup position was changed due to screen edges
 /// [child] is popup content
 typedef ProgressDecoratorBuilder = Widget Function(
-    BuildContext context, bool waiting, bool mirrored, Widget child);
+    BuildContext context, bool waiting, bool? mirrored, Widget? child);
 
 /// Determine the progress container - [Combo.child] or [Combo.popup]
 enum ProgressPosition { child, popup }
@@ -112,25 +112,25 @@ enum ProgressPosition { child, popup }
 /// [getIsSelectable] determines if the popup item is active for tapping
 typedef ListPopupBuilder = Widget Function(
     BuildContext context,
-    ComboParameters parameters,
-    List list,
+    ComboParameters? parameters,
+    List? list,
     PopupListItemBuilder itemBuilder,
-    GetIsSelectable getIsSelectable,
+    GetIsSelectable? getIsSelectable,
     void Function(dynamic value) onItemTapped,
     dynamic scrollToItem,
-    bool mirrored);
+    bool? mirrored);
 
 /// Default widget for displaying list of popup items
 class ListPopup extends StatefulWidget {
   /// Creates default widget for displaying popup items
   const ListPopup({
-    Key key,
-    @required this.parameters,
-    @required this.list,
-    @required this.itemBuilder,
-    @required this.getIsSelectable,
-    @required this.onItemTapped,
-    @required this.scrollToItem,
+    Key? key,
+    required this.parameters,
+    required this.list,
+    required this.itemBuilder,
+    required this.getIsSelectable,
+    required this.onItemTapped,
+    required this.scrollToItem,
   }) : super(key: key);
 
   /// Common parameters for combo widgets
@@ -156,7 +156,7 @@ class ListPopup extends StatefulWidget {
 }
 
 class _ListPopupState extends State<ListPopup> {
-  ScrollController _scrollController;
+  ScrollController? _scrollController;
 
   @override
   void didUpdateWidget(ListPopup oldWidget) {
@@ -164,20 +164,21 @@ class _ListPopupState extends State<ListPopup> {
     if (widget.list != oldWidget.list) setState(() {});
   }
 
-  List<Widget> _initController(BuildContext context) {
-    var initialScrollOffset = 0.0;
-    List<Widget> widgets;
+  List<Widget?>? _initController(BuildContext context) {
+    double? initialScrollOffset = 0.0;
+    List<Widget?>? widgets;
     final scrollToItem = widget.scrollToItem;
     if (scrollToItem != null) {
       final parameters = widget.parameters;
-      final itemBuilder = widget.itemBuilder;
-      var totalHeight = 0.0;
+      final Widget? Function(BuildContext, ComboParameters, dynamic)
+          itemBuilder = widget.itemBuilder;
+      double? totalHeight = 0.0;
       widgets = widget.list.map((item) {
         final widget = itemBuilder(context, parameters, item);
         if (totalHeight != null) {
-          if (widget is PreferredSizeWidget) {
+          if (widget is PreferredSizeWidget?) {
             if (item == scrollToItem) initialScrollOffset = totalHeight;
-            totalHeight += widget.preferredSize.height;
+            totalHeight = widget!.preferredSize.height + totalHeight!;
           } else {
             totalHeight = null;
           }
@@ -185,30 +186,31 @@ class _ListPopupState extends State<ListPopup> {
         return widget;
       }).toList();
       if (totalHeight != null) {
-        final listMaxHeight = parameters.listMaxHeight;
-        if (totalHeight <= listMaxHeight) {
+        final listMaxHeight = parameters.listMaxHeight!;
+        if (totalHeight! <= listMaxHeight) {
           initialScrollOffset = 0;
         } else {
-          if (totalHeight - initialScrollOffset < listMaxHeight) {
-            initialScrollOffset = totalHeight - listMaxHeight;
+          if (totalHeight! - initialScrollOffset! < listMaxHeight) {
+            initialScrollOffset = totalHeight! - listMaxHeight;
           }
         }
       }
     }
     _scrollController =
-        ScrollController(initialScrollOffset: initialScrollOffset);
+        ScrollController(initialScrollOffset: initialScrollOffset!);
     return widgets;
   }
 
   @override
   Widget build(BuildContext context) {
     final parameters = widget.parameters;
-    final itemBuilder = widget.itemBuilder;
+    final Widget? Function(BuildContext, ComboParameters, dynamic) itemBuilder =
+        widget.itemBuilder;
     final getIsSelectable = widget.getIsSelectable;
     final list = widget.list;
     if (list == null) return const SizedBox();
-    if (list.isEmpty) return parameters.emptyListIndicator;
-    List<Widget> widgets;
+    if (list.isEmpty) return parameters.emptyListIndicator!;
+    List<Widget?>? widgets;
     if (_scrollController == null) widgets = _initController(context);
     final child = ListView.builder(
         padding: EdgeInsets.zero,
@@ -226,11 +228,11 @@ class _ListPopupState extends State<ListPopup> {
                   child: itemWidget,
                   onTap: () => widget.onItemTapped(item),
                 )
-              : itemWidget;
+              : itemWidget!;
         });
 
     return ConstrainedBox(
-        constraints: BoxConstraints(maxHeight: parameters.listMaxHeight),
+        constraints: BoxConstraints(maxHeight: parameters.listMaxHeight!),
         child: child);
   }
 
@@ -245,11 +247,11 @@ class _ListPopupState extends State<ListPopup> {
 class MenuListPopup extends StatelessWidget {
   /// Creates default widget for displaying list of the menu items
   const MenuListPopup({
-    Key key,
-    @required this.parameters,
-    @required this.list,
-    @required this.itemBuilder,
-    @required this.onItemTapped,
+    Key? key,
+    required this.parameters,
+    required this.list,
+    required this.itemBuilder,
+    required this.onItemTapped,
     this.getIsSelectable,
   })  : assert(itemBuilder != null),
         super(key: key);
@@ -267,7 +269,7 @@ class MenuListPopup extends StatelessWidget {
   final ValueSetter onItemTapped;
 
   /// Determines if the menu item is active for tapping
-  final GetIsSelectable getIsSelectable;
+  final GetIsSelectable? getIsSelectable;
 
   @override
   Widget build(BuildContext context) {
@@ -281,7 +283,8 @@ class MenuListPopup extends StatelessWidget {
           if (list?.isEmpty == true)
             parameters.emptyListIndicator ?? const SizedBox()
           else if (list != null)
-            ...list.map((item) => itemBuilder(context, parameters, item))
+            ...list.map(((item) => itemBuilder(context, parameters, item)!)
+                as Widget Function(dynamic))
         ],
       );
       return hasSize ? menu : IntrinsicWidth(child: menu);
@@ -292,7 +295,7 @@ class MenuListPopup extends StatelessWidget {
 /// Default widget to display menu divider
 class MenuDivider extends StatelessWidget {
   /// Creates default widget to display menu divider
-  const MenuDivider({Key key, this.color = Colors.black12}) : super(key: key);
+  const MenuDivider({Key? key, this.color = Colors.black12}) : super(key: key);
 
   // Divider color
   final Color color;
@@ -311,8 +314,8 @@ class MenuDivider extends StatelessWidget {
 class ProgressDecorator extends StatefulWidget {
   /// Creates the progress decorator
   const ProgressDecorator({
-    Key key,
-    @required this.child,
+    Key? key,
+    required this.child,
     this.waiting = false,
     this.mirrored = false,
     this.progressBackgroundColor,
@@ -333,14 +336,14 @@ class ProgressDecorator extends StatefulWidget {
   final bool mirrored;
 
   /// The progress indicator's background color.
-  final Color progressBackgroundColor;
+  final Color? progressBackgroundColor;
 
   /// The progress indicator's color as an animated value.
-  final Animation<Color> progressValueColor;
+  final Animation<Color>? progressValueColor;
 
   /// Height of the progress indicator.
   /// If null, indicator stretches by the popup area
-  final double progressHeight;
+  final double? progressHeight;
 
   @override
   _ProgressDecoratorState createState() => _ProgressDecoratorState(waiting);
@@ -391,7 +394,7 @@ class _ProgressDecoratorState extends State<ProgressDecorator> {
 /// [ComboParameters.popupDecoratorBuilder],
 /// [ComboParameters.menuPopupDecoratorBuilder].
 typedef ComboDecoratorBuilder = Widget Function(BuildContext context,
-    ComboParameters parameters, ComboController controller, Widget child);
+    ComboParameters parameters, ComboController controller, Widget? child);
 
 // * context
 
@@ -468,177 +471,177 @@ class ComboParameters {
   /// Determines popup position depend on [Combo.child] position.
   /// Default is [PopupPosition.bottomMatch] for [ListCombo]s and
   /// [PopupPosition.bottomMinMatch] for others.
-  final PopupPosition position;
+  final PopupPosition? position;
 
   /// The offset to apply to the popup position.
-  final Offset offset;
+  final Offset? offset;
 
   /// If true, popup position may depends on screen edges using [requiredSpace]
   /// and [screenPadding] values.
   /// Default is true
-  final bool autoMirror;
+  final bool? autoMirror;
 
   /// Determines required space between popup position and screen edge minus [screenPadding].
   /// If the popup height or width (depends on [position]) is longer the popup will be
   /// showed on opposite side of [Combo.child] and [Combo.popupBuilder]
   /// will be called with mirrored = true.
   /// Default is 1/3 of screen dimensions.
-  final double requiredSpace;
+  final double? requiredSpace;
 
   /// Determines the padding of screen edges and clipping popups.
   /// (may be useful for hiding popups in app bar area).
   /// Default is [defaultScreenPadding] value (EdgeInsets.all(16.0)).
-  final EdgeInsets screenPadding;
+  final EdgeInsets? screenPadding;
 
   /// Determines automatically opening mode of the popup.
   /// Default is [ComboAutoOpen.tap].
-  final ComboAutoOpen autoOpen;
+  final ComboAutoOpen? autoOpen;
 
   /// Determines automatically closing mode of the popup.
   /// Default is [ComboAutoClose.tapOutsideWithChildIgnorePointer]
-  final ComboAutoClose autoClose;
+  final ComboAutoClose? autoClose;
 
   /// If false the combo is in "disabled" mode: it ignores taps.
   /// Setting it to false closes all combo popups in the context.
-  final bool enabled;
+  final bool? enabled;
 
   /// Determines [Combo.popup] open/close animation.
   /// Default is [PopupAnimation.fade].
-  final PopupAnimation animation;
+  final PopupAnimation? animation;
 
   /// Duration of open/close animation.
   /// Default is [defaultAnimationDuration] value (milliseconds: 150).
-  final Duration animationDuration;
+  final Duration? animationDuration;
 
   /// Define decorator widget for all [Combo.child] widgets
   /// with [Combo.ignoreChildDecorator] = false in the context.
-  final ComboDecoratorBuilder childContentDecoratorBuilder;
+  final ComboDecoratorBuilder? childContentDecoratorBuilder;
 
   /// Define decorator widget for all [Combo.child] with its [InkWell]
   /// with [Combo.ignoreChildDecorator] = false in the context.
-  final ComboDecoratorBuilder childDecoratorBuilder;
+  final ComboDecoratorBuilder? childDecoratorBuilder;
 
   /// Define decorator widget for all [Combo] popup widgets in the context.
-  final ComboDecoratorBuilder popupDecoratorBuilder;
+  final ComboDecoratorBuilder? popupDecoratorBuilder;
 
   /// Define constraints for the combo popup content.
   /// (May be useful for [ListCombo] with position different of
   /// [PopupPosition.bottomMatch] or [PopupPosition.topMatch]
   /// because [ListView] cannot automatically calculate its width).
-  final BoxConstraints popupContraints;
+  final BoxConstraints? popupContraints;
 
   // * AwaitCombo parameters
 
   /// Define the progress decorator widget.
   /// Default is [buildDefaultProgressDecorator] value.
-  final ProgressDecoratorBuilder progressDecoratorBuilder;
+  final ProgressDecoratorBuilder? progressDecoratorBuilder;
 
   /// Indicates that the popup should call [AwaitCombo.awaitPopupBuilder]
   /// each time when popup is opened to update the content.
   /// Default is false.
-  final bool refreshOnOpened;
+  final bool? refreshOnOpened;
 
   /// Determine the progress container - [Combo.child] or [Combo.popup].
   /// Default is [ProgressPosition.popup].
-  final ProgressPosition progressPosition;
+  final ProgressPosition? progressPosition;
 
   // * ListCombo parameters
 
   /// Builder of widget for displaying popup items list.
   /// Default is [buildDefaultListPopup] value.
-  final ListPopupBuilder listPopupBuilder;
+  final ListPopupBuilder? listPopupBuilder;
 
   /// Maximum height of list popup.
   /// Default is 308.0
-  final double listMaxHeight;
+  final double? listMaxHeight;
 
   /// Widget for empty list or sub-menus indication.
   /// Default is 'No Items' text caption.
-  final Widget emptyListIndicator;
+  final Widget? emptyListIndicator;
 
   // * TypeaheadCombo parameters
 
   /// Define delay between last text change to throttling user's inputs
   /// in [TypeaheadCombo].
   /// Default is Duration(milliseconds: 300)
-  final Duration inputThrottle;
+  final Duration? inputThrottle;
 
   // * MenuItemCombo parameters
 
   /// Builder of widget for displaying popup items list.
   /// Default is [buildDefaultMenuPopup] value.
-  final ListPopupBuilder menuPopupBuilder;
+  final ListPopupBuilder? menuPopupBuilder;
 
   /// Define decorator widget for all [MenuCombo] popups in the context.
-  final ComboDecoratorBuilder menuPopupDecoratorBuilder;
+  final ComboDecoratorBuilder? menuPopupDecoratorBuilder;
 
   /// Menu devider widget.
   /// Default is [MenuDivider].
-  final Widget menuDivider;
+  final Widget? menuDivider;
 
   /// Indicates that the menu items that contains another items should
   /// display 'right arrow'.
   /// Default is true
-  final bool menuShowArrows;
+  final bool? menuShowArrows;
 
   /// Determines if the menu items that containing another items is selectable.
   /// Default is false.
-  final bool menuCanTapOnFolder;
+  final bool? menuCanTapOnFolder;
 
   /// Define default menu progress decorator.
   /// Default is [buildDefaultMenuProgressDecorator] value.
-  final ProgressDecoratorBuilder menuProgressDecoratorBuilder;
+  final ProgressDecoratorBuilder? menuProgressDecoratorBuilder;
 
   /// Indicates that the menu item should  update sub-items
   /// each time when menu is opened.
   /// Default is false.
-  final bool menuRefreshOnOpened;
+  final bool? menuRefreshOnOpened;
 
   /// Determine the menu progress container - [Combo.child] for menu item
   /// or [Combo.popup] for its subitems.
   /// Default is [ProgressPosition.child].
-  final ProgressPosition menuProgressPosition;
+  final ProgressPosition? menuProgressPosition;
 
   /// Creates a copy of this combo parameters but with the given fields replaced with
   /// the new values.
   ComboParameters copyWith({
-    PopupPosition position,
-    Offset offset,
-    bool autoMirror,
-    double requiredSpace,
-    EdgeInsets screenPadding,
-    ComboAutoOpen autoOpen,
-    ComboAutoClose autoClose,
-    bool enabled,
-    PopupAnimation animation,
-    Duration animationDuration,
-    ComboDecoratorBuilder childContentDecoratorBuilder,
-    ComboDecoratorBuilder childDecoratorBuilder,
-    ComboDecoratorBuilder popupDecoratorBuilder,
-    BoxConstraints popupContraints,
-    Color focusColor,
-    Color hoverColor,
-    Color highlightColor,
-    Color splashColor,
-    ProgressDecoratorBuilder progressDecoratorBuilder,
-    bool refreshOnOpened,
-    ProgressPosition progressPosition,
-    ListPopupBuilder listPopupBuilder,
-    double listMaxHeight,
-    Widget emptyListIndicator,
-    Duration inputThrottle,
-    ListPopupBuilder menuPopupBuilder,
-    ComboDecoratorBuilder menuPopupDecoratorBuilder,
-    Widget menuDivider,
-    bool menuShowArrows,
-    bool menuCanTapOnFolder,
-    ProgressDecoratorBuilder menuProgressDecoratorBuilder,
-    bool menuRefreshOnOpened,
-    ProgressPosition menuProgressPosition,
-    Color menuFocusColor,
-    Color menuHoverColor,
-    Color menuHighlightColor,
-    Color menuSplashColor,
+    PopupPosition? position,
+    Offset? offset,
+    bool? autoMirror,
+    double? requiredSpace,
+    EdgeInsets? screenPadding,
+    ComboAutoOpen? autoOpen,
+    ComboAutoClose? autoClose,
+    bool? enabled,
+    PopupAnimation? animation,
+    Duration? animationDuration,
+    ComboDecoratorBuilder? childContentDecoratorBuilder,
+    ComboDecoratorBuilder? childDecoratorBuilder,
+    ComboDecoratorBuilder? popupDecoratorBuilder,
+    BoxConstraints? popupContraints,
+    Color? focusColor,
+    Color? hoverColor,
+    Color? highlightColor,
+    Color? splashColor,
+    ProgressDecoratorBuilder? progressDecoratorBuilder,
+    bool? refreshOnOpened,
+    ProgressPosition? progressPosition,
+    ListPopupBuilder? listPopupBuilder,
+    double? listMaxHeight,
+    Widget? emptyListIndicator,
+    Duration? inputThrottle,
+    ListPopupBuilder? menuPopupBuilder,
+    ComboDecoratorBuilder? menuPopupDecoratorBuilder,
+    Widget? menuDivider,
+    bool? menuShowArrows,
+    bool? menuCanTapOnFolder,
+    ProgressDecoratorBuilder? menuProgressDecoratorBuilder,
+    bool? menuRefreshOnOpened,
+    ProgressPosition? menuProgressPosition,
+    Color? menuFocusColor,
+    Color? menuHoverColor,
+    Color? menuHighlightColor,
+    Color? menuSplashColor,
   }) =>
       ComboParameters(
         position: position ?? this.position,
@@ -689,22 +692,22 @@ class ComboParameters {
     BuildContext context,
     ComboParameters parameters,
     ComboController controller,
-    Widget child, {
+    Widget? child, {
     IconData icon = Icons.arrow_drop_down,
     EdgeInsets iconPadding = const EdgeInsets.symmetric(horizontal: 8.0),
   }) =>
       Row(children: [
-        Expanded(child: child),
+        Expanded(child: child!),
         Padding(
             padding: iconPadding,
             child: AnimatedOpacity(
                 duration: kThemeChangeDuration,
-                opacity: parameters.enabled ? 1.0 : 0.5,
+                opacity: parameters.enabled! ? 1.0 : 0.5,
                 child: Icon(icon, color: Theme.of(context).disabledColor))),
       ]);
 
   static Widget buildDefaultChildDecorator(BuildContext context,
-      ComboParameters parameters, ComboController controller, Widget child) {
+      ComboParameters parameters, ComboController controller, Widget? child) {
     final theme = Theme.of(context);
     final decoration = InputDecoration(border: OutlineInputBorder())
         .applyDefaults(theme.inputDecorationTheme)
@@ -722,7 +725,7 @@ class ComboParameters {
 
   /// Default popup decorator builder
   static Widget buildDefaultPopupDecorator(BuildContext context,
-          ComboParameters parameters, ComboController controller, Widget child,
+          ComboParameters parameters, ComboController controller, Widget? child,
           {double elevation = 4,
           BorderRadiusGeometry borderRadius =
               const BorderRadius.all(Radius.circular(4))}) =>
@@ -733,61 +736,61 @@ class ComboParameters {
       );
 
   static Widget buildDefaultMenuPopupDecorator(BuildContext context,
-          ComboParameters parameters, ComboController controller, Widget child,
+          ComboParameters parameters, ComboController controller, Widget? child,
           {double elevation = 4,
           BorderRadiusGeometry borderRadius = BorderRadius.zero}) =>
-      buildDefaultPopupDecorator(context, parameters, controller, child,
+      buildDefaultPopupDecorator(context, parameters, controller, child!,
           elevation: elevation, borderRadius: borderRadius);
 
   /// Builds defaut progress decorator
   static Widget buildDefaultProgressDecorator(
-          BuildContext context, bool waiting, bool mirrored, Widget child) =>
-      ProgressDecorator(waiting: waiting, mirrored: mirrored, child: child);
+          BuildContext context, bool? waiting, bool? mirrored, Widget? child) =>
+      ProgressDecorator(waiting: waiting!, mirrored: mirrored!, child: child!);
 
   /// Builds default menu progress decorator
   static Widget buildDefaultMenuProgressDecorator(
-          BuildContext context, bool waiting, bool mirrored, Widget child) =>
+          BuildContext context, bool waiting, bool? mirrored, Widget? child) =>
       ProgressDecorator(
           waiting: waiting,
           mirrored: false,
           progressBackgroundColor: Colors.transparent,
           progressValueColor:
               AlwaysStoppedAnimation(Colors.blueAccent.withOpacity(0.2)),
-          child: child,
+          child: child!,
           progressHeight: null);
 
   /// Builds default widget for displaying list of the popup items.
   static Widget buildDefaultListPopup(
           BuildContext context,
-          ComboParameters parameters,
-          List list,
-          PopupListItemBuilder itemBuilder,
-          GetIsSelectable getIsSelectable,
-          void Function(dynamic value) onItemTapped,
-          dynamic scrollToItem,
-          bool mirrored) =>
+          ComboParameters? parameters,
+          List? list,
+          PopupListItemBuilder? itemBuilder,
+          GetIsSelectable? getIsSelectable,
+          void Function(dynamic? value) onItemTapped,
+          dynamic? scrollToItem,
+          bool? mirrored) =>
       ListPopup(
-          parameters: parameters,
-          list: list,
-          itemBuilder: itemBuilder,
-          getIsSelectable: getIsSelectable,
+          parameters: parameters!,
+          list: list!,
+          itemBuilder: itemBuilder!,
+          getIsSelectable: getIsSelectable!,
           onItemTapped: onItemTapped,
           scrollToItem: scrollToItem);
 
   /// Builds default widget for displaying list of the menu items
   static Widget buildDefaultMenuPopup(
           BuildContext context,
-          ComboParameters parameters,
-          List list,
-          PopupListItemBuilder itemBuilder,
-          GetIsSelectable getIsSelectable,
-          void Function(dynamic value) onItemTapped,
-          dynamic scrollToItem,
-          bool mirrored) =>
+          ComboParameters? parameters,
+          List? list,
+          PopupListItemBuilder? itemBuilder,
+          GetIsSelectable? getIsSelectable,
+          void Function(dynamic? value) onItemTapped,
+          dynamic? scrollToItem,
+          bool? mirrored) =>
       MenuListPopup(
-          parameters: parameters,
-          list: list,
-          itemBuilder: itemBuilder,
+          parameters: parameters!,
+          list: list!,
+          itemBuilder: itemBuilder!,
           onItemTapped: onItemTapped,
           getIsSelectable: getIsSelectable);
 }
@@ -797,9 +800,9 @@ class ComboParameters {
 /// with [ComboContextData.closeAll] method
 class ComboContext extends StatefulWidget {
   const ComboContext({
-    Key key,
-    @required this.parameters,
-    @required this.child,
+    Key? key,
+    required this.parameters,
+    required this.child,
     this.ignoreParentContraints = false,
   })  : assert(parameters != null),
         assert(child != null),
@@ -811,14 +814,14 @@ class ComboContext extends StatefulWidget {
   /// if true, parent context constraints will not be merged with current
   final bool ignoreParentContraints;
 
-  static ComboContextData of(BuildContext context) =>
+  static ComboContextData? of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<ComboContextData>();
 
   @override
   _ComboContextState createState() => _ComboContextState();
 
-  static BoxConstraints mergeConstraints(
-      BoxConstraints myConstraints, BoxConstraints parentConstraints) {
+  static BoxConstraints? mergeConstraints(
+      BoxConstraints? myConstraints, BoxConstraints? parentConstraints) {
     if (myConstraints == null) return parentConstraints;
     if (parentConstraints == null) return myConstraints;
     final maxWidth =
@@ -836,7 +839,7 @@ class ComboContext extends StatefulWidget {
 
 class _ComboContextState extends State<ComboContext> {
   final _closes = StreamController.broadcast();
-  var _saveEnabled = true;
+  bool? _saveEnabled = true;
 
   @override
   Widget build(BuildContext context) {
@@ -854,7 +857,7 @@ class _ComboContextState extends State<ComboContext> {
       screenPadding: my.screenPadding ?? def.screenPadding,
       autoOpen: my.autoOpen ?? def.autoOpen,
       autoClose: my.autoClose ?? def.autoClose,
-      enabled: (my.enabled ?? true) && def.enabled,
+      enabled: (my.enabled ?? true) && def.enabled!,
       animation: my.animation ?? def.animation,
       animationDuration: my.animationDuration ?? def.animationDuration,
       childContentDecoratorBuilder:
@@ -886,7 +889,7 @@ class _ComboContextState extends State<ComboContext> {
       menuRefreshOnOpened: my.menuRefreshOnOpened ?? def.menuRefreshOnOpened,
       menuProgressPosition: my.menuProgressPosition ?? def.menuProgressPosition,
     );
-    if (merged.enabled != _saveEnabled && !(_saveEnabled = merged.enabled)) {
+    if (merged.enabled != _saveEnabled && !(_saveEnabled = merged.enabled)!) {
       _closes.add(true);
     }
     return ComboContextData(widget, widget.child, merged, _closes);
@@ -999,7 +1002,7 @@ class Combo extends StatefulWidget {
   ///  * [TypeaheadCombo]
   ///  * [MenuItemCombo]
   const Combo({
-    Key key,
+    Key? key,
     this.child,
     this.popupBuilder,
     this.openedChanged,
@@ -1012,22 +1015,22 @@ class Combo extends StatefulWidget {
   /// The widget below this widget in the tree.
   ///
   /// {@macro flutter.widgets.child}
-  final Widget child;
+  final Widget? child;
 
   /// Called to obtain the popup widget.
-  final PopupBuilder popupBuilder;
+  final PopupBuilder? popupBuilder;
 
   /// Callbacks when the popup is opening or closing
-  final ValueChanged<bool> openedChanged;
+  final ValueChanged<bool>? openedChanged;
 
   /// Callbacks when the mouse pointer enters on or exits from child or popup
   /// and its children - when popup contains another [Combo] widgets.
-  final ValueChanged<bool> hoveredChanged;
+  final ValueChanged<bool>? hoveredChanged;
 
   /// Called when the user taps on [child].
   /// Also can be called by 'long tap' event if [ComboParameters.autoOpen]
   /// is set to [ComboAutoOpen.hovered] and platform is not 'Web'
-  final GestureTapCallback onTap;
+  final GestureTapCallback? onTap;
 
   /// if true, [ComboParameters.childDecoratorBuilder] will not be applied.
   final bool ignoreChildDecorator;
@@ -1059,49 +1062,49 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
   static final _closes = StreamController.broadcast();
   final _scrolls = StreamController.broadcast();
   final _layerLink = LayerLink();
-  OverlayEntry _overlay;
-  StreamSubscription _widgetClosesSubscription;
-  StreamSubscription _contextClosesSubscription;
-  Completer<double> _closeCompleter;
+  OverlayEntry? _overlay;
+  late StreamSubscription _widgetClosesSubscription;
+  StreamSubscription? _contextClosesSubscription;
+  Completer<double>? _closeCompleter;
   var _hovered = false;
-  bool _lastHovered;
+  bool? _lastHovered;
   var _popupHovered = false;
-  ComboState _parent;
+  ComboState? _parent;
 
   // workaround for: https://github.com/flutter/flutter/issues/50800
-  Completer<Offset> _sizeCompleter;
+  late Completer<Offset> _sizeCompleter;
 
   bool get _fadeOpen {
-    final animation = parameters.animation;
+    final animation = parameters!.animation;
     return animation == PopupAnimation.fade ||
         animation == PopupAnimation.fadeOpen;
   }
 
   bool get _fadeClose {
-    final animation = parameters.animation;
+    final animation = parameters!.animation;
     return animation == PopupAnimation.fade ||
         animation == PopupAnimation.fadeClose;
   }
 
   bool get _delayedClose {
-    final animation = parameters.animation;
+    final animation = parameters!.animation;
     return animation == PopupAnimation.fade ||
         animation == PopupAnimation.fadeClose ||
         animation == PopupAnimation.custom;
   }
 
   @protected
-  ComboParameters getParameters(ComboParameters contextParameters) {
+  ComboParameters getParameters(ComboParameters? contextParameters) {
     final parameters = contextParameters ?? ComboParameters.defaultParameters;
     return parameters.position == null
         ? parameters.copyWith(position: PopupPosition.bottomMinMatch)
         : parameters;
   }
 
-  ComboParameters _parameters;
+  ComboParameters? _parameters;
   @protected
-  ComboParameters get parameters => _parameters;
-  ThemeData _theme;
+  ComboParameters? get parameters => _parameters;
+  late ThemeData _theme;
 
   @override
   void initState() {
@@ -1127,24 +1130,24 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
   @override
   void open() {
     if (_overlay != null) return;
-    if (widget.openedChanged != null) widget.openedChanged(true);
+    if (widget.openedChanged != null) widget.openedChanged!(true);
     if (_fadeClose) _closeCompleter = Completer();
     _overlay = _createOverlay();
     if (_overlay == null) return;
-    Overlay.of(context).insert(_overlay);
+    Overlay.of(context)!.insert(_overlay!);
     setState(() {});
   }
 
   @override
   void close() async {
     if (_overlay == null) return;
-    final overlay = _overlay;
+    final overlay = _overlay!;
     _overlay = null;
     setState(() {});
     if (_fadeClose) _closeCompleter?.complete(0.0);
-    if (widget.openedChanged != null) widget.openedChanged(false);
+    if (widget.openedChanged != null) widget.openedChanged!(false);
     if (_delayedClose) {
-      final animationDuration = parameters.animationDuration;
+      final animationDuration = parameters!.animationDuration;
       await Future.delayed(animationDuration == null
           ? Duration.zero
           : animationDuration + Duration(milliseconds: 1));
@@ -1154,7 +1157,7 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
   }
 
   bool get _catchHover {
-    final parameters = this.parameters;
+    final parameters = this.parameters!;
     return parameters.autoOpen == ComboAutoOpen.hovered ||
         parameters.autoClose == ComboAutoClose.notHovered;
   }
@@ -1168,9 +1171,9 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
     if (value) {
       if (widget.hoveredChanged != null && _lastHovered != true) {
         _lastHovered = true;
-        widget.hoveredChanged(true);
+        widget.hoveredChanged!(true);
       }
-      if (!opened && parameters.autoOpen == ComboAutoOpen.hovered) {
+      if (!opened && parameters!.autoOpen == ComboAutoOpen.hovered) {
         open();
       }
     } else {
@@ -1178,33 +1181,34 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
       if (_hovered) return;
       if (widget.hoveredChanged != null && _lastHovered != false) {
         _lastHovered = false;
-        widget.hoveredChanged(false);
+        widget.hoveredChanged!(false);
       }
-      if (opened && parameters.autoClose == ComboAutoClose.notHovered) {
+      if (opened && parameters!.autoClose == ComboAutoClose.notHovered) {
         close();
       }
     }
   }
 
   @protected
-  Widget getChild() => widget.child;
+  Widget? getChild() => widget.child;
 
   @protected
-  Widget getPopup(BuildContext context, bool mirrored) =>
+  Widget? getPopup(BuildContext context, bool? mirrored) =>
       widget.popupBuilder == null
           ? null
-          : widget.popupBuilder(context, mirrored);
+          : widget.popupBuilder!(context, mirrored);
 
   OverlayEntry _createOverlay() => OverlayEntry(builder: (context) {
-        if (this.context == null) return null;
+        if (this.context == null) return Container();
         _sizeCompleter = Completer<Offset>();
-        final parameters = this.parameters;
+        final parameters = this.parameters!;
         final position = parameters.position;
         final mediaQuery = MediaQuery.of(context);
-        final screenPadding = parameters.screenPadding.copyWith(
-            top:
-                math.max(parameters.screenPadding.top, mediaQuery.padding.top));
-        final RenderBox renderBox = this.context.findRenderObject();
+        final screenPadding = parameters.screenPadding!.copyWith(
+            top: math.max(
+                parameters.screenPadding!.top, mediaQuery.padding.top));
+        final RenderBox renderBox =
+            this.context.findRenderObject() as RenderBox;
         final size = renderBox.size;
         final mediaQuerySize = mediaQuery.size;
         final screenSize = Size(mediaQuerySize.width,
@@ -1214,16 +1218,16 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
                 ? screenSize.width / 3
                 : screenSize.height / 3);
 
-        Offset lastOffset;
-        Offset offset;
-        bool mirrored;
-        Widget popup;
+        Offset? lastOffset;
+        late Offset offset;
+        bool? mirrored;
+        Widget? popup;
 
         void updatePopup() {
           offset = renderBox.attached
               ? lastOffset = renderBox.localToGlobal(Offset.zero)
               : lastOffset ?? Offset.zero;
-          mirrored = parameters.autoMirror
+          mirrored = parameters.autoMirror!
               ? () {
                   final offsetx = parameters.offset?.dx ?? 0;
                   final offsety = parameters.offset?.dx ?? 0;
@@ -1262,7 +1266,7 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
             popup = ConstrainedBox(constraints: constraints, child: popup);
           }
 
-          popup = parameters.popupDecoratorBuilder(
+          popup = parameters.popupDecoratorBuilder!(
               context, parameters, this, popup);
 
           if (_catchHover) {
@@ -1281,7 +1285,7 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
 
         updatePopup();
 
-        if (popup == null) return null;
+        if (popup == null) return Container();
 
         Widget overlay = StreamBuilder(
             stream: _scrolls.stream,
@@ -1320,7 +1324,7 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
                               offsetBuilder: (popupSize) {
                                 final offsetx = parameters.offset?.dx ?? 0;
                                 final offsety = parameters.offset?.dy ?? 0;
-                                final pos = mirrored &&
+                                final pos = mirrored! &&
                                         (position == PopupPosition.left ||
                                             position == PopupPosition.right)
                                     ? position == PopupPosition.left
@@ -1364,14 +1368,14 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
                                     default:
                                       break;
                                   }
-                                  return mirrored
+                                  return mirrored!
                                       ? ((overlapped ? size.height : 0.0) -
                                               popupSize.height) -
                                           offsety
                                       : (overlapped ? 0 : size.height) +
                                           offsety;
                                 }();
-                                final res = Offset(dx, dy);
+                                final res = Offset(dx, dy as double);
 
                                 if (!_sizeCompleter.isCompleted) {
                                   _sizeCompleter.complete(res);
@@ -1393,7 +1397,7 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
               builder: (context, snapshot) => IgnorePointer(
                 ignoring: snapshot.data != 1.0,
                 child: AnimatedOpacity(
-                  opacity: snapshot.data,
+                  opacity: snapshot.data!,
                   duration: parameters.animationDuration ?? Duration.zero,
                   child: child,
                 ),
@@ -1401,7 +1405,7 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
             );
         if (_fadeOpen) overlay = animate(0.0, Future.value(1.0), overlay);
         if (_fadeClose && _closeCompleter != null) {
-          overlay = animate(1.0, _closeCompleter.future, overlay);
+          overlay = animate(1.0, _closeCompleter!.future, overlay);
         }
 
         if (screenPadding != null) {
@@ -1440,7 +1444,7 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
     var child = getChild();
     void decorate() {
       if (!widget.ignoreChildDecorator) {
-        child = parameters.childContentDecoratorBuilder(
+        child = parameters.childContentDecoratorBuilder!(
             context, parameters, this, child);
       }
     }
@@ -1455,21 +1459,21 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
         final openOnHover = parameters.autoOpen == ComboAutoOpen.hovered;
         final canHover = _PlatformHelper.canHover;
 
-        if ((widget.onTap == null || !enabled) &&
+        if ((widget.onTap == null || !enabled!) &&
             (openOnHover && (canHover || !hasPopup))) {
           child = MouseRegion(
             onEnter: (_) {
-              if (enabled) _setHovered(true);
+              if (enabled!) _setHovered(true);
             },
             onExit: (_) {
-              if (enabled) _setHovered(false);
+              if (enabled!) _setHovered(false);
             },
             child: child,
           );
         } else {
           child = InkWell(
             child: child,
-            onTap: enabled
+            onTap: enabled!
                 ? () {
                     if (!openOnHover ||
                         (openOnHover && !canHover && hasPopup)) {
@@ -1477,7 +1481,7 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
                     }
                     if (widget.onTap != null &&
                         (canHover || !openOnHover || !hasPopup)) {
-                      widget.onTap();
+                      widget.onTap!();
                     }
                   }
                 : null,
@@ -1489,7 +1493,7 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
           );
         }
         if (!widget.ignoreChildDecorator) {
-          child = parameters.childDecoratorBuilder(
+          child = parameters.childDecoratorBuilder!(
               context, parameters, this, child);
         }
       }
@@ -1512,8 +1516,7 @@ class ComboState<T extends Combo> extends State<T> implements ComboController {
 }
 
 class _ComboOverlay extends StatefulWidget {
-  const _ComboOverlay(
-      {Key key, @required this.child, @required this.comboState})
+  const _ComboOverlay({Key? key, required this.child, required this.comboState})
       : super(key: key);
 
   final Widget child;
@@ -1534,11 +1537,11 @@ typedef _OffsetBuilder = Offset Function(Size childSize);
 
 class _DynamicTransformFollower extends CompositedTransformFollower {
   const _DynamicTransformFollower({
-    Key key,
-    @required LayerLink link,
+    Key? key,
+    required LayerLink link,
     bool showWhenUnlinked = true,
-    @required this.offsetBuilder,
-    Widget child,
+    required this.offsetBuilder,
+    Widget? child,
   }) : super(
           key: key,
           link: link,
@@ -1558,10 +1561,10 @@ class _DynamicTransformFollower extends CompositedTransformFollower {
 
 class _DynamicRenderFollowerLayer extends RenderFollowerLayer {
   _DynamicRenderFollowerLayer({
-    @required LayerLink link,
+    required LayerLink link,
     bool showWhenUnlinked = true,
-    @required this.offsetBuilder,
-    RenderBox child,
+    required this.offsetBuilder,
+    RenderBox? child,
   }) : super(
           link: link,
           showWhenUnlinked: showWhenUnlinked,
@@ -1571,7 +1574,7 @@ class _DynamicRenderFollowerLayer extends RenderFollowerLayer {
   final _OffsetBuilder offsetBuilder;
 
   @override
-  Offset get offset => offsetBuilder(child.size);
+  Offset get offset => offsetBuilder(child!.size);
 }
 
 // * await
@@ -1592,15 +1595,15 @@ typedef AwaitPopupBuilder = FutureOr<Widget> Function(BuildContext context);
 class AwaitCombo extends Combo {
   /// Creates combo widget with the delayed getting of the popup content and progress indication
   const AwaitCombo({
-    Key key,
+    Key? key,
     this.waitChanged,
 
     // inherited
-    Widget child,
-    AwaitPopupBuilder popupBuilder,
-    ValueChanged<bool> openedChanged,
-    ValueChanged<bool> hoveredChanged,
-    GestureTapCallback onTap,
+    Widget? child,
+    AwaitPopupBuilder? popupBuilder,
+    ValueChanged<bool>? openedChanged,
+    ValueChanged<bool>? hoveredChanged,
+    GestureTapCallback? onTap,
     bool ignoreChildDecorator = false,
   })  : awaitPopupBuilder = popupBuilder,
         super(
@@ -1613,10 +1616,10 @@ class AwaitCombo extends Combo {
         );
 
   /// Called to obtain the futured popup content.
-  final AwaitPopupBuilder awaitPopupBuilder;
+  final AwaitPopupBuilder? awaitPopupBuilder;
 
   /// Called when the popup content is getting or got
-  final ValueChanged<bool> waitChanged;
+  final ValueChanged<bool>? waitChanged;
 
   @override
   AwaitComboStateBase createState() => AwaitComboState();
@@ -1627,18 +1630,18 @@ abstract class AwaitComboStateBase<TWidget extends AwaitCombo, TPopupContent>
     extends ComboState<TWidget> {
   var _waitCount = 0;
   final _waitController = StreamController<int>.broadcast();
-  TPopupContent _popupContent;
-  TPopupContent get popupContent => _popupContent;
+  TPopupContent? _popupContent;
+  TPopupContent? get popupContent => _popupContent;
   final _contentController = StreamController<TPopupContent>.broadcast();
-  DateTime _timestamp;
+  DateTime? _timestamp;
 
   @override
   bool get hasPopup => widget.popupBuilder != null;
 
   @protected
-  FutureOr<TPopupContent> getPopupContent(BuildContext context);
+  FutureOr<TPopupContent>? getPopupContent(BuildContext context);
   @protected
-  Widget buildPopupContent(TPopupContent content, bool mirrored);
+  Widget? buildPopupContent(TPopupContent? content, bool? mirrored);
   @protected
   void clearPopupContent() => _popupContent = null;
   @protected
@@ -1646,20 +1649,21 @@ abstract class AwaitComboStateBase<TWidget extends AwaitCombo, TPopupContent>
       _contentController.add(_popupContent = content);
 
   @override
-  Widget getChild() {
-    final parameters = this.parameters;
+  Widget? getChild() {
+    final parameters = this.parameters!;
     return parameters.progressDecoratorBuilder == null ||
             parameters.progressPosition != ProgressPosition.child
         ? super.getChild()
         : StreamBuilder<int>(
             initialData: _waitCount,
             stream: _waitController.stream,
-            builder: (context, snapshot) => parameters.progressDecoratorBuilder(
-                context, snapshot.data != 0, false, super.getChild()));
+            builder: (context, snapshot) =>
+                parameters.progressDecoratorBuilder!(
+                    context, snapshot.data != 0, false, super.getChild()));
   }
 
   @override
-  Widget getPopup(BuildContext context, bool mirrored) {
+  Widget getPopup(BuildContext context, bool? mirrored) {
     final parameters = this.parameters;
     return StreamBuilder<int>(
       initialData: _waitCount,
@@ -1671,10 +1675,10 @@ abstract class AwaitComboStateBase<TWidget extends AwaitCombo, TPopupContent>
           builder: (context, snapshot) =>
               buildPopupContent(snapshot.data, mirrored) ?? const SizedBox(),
         );
-        return parameters.progressDecoratorBuilder == null ||
+        return parameters!.progressDecoratorBuilder == null ||
                 parameters.progressPosition != ProgressPosition.popup
             ? content
-            : parameters.progressDecoratorBuilder(
+            : parameters.progressDecoratorBuilder!(
                 context, snapshot.data != 0, mirrored, content);
       },
     );
@@ -1690,7 +1694,7 @@ abstract class AwaitComboStateBase<TWidget extends AwaitCombo, TPopupContent>
       try {
         _waitController.add(++_waitCount);
         if (_waitCount == 1 && widget.waitChanged != null) {
-          widget.waitChanged(true);
+          widget.waitChanged!(true);
         }
         super.open();
         content = await future;
@@ -1700,7 +1704,7 @@ abstract class AwaitComboStateBase<TWidget extends AwaitCombo, TPopupContent>
       } finally {
         _waitController.add(--_waitCount);
         if (_waitCount == 0 && widget.waitChanged != null) {
-          widget.waitChanged(false);
+          widget.waitChanged!(false);
         }
       }
     } else {
@@ -1710,7 +1714,7 @@ abstract class AwaitComboStateBase<TWidget extends AwaitCombo, TPopupContent>
   }
 
   @override
-  void open() => (parameters.refreshOnOpened || _popupContent == null
+  void open() => (parameters!.refreshOnOpened! || _popupContent == null
       ? fill
       : super.open)();
 
@@ -1725,23 +1729,23 @@ abstract class AwaitComboStateBase<TWidget extends AwaitCombo, TPopupContent>
 /// State for a [AwaitCombo].
 class AwaitComboState extends AwaitComboStateBase<AwaitCombo, Widget> {
   @override
-  FutureOr<Widget> getPopupContent(BuildContext context) =>
+  FutureOr<Widget>? getPopupContent(BuildContext context) =>
       widget.awaitPopupBuilder == null
           ? null
-          : widget.awaitPopupBuilder(context);
+          : widget.awaitPopupBuilder!(context);
 
   @override
-  Widget buildPopupContent(Widget content, bool mirrored) => content;
+  Widget? buildPopupContent(Widget? content, bool? mirrored) => content;
 }
 
 // * list
 
 /// Signature to get the popup items.
-typedef PopupGetList<T> = FutureOr<List<T>> Function();
+typedef PopupGetList<T> = FutureOr<List<T>>? Function();
 
 /// Signature to build the list popup item widget.
-typedef PopupListItemBuilder<T> = Widget Function(
-    BuildContext context, ComboParameters parameters, T item);
+typedef PopupListItemBuilder<T> = Widget? Function(
+    BuildContext context, ComboParameters? parameters, T item);
 
 /// Signature to determine if the popup item is active for tapping
 typedef GetIsSelectable<T> = bool Function(T item);
@@ -1764,19 +1768,19 @@ typedef GetIsSelectable<T> = bool Function(T item);
 class ListCombo<TItem> extends AwaitCombo {
   /// Creates combo widget for displaying the items list
   const ListCombo({
-    Key key,
-    @required this.getList,
-    @required this.itemBuilder,
-    @required this.onItemTapped,
+    Key? key,
+    this.getList,
+    this.itemBuilder,
+    this.onItemTapped,
     this.getIsSelectable,
     this.closeAfterItemTapped = true,
 
     // inherited
-    ValueChanged<bool> waitChanged,
-    Widget child,
-    ValueChanged<bool> openedChanged,
-    ValueChanged<bool> hoveredChanged,
-    GestureTapCallback onTap,
+    ValueChanged<bool>? waitChanged,
+    Widget? child,
+    ValueChanged<bool>? openedChanged,
+    ValueChanged<bool>? hoveredChanged,
+    GestureTapCallback? onTap,
     bool ignoreChildDecorator = false,
   })  : assert(closeAfterItemTapped != null),
         super(
@@ -1790,16 +1794,16 @@ class ListCombo<TItem> extends AwaitCombo {
         );
 
   /// Popup items getter.
-  final PopupGetList<TItem> getList;
+  final PopupGetList<TItem>? getList;
 
   /// Popup item widget builder.
-  final PopupListItemBuilder<TItem> itemBuilder;
+  final PopupListItemBuilder<TItem>? itemBuilder;
 
   /// Calls when the user taps on the item.
-  final ValueSetter<TItem> onItemTapped;
+  final ValueSetter<TItem>? onItemTapped;
 
   /// Determines if the popup item is active for tapping
-  final GetIsSelectable<TItem> getIsSelectable;
+  final GetIsSelectable<TItem>? getIsSelectable;
 
   /// Determines that [ListCombo] should close the popup
   /// after user tapped on item
@@ -1814,7 +1818,7 @@ class ListCombo<TItem> extends AwaitCombo {
 class ListComboState<TWidget extends ListCombo<TItem>, TItem>
     extends AwaitComboStateBase<TWidget, List<TItem>> {
   @override
-  ComboParameters getParameters(ComboParameters contextParameters) {
+  ComboParameters getParameters(ComboParameters? contextParameters) {
     final parameters = contextParameters ?? ComboParameters.defaultParameters;
     return parameters.position == null
         ? parameters.copyWith(position: PopupPosition.bottomMatch)
@@ -1822,18 +1826,18 @@ class ListComboState<TWidget extends ListCombo<TItem>, TItem>
   }
 
   @protected
-  Widget buildItem(
-          BuildContext context, ComboParameters parameters, TItem item) =>
-      widget.itemBuilder(context, parameters, item);
+  Widget? buildItem(
+          BuildContext context, ComboParameters? parameters, TItem item) =>
+      widget.itemBuilder!(context, parameters, item);
 
   @override
-  Widget buildPopupContent(List<TItem> list, bool mirrored, [scrollToItem]) =>
-      parameters.listPopupBuilder(
+  Widget buildPopupContent(List<TItem>? list, bool? mirrored, [scrollToItem]) =>
+      parameters!.listPopupBuilder!(
           context,
           parameters,
           list,
           (context, parameters, item) => buildItem(context, parameters, item),
-          widget.getIsSelectable,
+          widget.getIsSelectable as bool Function(dynamic)?,
           (item) => itemTapped(item,
               closeAfterItemTapped: widget.closeAfterItemTapped),
           scrollToItem,
@@ -1852,12 +1856,12 @@ class ListComboState<TWidget extends ListCombo<TItem>, TItem>
   bool get hasPopup => widget.getList != null;
 
   @override
-  FutureOr<List<TItem>> getPopupContent(BuildContext context) =>
-      widget.getList();
+  FutureOr<List<TItem>>? getPopupContent(BuildContext context) =>
+      widget.getList!();
 
   @protected
-  void itemTapped(TItem item, {@required bool closeAfterItemTapped}) {
-    if (widget.onItemTapped != null) widget.onItemTapped(item);
+  void itemTapped(TItem item, {required bool closeAfterItemTapped}) {
+    if (widget.onItemTapped != null) widget.onItemTapped!(item);
     if (closeAfterItemTapped) super.close();
   }
 }
@@ -1866,7 +1870,7 @@ class ListComboState<TWidget extends ListCombo<TItem>, TItem>
 
 /// Signature to build the selector popup item widget.
 typedef PopupSelectorItemBuilder<T> = Widget Function(
-    BuildContext context, ComboParameters parameters, T item, bool selected);
+    BuildContext context, ComboParameters? parameters, T item, bool selected);
 
 /// Base class to build list combo widgets with selection
 ///
@@ -1879,21 +1883,21 @@ typedef PopupSelectorItemBuilder<T> = Widget Function(
 abstract class SelectorComboBase<TItem, TSelection> extends ListCombo<TItem> {
   /// Creates list combo with selection
   const SelectorComboBase({
-    Key key,
+    Key? key,
     this.selected,
-    @required this.onSelectedChanged,
+    required this.onSelectedChanged,
     this.childBuilder,
-    @required PopupSelectorItemBuilder<TItem> itemBuilder,
+    PopupSelectorItemBuilder<TItem>? itemBuilder,
 
     // inherited
-    @required PopupGetList<TItem> getList,
-    ValueSetter<TItem> onItemTapped,
-    GetIsSelectable<TItem> getIsSelectable,
+    PopupGetList<TItem>? getList,
+    ValueSetter<TItem>? onItemTapped,
+    GetIsSelectable<TItem>? getIsSelectable,
     bool closeAfterItemTapped = true,
-    ValueChanged<bool> waitChanged,
-    ValueChanged<bool> openedChanged,
-    ValueChanged<bool> hoveredChanged,
-    GestureTapCallback onTap,
+    ValueChanged<bool>? waitChanged,
+    ValueChanged<bool>? openedChanged,
+    ValueChanged<bool>? hoveredChanged,
+    GestureTapCallback? onTap,
     bool ignoreChildDecorator = false,
   })  : selectorItemBuilder = itemBuilder,
         // ignore: missing_required_param
@@ -1911,16 +1915,16 @@ abstract class SelectorComboBase<TItem, TSelection> extends ListCombo<TItem> {
         );
 
   /// The 'selected' item to display in [Combo.child] area
-  final TSelection selected;
+  final TSelection? selected;
 
   /// Calls when the selection value is changed.
   final ValueChanged<TSelection> onSelectedChanged;
 
   /// Builds the thid widget for [selected] item
-  final PopupListItemBuilder<TSelection> childBuilder;
+  final PopupListItemBuilder<TSelection>? childBuilder;
 
   /// Popup item widget builder.
-  final PopupSelectorItemBuilder<TItem> selectorItemBuilder;
+  final PopupSelectorItemBuilder<TItem>? selectorItemBuilder;
 }
 
 abstract class SelectorController<TSelection> {
@@ -1966,26 +1970,27 @@ abstract class SelectorComboStateBase<
 ///  * [MultiSelectorCombo]
 ///  * [TypeaheadCombo]
 ///  * [MenuItemCombo]
-class SelectorCombo<TItem> extends SelectorComboBase<TItem, TItem> {
+class SelectorCombo<TItem> extends SelectorComboBase<TItem?, TItem> {
   /// Creates combo widget for displaying the items list and selected item
   const SelectorCombo({
-    Key key,
-    TItem selected,
-    @required ValueChanged<TItem> onSelectedChanged,
+    Key? key,
+    TItem? selected,
+    required ValueChanged<TItem> onSelectedChanged,
 
     /// Builds the thid widget for [selected] item
     /// If null uses [ListCombo.itemBuilder]
-    PopupListItemBuilder<TItem> childBuilder,
+    PopupListItemBuilder<TItem>? childBuilder,
+
     /// Return [PreferredSizeWidget] to enable auto scroll to selected
-    @required PopupSelectorItemBuilder<TItem> itemBuilder,
-    @required PopupGetList<TItem> getList,
-    ValueSetter<TItem> onItemTapped,
-    GetIsSelectable<TItem> getIsSelectable,
+    PopupSelectorItemBuilder<TItem?>? itemBuilder,
+    PopupGetList<TItem>? getList,
+    ValueSetter<TItem?>? onItemTapped,
+    GetIsSelectable<TItem?>? getIsSelectable,
     bool closeAfterItemTapped = true,
-    ValueChanged<bool> waitChanged,
-    ValueChanged<bool> openedChanged,
-    ValueChanged<bool> hoveredChanged,
-    GestureTapCallback onTap,
+    ValueChanged<bool>? waitChanged,
+    ValueChanged<bool>? openedChanged,
+    ValueChanged<bool>? hoveredChanged,
+    GestureTapCallback? onTap,
     bool ignoreChildDecorator = false,
   }) : super(
           key: key,
@@ -2005,29 +2010,30 @@ class SelectorCombo<TItem> extends SelectorComboBase<TItem, TItem> {
         );
 
   @override
-  SelectorComboState<SelectorCombo<TItem>, TItem> createState() =>
-      SelectorComboState<SelectorCombo<TItem>, TItem>(selected);
+  SelectorComboState<SelectorCombo<TItem>, TItem?> createState() =>
+      SelectorComboState<SelectorCombo<TItem>, TItem?>(selected);
 }
 
 /// State for [SelectorCombo].
-class SelectorComboState<TWidget extends SelectorCombo<TItem>, TItem>
-    extends SelectorComboStateBase<TWidget, TItem, TItem> {
+class SelectorComboState<TWidget extends SelectorCombo<TItem?>, TItem>
+    extends SelectorComboStateBase<TWidget, TItem?, TItem?> {
   SelectorComboState(TItem selected) : super(selected);
   @override
   void clearSelected() => selected = null;
 
   @override
   Widget buildItem(
-          BuildContext context, ComboParameters parameters, TItem item) =>
-      widget.selectorItemBuilder(context, parameters, item, item == selected);
+          BuildContext context, ComboParameters? parameters, TItem? item) =>
+      widget.selectorItemBuilder!(context, parameters, item, item == selected);
 
   @override
-  Widget buildPopupContent(List<TItem> list, bool mirrored, [scrollToItem]) =>
+  Widget buildPopupContent(List<TItem?>? list, bool? mirrored,
+          [scrollToItem]) =>
       super.buildPopupContent(list, mirrored, selected);
 
   @override
-  void didUpdateWidget(SelectorCombo<TItem> oldWidget) {
-    super.didUpdateWidget(oldWidget);
+  void didUpdateWidget(SelectorCombo<TItem?> oldWidget) {
+    super.didUpdateWidget(oldWidget as TWidget);
     final selected = widget.selected;
     if (selected != oldWidget.selected && selected != this.selected) {
       setState(() => _selected = selected);
@@ -2035,12 +2041,12 @@ class SelectorComboState<TWidget extends SelectorCombo<TItem>, TItem>
   }
 
   @override
-  Widget getChild() => (widget.childBuilder ?? widget.itemBuilder)(
+  Widget? getChild() => (widget.childBuilder ?? widget.itemBuilder)!(
       context, parameters, _selected);
 
   @override
-  void itemTapped(TItem item, {bool closeAfterItemTapped}) {
-    super.itemTapped(item, closeAfterItemTapped: closeAfterItemTapped);
+  void itemTapped(TItem? item, {bool? closeAfterItemTapped}) {
+    super.itemTapped(item, closeAfterItemTapped: closeAfterItemTapped!);
     selected = item;
   }
 }
@@ -2054,21 +2060,21 @@ class SelectorComboState<TWidget extends SelectorCombo<TItem>, TItem>
 ///  * [SelectorCombo]
 ///  * [TypeaheadCombo]
 ///  * [MenuItemCombo]
-class MultiSelectorCombo<TItem> extends SelectorComboBase<TItem, Set<TItem>> {
+class MultiSelectorCombo<TItem> extends SelectorComboBase<TItem, Set<TItem>?> {
   const MultiSelectorCombo({
-    Key key,
-    Set<TItem> selected,
-    @required ValueChanged<Set<TItem>> onSelectedChanged,
-    @required PopupListItemBuilder<Set<TItem>> childBuilder,
-    @required PopupSelectorItemBuilder<TItem> itemBuilder,
-    @required PopupGetList<TItem> getList,
-    ValueSetter<TItem> onItemTapped,
-    GetIsSelectable<TItem> getIsSelectable,
+    Key? key,
+    Set<TItem>? selected,
+    required ValueChanged<Set<TItem>?> onSelectedChanged,
+    required PopupListItemBuilder<Set<TItem>?> childBuilder,
+    required PopupSelectorItemBuilder<TItem> itemBuilder,
+    required PopupGetList<TItem> getList,
+    ValueSetter<TItem>? onItemTapped,
+    GetIsSelectable<TItem>? getIsSelectable,
     bool closeAfterItemTapped = false,
-    ValueChanged<bool> waitChanged,
-    ValueChanged<bool> openedChanged,
-    ValueChanged<bool> hoveredChanged,
-    GestureTapCallback onTap,
+    ValueChanged<bool>? waitChanged,
+    ValueChanged<bool>? openedChanged,
+    ValueChanged<bool>? hoveredChanged,
+    GestureTapCallback? onTap,
     bool ignoreChildDecorator = false,
   })  : assert(childBuilder != null),
         super(
@@ -2095,8 +2101,8 @@ class MultiSelectorCombo<TItem> extends SelectorComboBase<TItem, Set<TItem>> {
 
 /// State for [MultiSelectorCombo].
 class MultiSelectorComboState<TWidget extends MultiSelectorCombo<TItem>, TItem>
-    extends SelectorComboStateBase<TWidget, TItem, Set<TItem>> {
-  MultiSelectorComboState(Set<TItem> selected) : super(selected);
+    extends SelectorComboStateBase<TWidget, TItem, Set<TItem>?> {
+  MultiSelectorComboState(Set<TItem>? selected) : super(selected);
   final _changes = StreamController.broadcast();
 
   @override
@@ -2104,19 +2110,19 @@ class MultiSelectorComboState<TWidget extends MultiSelectorCombo<TItem>, TItem>
 
   @override
   Widget buildItem(
-          BuildContext context, ComboParameters parameters, TItem item) =>
-      widget.selectorItemBuilder(
+          BuildContext context, ComboParameters? parameters, TItem item) =>
+      widget.selectorItemBuilder!(
           context, parameters, item, selected?.contains(item) == true);
 
   @override
-  Widget buildPopupContent(List<TItem> list, bool mirrored, [scrollToItem]) =>
+  Widget buildPopupContent(List<TItem>? list, bool? mirrored, [scrollToItem]) =>
       StatefulBuilder(builder: (context, setState) {
-        return parameters.listPopupBuilder(
+        return parameters!.listPopupBuilder!(
             context,
             parameters,
             list,
             (context, parameters, item) => buildItem(context, parameters, item),
-            widget.getIsSelectable,
+            widget.getIsSelectable as bool Function(dynamic)?,
             (item) => setState(() => itemTapped(item,
                 closeAfterItemTapped: widget.closeAfterItemTapped)),
             null,
@@ -2125,8 +2131,8 @@ class MultiSelectorComboState<TWidget extends MultiSelectorCombo<TItem>, TItem>
 
   @override
   void didUpdateWidget(MultiSelectorCombo<TItem> oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    final selected = widget.selected;
+    super.didUpdateWidget(oldWidget as TWidget);
+    final Set<TItem>? selected = widget.selected;
     if (selected != oldWidget.selected && !setEquals(selected, this.selected)) {
       setState(() => this.selected = selected);
     }
@@ -2136,14 +2142,14 @@ class MultiSelectorComboState<TWidget extends MultiSelectorCombo<TItem>, TItem>
   Widget getChild() => StreamBuilder(
       stream: _changes.stream,
       builder: (context, snapshot) =>
-          widget.childBuilder(context, parameters, _selected));
+          widget.childBuilder!(context, parameters, _selected)!);
 
   @override
-  void itemTapped(TItem item, {bool closeAfterItemTapped}) {
+  void itemTapped(TItem item, {required bool closeAfterItemTapped}) {
     super.itemTapped(item, closeAfterItemTapped: closeAfterItemTapped);
-    var selected = this.selected;
+    Set<TItem>? selected = this.selected;
     (selected?.contains(item) == true
-        ? selected.remove
+        ? selected!.remove
         : (selected ??= <TItem>{}).add)(item);
     this.selected = selected;
     _changes.add(true);
@@ -2165,7 +2171,7 @@ typedef TypeaheadGetList<T> = FutureOr<List<T>> Function(String text);
 typedef PopupGetItemText<T> = String Function(T item);
 
 typedef PopupTypeaheadItemBuilder<T> = Widget Function(BuildContext context,
-    ComboParameters parameters, T item, bool selected, String text);
+    ComboParameters? parameters, T item, bool selected, String? text);
 
 /// Combo widget for displaying the items list and selected item
 /// Combo widget with the delayed getting of the popup content and progress indication
@@ -2180,26 +2186,26 @@ typedef PopupTypeaheadItemBuilder<T> = Widget Function(BuildContext context,
 class TypeaheadCombo<TItem> extends SelectorCombo<TItem> {
   /// Creates combo widget for displaying the items list and selected item
   const TypeaheadCombo({
-    Key key,
-    @required TypeaheadGetList<TItem> getList,
-    @required PopupTypeaheadItemBuilder<TItem> itemBuilder,
+    Key? key,
+    TypeaheadGetList<TItem>? getList,
+    PopupTypeaheadItemBuilder<TItem>? itemBuilder,
     this.decoration,
     this.autofocus = false,
-    @required this.getItemText,
+    required this.getItemText,
     this.minTextLength = 1,
     this.focusNode,
     this.cleanAfterSelection = false,
 
     // inherited
-    TItem selected,
-    @required ValueChanged<TItem> onSelectedChanged,
-    ValueSetter<TItem> onItemTapped,
-    GetIsSelectable<TItem> getIsSelectable,
+    TItem? selected,
+    required ValueChanged<TItem> onSelectedChanged,
+    ValueSetter<TItem?>? onItemTapped,
+    GetIsSelectable<TItem?>? getIsSelectable,
     bool closeAfterItemTapped = true,
-    ValueChanged<bool> waitChanged,
-    ValueChanged<bool> openedChanged,
-    ValueChanged<bool> hoveredChanged,
-    GestureTapCallback onTap,
+    ValueChanged<bool>? waitChanged,
+    ValueChanged<bool>? openedChanged,
+    ValueChanged<bool>? hoveredChanged,
+    GestureTapCallback? onTap,
   })  : typeaheadItemBuilder = itemBuilder,
         typeaheadGetList = getList,
         assert(getList != null),
@@ -2223,33 +2229,33 @@ class TypeaheadCombo<TItem> extends SelectorCombo<TItem> {
         );
 
   /// Popup items getter using user's text.
-  final TypeaheadGetList<TItem> typeaheadGetList;
+  final TypeaheadGetList<TItem>? typeaheadGetList;
 
   /// Popup item widget builder.
-  final PopupTypeaheadItemBuilder<TItem> typeaheadItemBuilder;
+  final PopupTypeaheadItemBuilder<TItem>? typeaheadItemBuilder;
 
   /// The decoration to show around the text field.
-  final InputDecoration decoration;
+  final InputDecoration? decoration;
 
   /// {@macro flutter.widgets.editableText.autofocus}
   final bool autofocus;
 
   /// Gets the text that corresponds to popup item
-  final PopupGetItemText<TItem> getItemText;
+  final PopupGetItemText<TItem?> getItemText;
 
   /// Minimum text length to start getting the list
   /// if [minTextLength] = 0, shows the popup immediatelly on focus
   final int minTextLength;
 
   /// Defines the keyboard focus for this widget.
-  final FocusNode focusNode;
+  final FocusNode? focusNode;
 
   /// Determine if text should be cleared when user select the item
   final bool cleanAfterSelection;
 
   @override
-  TypeaheadComboState<TypeaheadCombo<TItem>, TItem> createState() =>
-      TypeaheadComboState<TypeaheadCombo<TItem>, TItem>(
+  TypeaheadComboState<TypeaheadCombo<TItem>, TItem?> createState() =>
+      TypeaheadComboState<TypeaheadCombo<TItem>, TItem?>(
           selected,
           selected == null ? '' : getItemText(selected),
           focusNode ?? FocusNode());
@@ -2284,8 +2290,8 @@ class TypeaheadCombo<TItem> extends SelectorCombo<TItem> {
 }
 
 /// State for [TypeaheadCombo]
-class TypeaheadComboState<TWidget extends TypeaheadCombo<TItem>, TItem>
-    extends SelectorComboState<TWidget, TItem> {
+class TypeaheadComboState<TWidget extends TypeaheadCombo<TItem?>, TItem>
+    extends SelectorComboState<TWidget, TItem?> {
   TypeaheadComboState(TItem selected, String text, this._focusNode)
       : _controller = TextEditingController(text: text),
         _text = text,
@@ -2293,12 +2299,12 @@ class TypeaheadComboState<TWidget extends TypeaheadCombo<TItem>, TItem>
 
   final TextEditingController _controller;
   final FocusNode _focusNode;
-  String _lastSearched;
+  String? _lastSearched;
   String _text;
   int get _textLength => _controller.text?.length ?? 0;
 
   @override
-  set selected(TItem value) {
+  set selected(TItem? value) {
     if (value == selected) return;
     if (widget.cleanAfterSelection) {
       value = null;
@@ -2310,12 +2316,12 @@ class TypeaheadComboState<TWidget extends TypeaheadCombo<TItem>, TItem>
 
   @override
   Widget buildItem(
-          BuildContext context, ComboParameters parameters, TItem item) =>
-      widget.typeaheadItemBuilder(
+          BuildContext context, ComboParameters? parameters, TItem? item) =>
+      widget.typeaheadItemBuilder!(
           context, parameters, item, item == _selected, _lastSearched);
 
   @override
-  ComboParameters getParameters(ComboParameters contextParameters) =>
+  ComboParameters getParameters(ComboParameters? contextParameters) =>
       super.getParameters(contextParameters).copyWith(
           autoOpen: ComboAutoOpen.none,
           autoClose: ComboAutoClose.tapOutsideExceptChild,
@@ -2337,8 +2343,8 @@ class TypeaheadComboState<TWidget extends TypeaheadCombo<TItem>, TItem>
       if (_textLength < widget.minTextLength) {
         super.close();
       } else {
-        if ((parameters.inputThrottle ?? Duration.zero) != Duration.zero) {
-          await Future.delayed(parameters.inputThrottle);
+        if ((parameters!.inputThrottle ?? Duration.zero) != Duration.zero) {
+          await Future.delayed(parameters!.inputThrottle!);
         }
         if (text == _controller.text) await fill();
       }
@@ -2354,7 +2360,7 @@ class TypeaheadComboState<TWidget extends TypeaheadCombo<TItem>, TItem>
   }
 
   @override
-  void didUpdateWidget(TypeaheadCombo<TItem> oldWidget) {
+  void didUpdateWidget(TypeaheadCombo<TItem?> oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.selected != null) {
       final text = widget.getItemText(selected);
@@ -2365,14 +2371,14 @@ class TypeaheadComboState<TWidget extends TypeaheadCombo<TItem>, TItem>
   }
 
   @override
-  FutureOr<List<TItem>> getPopupContent(BuildContext context) =>
-      widget.typeaheadGetList(_lastSearched = _text);
+  FutureOr<List<TItem?>> getPopupContent(BuildContext context) =>
+      widget.typeaheadGetList!(_lastSearched = _text);
 
   @override
   Widget getChild() => TextField(
         controller: _controller,
         focusNode: _focusNode,
-        enabled: parameters.enabled,
+        enabled: parameters!.enabled,
         autofocus: widget.autofocus,
         decoration: widget.decoration ?? const InputDecoration(),
         onTap: () {
@@ -2406,15 +2412,15 @@ class MenuItem<T> {
   final T item;
 
   /// Menu item children getter
-  final PopupGetList<MenuItem<T>> getChildren;
+  final PopupGetList<MenuItem<T>>? getChildren;
 }
 
 class _ArrowedItem extends StatelessWidget {
-  const _ArrowedItem({Key key, this.child}) : super(key: key);
-  final Widget child;
+  const _ArrowedItem({Key? key, this.child}) : super(key: key);
+  final Widget? child;
   @override
   Widget build(BuildContext context) => Row(children: [
-        Expanded(child: child),
+        Expanded(child: child!),
         const SizedBox(width: 16),
         Icon(
           Icons.arrow_right,
@@ -2438,8 +2444,8 @@ class _ArrowedItem extends StatelessWidget {
 class MenuItemCombo<T> extends StatelessWidget {
   /// Creates combo widget for displaying the menu
   const MenuItemCombo({
-    Key key,
-    @required this.item,
+    Key? key,
+    required this.item,
     this.child,
 
     // inherited
@@ -2457,37 +2463,37 @@ class MenuItemCombo<T> extends StatelessWidget {
   final MenuItem<T> item;
 
   /// Defines menu item child, if null uses itemBuilder to build child item
-  final Widget child;
+  final Widget? child;
 
   // * ListCombo properties
 
   /// Menu item widget builder.
-  final PopupListItemBuilder<MenuItem<T>> itemBuilder;
+  final PopupListItemBuilder<MenuItem<T>>? itemBuilder;
 
   /// Calls when the user taps on the menu item.
-  final ValueSetter<MenuItem<T>> onItemTapped;
+  final ValueSetter<MenuItem<T>>? onItemTapped;
 
   /// Determines if the menu item is active for tapping
-  final GetIsSelectable<MenuItem<T>> getIsSelectable;
+  final GetIsSelectable<MenuItem<T>>? getIsSelectable;
 
   /// Determines that [MenuItemCombo] should close the popup
   /// after user tapped on item
   final bool closeAfterItemTapped;
 
   /// Called when the menu items is getting or got
-  final ValueChanged<bool> waitChanged;
+  final ValueChanged<bool>? waitChanged;
 
   /// Callbacks when the menu is opening or closing
-  final ValueChanged<bool> openedChanged;
+  final ValueChanged<bool>? openedChanged;
 
   /// Callbacks when the mouse pointer enters on or exits from child or menu
   /// and its sub-menus
-  final ValueChanged<bool> hoveredChanged;
+  final ValueChanged<bool>? hoveredChanged;
 
   /// Called when the user taps on [child].
   /// Also can be called by 'long tap' event if [autoOpen] is set to [ComboAutoOpen.hovered]
   /// and platform is not 'Web'
-  final GestureTapCallback onTap;
+  final GestureTapCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
@@ -2500,7 +2506,7 @@ class MenuItemCombo<T> extends StatelessWidget {
     final divider = parameters.menuDivider;
     final showArrows = parameters.menuShowArrows;
     final canTapOnFolder = parameters.menuCanTapOnFolder;
-    ComboParameters menuParameters;
+    late ComboParameters menuParameters;
     menuParameters = parameters.copyWith(
       position: PopupPosition.right,
       autoOpen: ComboAutoOpen.hovered,
@@ -2512,7 +2518,7 @@ class MenuItemCombo<T> extends StatelessWidget {
               getIsSelectable, onItemTapped, scrollToItem, mirrored) =>
           ComboContext(
         parameters: menuParameters,
-        child: parameters.menuPopupBuilder(context, parameters, list,
+        child: parameters!.menuPopupBuilder!(context, parameters, list,
             itemBuilder, getIsSelectable, onItemTapped, scrollToItem, mirrored),
       ),
       popupDecoratorBuilder: parameters.menuPopupDecoratorBuilder,
@@ -2531,9 +2537,10 @@ class MenuItemCombo<T> extends StatelessWidget {
                 parameters: menuParameters,
                 child: MenuItemCombo<T>(
                   item: item,
-                  itemBuilder: showArrows
+                  itemBuilder: showArrows!
                       ? (context, parameters, item) {
-                          final widget = itemBuilder(context, parameters, item);
+                          final widget =
+                              itemBuilder!(context, parameters, item);
                           return item.getChildren == null ||
                                   widget is _ArrowedItem
                               ? widget
@@ -2545,10 +2552,10 @@ class MenuItemCombo<T> extends StatelessWidget {
                   closeAfterItemTapped: closeAfterItemTapped,
                   waitChanged: waitChanged,
                   openedChanged: openedChanged,
-                  onTap: canTapOnFolder || item.getChildren == null
+                  onTap: canTapOnFolder! || item.getChildren == null
                       ? () {
                           Combo.closeAll();
-                          onItemTapped(item);
+                          onItemTapped!(item);
                         }
                       : null,
                 ),
@@ -2557,7 +2564,7 @@ class MenuItemCombo<T> extends StatelessWidget {
         getIsSelectable: getIsSelectable,
         closeAfterItemTapped: closeAfterItemTapped,
         waitChanged: waitChanged,
-        child: child ?? itemBuilder(context, parameters, item),
+        child: child ?? itemBuilder!(context, parameters, item),
         openedChanged: openedChanged,
         hoveredChanged: hoveredChanged,
         onTap: onTap,
@@ -2572,12 +2579,12 @@ class MenuItemCombo<T> extends StatelessWidget {
 enum _Platform { mobile, web, desktop }
 
 class _PlatformHelper {
-  static _Platform _platform;
+  static _Platform? _platform;
   static _Platform get platform => _platform ??= kIsWeb
       ? _Platform.web
       : Platform.isAndroid || Platform.isIOS
           ? _Platform.mobile
           : _Platform.desktop;
-  static bool _canHover;
+  static bool? _canHover;
   static bool get canHover => _canHover ??= platform != _Platform.mobile;
 }
